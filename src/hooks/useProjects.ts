@@ -1,7 +1,6 @@
-
 import { useState } from 'react';
 import { Project } from '@/types';
-import { databaseService } from '@/services/databaseService';
+import { projectService } from '@/services';
 import { useToast } from '@/hooks/use-toast';
 
 export const useProjects = (userId: string) => {
@@ -11,7 +10,7 @@ export const useProjects = (userId: string) => {
 
   const addProject = async (projectData: Omit<Project, 'id' | 'createdAt' | 'userId'>) => {
     try {
-      const newProject = await databaseService.createProject({ 
+      const newProject = await projectService.createProject({ 
         ...projectData, 
         userId 
       });
@@ -30,7 +29,7 @@ export const useProjects = (userId: string) => {
 
   const updateProject = async (project: Project) => {
     try {
-      await databaseService.updateProject(project);
+      await projectService.updateProject(project);
       setProjects(prev => prev.map(p => p.id === project.id ? project : p));
       setCurrentProject(prev => prev?.id === project.id ? project : prev);
     } catch (error: any) {
@@ -46,7 +45,7 @@ export const useProjects = (userId: string) => {
 
   const deleteProject = async (projectId: string) => {
     try {
-      await databaseService.deleteProject(projectId);
+      await projectService.deleteProject(projectId);
       setProjects(prev => prev.filter(p => p.id !== projectId));
       setCurrentProject(prev => prev?.id === projectId ? null : prev);
     } catch (error: any) {

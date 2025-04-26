@@ -1,7 +1,6 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { TimeEntry } from '@/types';
-import { databaseService } from '@/services/databaseService';
+import { timeEntryService } from '@/services';
 import { useToast } from '@/hooks/use-toast';
 
 export const useTimerManagement = (userId: string) => {
@@ -15,7 +14,7 @@ export const useTimerManagement = (userId: string) => {
         await stopTimer();
       }
 
-      const newTimeEntry = await databaseService.createTimeEntry({
+      const newTimeEntry = await timeEntryService.createTimeEntry({
         taskId,
         projectId,
         userId,
@@ -53,7 +52,7 @@ export const useTimerManagement = (userId: string) => {
         isRunning: false,
       };
 
-      await databaseService.updateTimeEntry(updatedTimeEntry);
+      await timeEntryService.updateTimeEntry(updatedTimeEntry);
 
       setTimeEntries(prev => prev.map(entry => 
         entry.id === activeTimeEntry.id ? updatedTimeEntry : entry
@@ -80,7 +79,7 @@ export const useTimerManagement = (userId: string) => {
       const activeTimeEntryId = localStorage.getItem('activeTimeEntryId');
       if (activeTimeEntryId && userId) {
         try {
-          const entries = await databaseService.loadTimeEntries();
+          const entries = await timeEntryService.loadTimeEntries();
           const active = entries.find(entry => entry.id === activeTimeEntryId);
           if (active && active.isRunning) {
             setActiveTimeEntry(active);

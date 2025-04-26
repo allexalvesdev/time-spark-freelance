@@ -1,7 +1,6 @@
-
 import { useState } from 'react';
 import { Task } from '@/types';
-import { databaseService } from '@/services/databaseService';
+import { taskService } from '@/services';
 import { useToast } from '@/hooks/use-toast';
 import { calculateElapsedTime } from '@/utils/dateUtils';
 
@@ -12,7 +11,7 @@ export const useTasks = (userId: string) => {
 
   const addTask = async (taskData: Omit<Task, 'id' | 'completed' | 'actualStartTime' | 'actualEndTime' | 'elapsedTime' | 'userId'>) => {
     try {
-      const newTask = await databaseService.createTask({ 
+      const newTask = await taskService.createTask({ 
         ...taskData, 
         userId 
       });
@@ -31,7 +30,7 @@ export const useTasks = (userId: string) => {
 
   const updateTask = async (task: Task) => {
     try {
-      await databaseService.updateTask(task);
+      await taskService.updateTask(task);
       setTasks(prev => prev.map(t => t.id === task.id ? task : t));
       setCurrentTask(prev => prev?.id === task.id ? task : prev);
     } catch (error: any) {
@@ -73,7 +72,7 @@ export const useTasks = (userId: string) => {
 
   const deleteTask = async (taskId: string) => {
     try {
-      await databaseService.deleteTask(taskId);
+      await taskService.deleteTask(taskId);
       setTasks(prev => prev.filter(t => t.id !== taskId));
       setCurrentTask(prev => prev?.id === taskId ? null : prev);
     } catch (error: any) {

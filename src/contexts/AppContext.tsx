@@ -1,37 +1,11 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Project, Task, TimeEntry, ReportData } from '../types';
+import { ReportData } from '../types';
+import { AppState, AppContextType } from '../types/app';
 import { useAuth } from './AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { databaseService } from '@/services/databaseService';
 import { useReportGenerator } from '@/hooks/useReportGenerator';
-import { supabase } from '@/integrations/supabase/client';
 import { calculateElapsedTime } from '@/utils/dateUtils';
-
-interface AppState {
-  projects: Project[];
-  tasks: Task[];
-  timeEntries: TimeEntry[];
-  activeTimeEntry: TimeEntry | null;
-  currentProject: Project | null;
-  currentTask: Task | null;
-}
-
-interface AppContextType {
-  state: AppState;
-  addProject: (project: Omit<Project, 'id' | 'createdAt' | 'userId'>) => Promise<void>;
-  updateProject: (project: Project) => Promise<void>;
-  deleteProject: (projectId: string) => Promise<void>;
-  addTask: (task: Omit<Task, 'id' | 'completed' | 'actualStartTime' | 'actualEndTime' | 'elapsedTime' | 'userId'>) => Promise<void>;
-  updateTask: (task: Task) => Promise<void>;
-  completeTask: (taskId: string) => Promise<void>;
-  deleteTask: (taskId: string) => Promise<void>;
-  startTimer: (taskId: string, projectId: string) => Promise<void>;
-  stopTimer: () => Promise<void>;
-  setCurrentProject: (project: Project | null) => void;
-  setCurrentTask: (task: Task | null) => void;
-  generateReport: (projectId: string) => ReportData | null;
-}
 
 const initialState: AppState = {
   projects: [],

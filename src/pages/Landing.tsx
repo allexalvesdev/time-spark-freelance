@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState } from 'react';
 import LandingHeader from '@/components/landing/LandingHeader';
 import FeatureCard from '@/components/landing/FeatureCard';
@@ -61,13 +62,13 @@ const Landing = () => {
       name: "Carlos Silva",
       role: "Designer Freelancer",
       image: "https://randomuser.me/api/portraits/men/1.jpg",
-      content: "O TimeSpark transformou meu fluxo de trabalho. Agora consigo gerenciar meus projetos freelance com muito mais eficiência e transparência para meus clientes."
+      content: "O Workly transformou meu fluxo de trabalho. Agora consigo gerenciar meus projetos freelance com muito mais eficiência e transparência para meus clientes."
     },
     {
       name: "Ana Martins",
       role: "Gerente de Projetos",
       image: "https://randomuser.me/api/portraits/women/2.jpg",
-      content: "Como gerente de uma equipe remota, o TimeSpark nos permitiu sincronizar melhor nosso trabalho e ter uma visão clara de quanto tempo cada tarefa está consumindo."
+      content: "Como gerente de uma equipe remota, o Workly nos permitiu sincronizar melhor nosso trabalho e ter uma visão clara de quanto tempo cada tarefa está consumindo."
     },
     {
       name: "Rodrigo Mendes",
@@ -138,7 +139,7 @@ const Landing = () => {
             <span className="text-primary">potencialize seus resultados</span>
           </h1>
           <p className="text-xl md:text-2xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-            O TimeSpark é a ferramenta de gerenciamento de tempo que vai transformar sua produtividade e organização.
+            O Workly é a ferramenta de gerenciamento de tempo que vai transformar sua produtividade e organização.
           </p>
           <div className="flex flex-col md:flex-row gap-4 justify-center">
             <Link to="/auth">
@@ -187,7 +188,7 @@ const Landing = () => {
         <div className="absolute inset-0 bg-primary/70"></div>
         <div className="container mx-auto px-4 h-full flex items-center justify-center relative z-10">
           <h3 className="text-2xl md:text-4xl font-bold text-white text-center">
-            Mais de 1,000 profissionais já otimizaram seu tempo com o TimeSpark
+            Mais de 1,000 profissionais já otimizaram seu tempo com o Workly
           </h3>
         </div>
       </div>
@@ -261,7 +262,7 @@ const Landing = () => {
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div>
-              <h3 className="font-bold text-lg mb-4">TimeSpark</h3>
+              <h3 className="font-bold text-lg mb-4">Workly<span className="text-timespark-accent">.</span></h3>
               <p className="text-muted-foreground">
                 Sua ferramenta completa para gerenciamento de tempo e produtividade.
               </p>
@@ -294,7 +295,7 @@ const Landing = () => {
             </div>
           </div>
           <div className="border-t border-border mt-8 pt-8 text-center text-muted-foreground">
-            <p>&copy; {new Date().getFullYear()} TimeSpark. Todos os direitos reservados.</p>
+            <p>&copy; {new Date().getFullYear()} Workly. Todos os direitos reservados.</p>
           </div>
         </div>
       </footer>

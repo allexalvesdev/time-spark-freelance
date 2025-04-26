@@ -1,21 +1,19 @@
 
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 const Settings = () => {
-  const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const { toast } = useToast();
 
   const handleLogout = async () => {
     try {
-      await supabase.auth.signOut();
-      navigate('/auth');
+      await signOut();
+      // Redirect is handled by the auth context
     } catch (error) {
       console.error('Error logging out:', error);
       toast({

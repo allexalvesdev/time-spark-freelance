@@ -31,7 +31,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   };
 
   const navItems = [
-    { path: '/', label: 'Dashboard', icon: <LayoutDashboard size={20} /> },
+    { path: '/dashboard', label: 'Dashboard', icon: <LayoutDashboard size={20} /> },
     { path: '/agenda', label: 'Agenda', icon: <CalendarDays size={20} /> },
     { path: '/tarefas', label: 'Tarefas', icon: <ClipboardList size={20} /> },
     { path: '/relatorios', label: 'Relatórios', icon: <BarChart2 size={20} /> }
@@ -60,11 +60,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       {/* Header para Mobile */}
       <header className="lg:hidden border-b p-4 bg-card shadow-sm">
         <div className="flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2">
+          <Link to="/dashboard" className="flex items-center gap-2">
             <span className="w-8 h-8 bg-timespark-primary rounded-md flex items-center justify-center">
               <ClipboardList size={20} className="text-white" />
             </span>
-            <h1 className="text-xl font-semibold">Workly</h1>
+            <h1 className="text-xl font-semibold">Workly<span className="text-timespark-accent">.</span></h1>
           </Link>
           
           <div className="flex items-center gap-2">
@@ -77,11 +77,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               </SheetTrigger>
               <SheetContent side="left">
                 <div className="flex flex-col gap-6 py-4">
-                  <Link to="/" className="flex items-center gap-2">
+                  <Link to="/dashboard" className="flex items-center gap-2">
                     <span className="w-8 h-8 bg-timespark-primary rounded-md flex items-center justify-center">
                       <ClipboardList size={20} className="text-white" />
                     </span>
-                    <h1 className="text-xl font-semibold">Workly</h1>
+                    <h1 className="text-xl font-semibold">Workly<span className="text-timespark-accent">.</span></h1>
                   </Link>
                   
                   <Separator />
@@ -113,11 +113,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         {/* Sidebar para Desktop */}
         <aside className="hidden lg:flex w-64 flex-col border-r bg-card">
           <div className="p-6">
-            <Link to="/" className="flex items-center gap-2">
+            <Link to="/dashboard" className="flex items-center gap-2">
               <span className="w-8 h-8 bg-timespark-primary rounded-md flex items-center justify-center">
                 <ClipboardList size={20} className="text-white" />
               </span>
-              <h1 className="text-xl font-semibold">Workly</h1>
+              <h1 className="text-xl font-semibold">Workly<span className="text-timespark-accent">.</span></h1>
             </Link>
           </div>
           

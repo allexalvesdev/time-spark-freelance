@@ -40,13 +40,17 @@ const LandingHeader: React.FC = () => {
         <div className="flex justify-between items-center">
           {/* Logo */}
           <Link to="/" className="flex items-center">
-            <span className={`font-bold text-2xl ${scrolled ? 'text-foreground' : 'text-white'}`}>
-              TimeSpark<span className="text-timespark-accent">.</span>
+            <span className={`font-bold text-2xl ${scrolled ? 'text-foreground' : 'text-foreground dark:text-white'}`}>
+              Workly<span className="text-timespark-accent">.</span>
             </span>
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className={`hidden md:flex items-center space-x-6 ${scrolled ? 'text-foreground' : 'text-white'}`}>
+          <nav className={`hidden md:flex items-center space-x-6 ${
+            scrolled 
+              ? 'text-foreground' 
+              : 'text-foreground dark:text-white'
+          }`}>
             <a href="#features" className="hover:text-timespark-accent transition-colors">Recursos</a>
             <a href="#testimonials" className="hover:text-timespark-accent transition-colors">Depoimentos</a>
             <a href="#pricing" className="hover:text-timespark-accent transition-colors">Preços</a>
@@ -65,7 +69,11 @@ const LandingHeader: React.FC = () => {
             <ThemeToggle />
             <button
               onClick={toggleMobileMenu}
-              className={`ml-4 p-2 rounded-full ${scrolled ? 'text-foreground' : 'text-white'}`}
+              className={`ml-4 p-2 rounded-full ${
+                scrolled 
+                  ? 'text-foreground' 
+                  : 'text-foreground dark:text-white'
+              }`}
             >
               {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
             </button>

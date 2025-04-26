@@ -25,7 +25,12 @@ const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, isLoading } = useAuth();
   
   if (isLoading) {
-    return <div>Loading...</div>;
+    return <div className="flex h-screen w-screen items-center justify-center">
+      <div className="text-center">
+        <h2 className="text-xl font-semibold mb-2">Carregando...</h2>
+        <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto"></div>
+      </div>
+    </div>;
   }
   
   if (!user) {

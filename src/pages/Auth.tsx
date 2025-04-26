@@ -1,19 +1,19 @@
 
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardContent, CardFooter } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
+import { Link } from 'react-router-dom';
 
 const Auth = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isSignUp, setIsSignUp] = useState(false);
-  const navigate = useNavigate();
   const { toast } = useToast();
+  const { signIn, signUp } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,22 +21,17 @@ const Auth = () => {
 
     try {
       if (isSignUp) {
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-        });
+        const { error } = await signUp(email, password);
         if (error) throw error;
         toast({
           title: "Conta criada com sucesso!",
-          description: "Verifique seu email para confirmar o cadastro.",
+          description: "Você já pode fazer login com suas credenciais.",
         });
+        setIsSignUp(false); // Switch to login view
       } else {
-        const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
+        const { error } = await signIn(email, password);
         if (error) throw error;
-        navigate('/');
+        // Redirect is handled by the auth context
       }
     } catch (error: any) {
       toast({
@@ -53,6 +48,11 @@ const Auth = () => {
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md">
         <CardHeader>
+          <Link to="/" className="flex justify-center mb-6">
+            <h1 className="text-2xl font-bold">
+              Workly<span className="text-timespark-accent">.</span>
+            </h1>
+          </Link>
           <h1 className="text-2xl font-bold text-center">
             {isSignUp ? 'Criar conta' : 'Entrar'}
           </h1>

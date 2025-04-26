@@ -9,7 +9,12 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 24,
-    marginBottom: 20
+    marginBottom: 10
+  },
+  projectName: {
+    fontSize: 18,
+    marginBottom: 10,
+    fontWeight: 'bold'
   },
   subtitle: {
     fontSize: 18,
@@ -49,11 +54,19 @@ interface ReportPDFProps {
   data: ReportData;
 }
 
+const formatTimeForPDF = (seconds: number): string => {
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const remainingSeconds = seconds % 60;
+
+  return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+};
+
 export const ReportPDF = ({ data }: ReportPDFProps) => (
   <Document>
     <Page size="A4" style={styles.page}>
-      <Text style={styles.title}>{data.projectName}</Text>
-      <Text style={styles.subtitle}>Relatório de Projeto</Text>
+      <Text style={styles.title}>Relatório de Projeto</Text>
+      <Text style={styles.projectName}>{data.projectName}</Text>
 
       <View style={styles.table}>
         <View style={[styles.tableRow, styles.tableHeader]}>
@@ -64,15 +77,16 @@ export const ReportPDF = ({ data }: ReportPDFProps) => (
         {data.tasks.map((task) => (
           <View key={task.id} style={styles.tableRow}>
             <Text style={styles.tableCell}>{task.name}</Text>
-            <Text style={styles.tableCell}>{task.timeSpent} segundos</Text>
+            <Text style={styles.tableCell}>{formatTimeForPDF(task.timeSpent)}</Text>
             <Text style={styles.tableCell}>R$ {task.earnings.toFixed(2)}</Text>
           </View>
         ))}
       </View>
 
       <View style={styles.summary}>
+        <Text>Projeto: {data.projectName}</Text>
         <Text>Total de Tarefas: {data.tasks.length}</Text>
-        <Text>Tempo Total: {data.totalTime} segundos</Text>
+        <Text>Tempo Total: {formatTimeForPDF(data.totalTime)}</Text>
         <Text>Ganhos Totais: R$ {data.totalEarnings.toFixed(2)}</Text>
       </View>
     </Page>

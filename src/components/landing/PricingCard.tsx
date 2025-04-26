@@ -14,20 +14,13 @@ interface PricingCardProps {
   popular?: boolean;
 }
 
-const PricingCard: React.FC<PricingCardProps> = ({ 
-  name, 
-  price, 
-  period, 
-  features, 
-  cta, 
-  popular = false 
-}) => {
+const PricingCard: React.FC<PricingCardProps> = ({ name, price, period, features, cta, popular = false }) => {
   return (
-    <Card className={`h-full flex flex-col relative ${
-      popular ? 'border-timespark-accent shadow-lg scale-105 z-10' : 'border-border'
+    <Card className={`h-full flex flex-col relative bg-background/50 backdrop-blur-sm ${
+      popular ? 'border-primary shadow-lg scale-105 z-10' : 'border-border'
     }`}>
       {popular && (
-        <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-timespark-accent text-white text-xs uppercase font-bold py-1 px-4 rounded-full">
+        <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-primary text-primary-foreground text-xs uppercase font-bold py-1 px-4 rounded-full">
           Mais Popular
         </div>
       )}
@@ -45,7 +38,7 @@ const PricingCard: React.FC<PricingCardProps> = ({
         <ul className="space-y-3 w-full mb-8">
           {features.map((feature, index) => (
             <li key={index} className="flex items-center">
-              <Check className="h-5 w-5 mr-2 text-timespark-accent flex-shrink-0" />
+              <Check className="h-5 w-5 mr-2 text-primary flex-shrink-0" />
               <span>{feature}</span>
             </li>
           ))}
@@ -57,8 +50,8 @@ const PricingCard: React.FC<PricingCardProps> = ({
           <Button 
             className={`w-full ${
               popular 
-                ? 'bg-timespark-accent hover:bg-timespark-accent/90 text-white' 
-                : 'bg-primary/10 hover:bg-primary/20'
+                ? 'bg-primary hover:bg-primary/90 text-primary-foreground' 
+                : 'bg-secondary hover:bg-secondary/90'
             }`}
           >
             {cta}

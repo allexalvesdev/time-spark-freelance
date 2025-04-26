@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import LandingHeader from '@/components/landing/LandingHeader';
 import FeatureCard from '@/components/landing/FeatureCard';
@@ -122,45 +121,40 @@ const Landing = () => {
     }
   ];
 
-  // CSS animation classes
   const fadeInClass = "animate-fade-in";
 
   return (
     <div className="landing-page overflow-x-hidden">
       <LandingHeader />
       
-      {/* Hero Section with Parallax */}
       <section 
         ref={heroRef}
-        className="relative h-screen flex items-center justify-center bg-gradient-to-b from-primary to-primary/80 bg-cover bg-center"
-        style={parallaxStyle}
+        className="relative min-h-screen flex items-center justify-center bg-background pattern-grid"
       >
-        <div className="absolute inset-0 bg-black/30 z-0"></div>
+        <div className="absolute inset-0 bg-gradient-to-b from-background via-background/95 to-background"></div>
         <div className="container mx-auto px-4 z-10 text-center">
-          <h1 className="text-4xl md:text-6xl font-bold text-white mb-6 drop-shadow-lg">
+          <h1 className="text-4xl md:text-6xl font-bold mb-6">
             Gerencie seu tempo, <br className="hidden md:block" />
-            <span className="text-timespark-accent">potencialize seus resultados</span>
+            <span className="text-primary">potencialize seus resultados</span>
           </h1>
-          <p className="text-xl md:text-2xl text-white mb-8 max-w-2xl mx-auto">
+          <p className="text-xl md:text-2xl text-muted-foreground mb-8 max-w-2xl mx-auto">
             O TimeSpark é a ferramenta de gerenciamento de tempo que vai transformar sua produtividade e organização.
           </p>
           <div className="flex flex-col md:flex-row gap-4 justify-center">
             <Link to="/auth">
-              <Button size="lg" className="bg-timespark-accent hover:bg-timespark-accent/90 text-white">
+              <Button size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground">
                 Comece Agora <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </Link>
-            <Button size="lg" variant="outline" className="text-white border-white hover:bg-white/20">
+            <Button size="lg" variant="outline">
               Ver Demonstração
             </Button>
           </div>
         </div>
-        
-        <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-background to-transparent"></div>
       </section>
 
-      {/* Features Section */}
-      <section ref={featuresRef} className="py-20 bg-background">
+      <section ref={featuresRef} className="py-20 bg-background pattern-dots relative">
+        <div className="absolute inset-0 bg-gradient-to-b from-background via-background/50 to-background"></div>
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">Recursos Poderosos para Gerenciar seu Tempo</h2>
@@ -183,7 +177,6 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* Parallax Divider */}
       <div 
         className="h-64 bg-fixed bg-cover bg-center relative"
         style={{
@@ -199,7 +192,6 @@ const Landing = () => {
         </div>
       </div>
 
-      {/* Testimonials Section */}
       <section ref={testimonialsRef} className="py-20 bg-muted/50">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
@@ -224,7 +216,6 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* Pricing Section */}
       <section ref={pricingRef} className="py-20 bg-background">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
@@ -251,7 +242,6 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* CTA Section */}
       <section className="py-16 bg-primary text-white">
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-3xl md:text-4xl font-bold mb-6">Pronto para Transformar sua Produtividade?</h2>
@@ -266,8 +256,8 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="bg-background py-12">
+      <footer className="bg-background pattern-grid relative py-12">
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/95 to-background/50"></div>
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div>
@@ -309,7 +299,6 @@ const Landing = () => {
         </div>
       </footer>
 
-      {/* Add custom styles */}
       <style>
         {`
         @keyframes fadeIn {

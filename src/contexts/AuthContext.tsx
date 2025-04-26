@@ -2,7 +2,7 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 interface AuthContextType {
   session: Session | null;
@@ -27,6 +27,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     // Set up auth state listener FIRST
@@ -36,14 +37,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         setUser(session?.user ?? null);
         setIsLoading(false);
         
-        // Redirect to dashboard on successful login
+        // Only redirect if we're not already on the landing page
         if (event === 'SIGNED_IN' && session) {
-          navigate('/dashboard');
+          // Check if we're on the landing page or auth page and redirect accordingly
+          if (location.pathname === '/' || location.pathname === '/auth') {
+            navigate('/dashboard');
+          }
         }
         
-        // Redirect to login on logout
+        // Redirect to landing page on logout
         if (event === 'SIGNED_OUT') {
-          navigate('/auth');
+          navigate('/');
         }
       }
     );
@@ -53,10 +57,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setSession(session);
       setUser(session?.user ?? null);
       setIsLoading(false);
+      
+      // Initial redirection logic
+      if (session && (location.pathname === '/' || location.pathname === '/auth')) {
+        navigate('/dashboard');
+      }
     });
 
     return () => subscription.unsubscribe();
-  }, [navigate]);
+  }, [navigate, location.pathname]);
 
   const signIn = async (email: string, password: string) => {
     try {

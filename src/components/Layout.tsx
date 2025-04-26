@@ -45,8 +45,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         to={path}
         className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
           active 
-            ? 'bg-timespark-primary text-white font-medium' 
-            : 'hover:bg-timespark-light'
+            ? 'bg-primary text-white font-medium' 
+            : 'hover:bg-muted'
         }`}
       >
         {icon}
@@ -61,10 +61,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       <header className="lg:hidden border-b p-4 bg-card shadow-sm">
         <div className="flex items-center justify-between">
           <Link to="/dashboard" className="flex items-center gap-2">
-            <span className="w-8 h-8 bg-timespark-primary rounded-md flex items-center justify-center">
+            <span className="w-8 h-8 bg-primary rounded-md flex items-center justify-center">
               <ClipboardList size={20} className="text-white" />
             </span>
-            <h1 className="text-xl font-semibold">Workly<span className="text-timespark-accent">.</span></h1>
+            <h1 className="text-xl font-semibold">Workly<span className="text-accent">.</span></h1>
           </Link>
           
           <div className="flex items-center gap-2">
@@ -78,10 +78,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               <SheetContent side="left">
                 <div className="flex flex-col gap-6 py-4">
                   <Link to="/dashboard" className="flex items-center gap-2">
-                    <span className="w-8 h-8 bg-timespark-primary rounded-md flex items-center justify-center">
+                    <span className="w-8 h-8 bg-primary rounded-md flex items-center justify-center">
                       <ClipboardList size={20} className="text-white" />
                     </span>
-                    <h1 className="text-xl font-semibold">Workly<span className="text-timespark-accent">.</span></h1>
+                    <h1 className="text-xl font-semibold">Workly<span className="text-accent">.</span></h1>
                   </Link>
                   
                   <Separator />
@@ -93,8 +93,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                         to={item.path}
                         className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
                           isActive(item.path) 
-                            ? 'bg-timespark-primary text-white font-medium' 
-                            : 'hover:bg-timespark-light'
+                            ? 'bg-primary text-white font-medium' 
+                            : 'hover:bg-muted'
                         }`}
                       >
                         {item.icon}
@@ -114,10 +114,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         <aside className="hidden lg:flex w-64 flex-col border-r bg-card">
           <div className="p-6">
             <Link to="/dashboard" className="flex items-center gap-2">
-              <span className="w-8 h-8 bg-timespark-primary rounded-md flex items-center justify-center">
+              <span className="w-8 h-8 bg-primary rounded-md flex items-center justify-center">
                 <ClipboardList size={20} className="text-white" />
               </span>
-              <h1 className="text-xl font-semibold">Workly<span className="text-timespark-accent">.</span></h1>
+              <h1 className="text-xl font-semibold">Workly<span className="text-accent">.</span></h1>
             </Link>
           </div>
           
@@ -131,9 +131,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             <div className="flex items-center justify-between mb-4">
               <ThemeToggle />
               {activeTimeEntry && (
-                <div className="p-3 bg-timespark-light rounded-md mb-4">
-                  <div className="text-sm font-medium text-timespark-dark">Timer ativo</div>
-                  <div className="text-xs text-timespark-secondary animate-pulse-subtle">
+                <div className="p-3 bg-muted rounded-md mb-4">
+                  <div className="text-sm font-medium">Timer ativo</div>
+                  <div className="text-xs text-muted-foreground animate-pulse-subtle">
                     Gravando tempo...
                   </div>
                 </div>

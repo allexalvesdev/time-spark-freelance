@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AppProvider } from "@/contexts/AppContext";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { PlanProvider } from "@/contexts/PlanContext";
 import { ThemeProvider } from "next-themes";
 import Layout from "@/components/Layout";
 import Dashboard from "@/pages/Dashboard";
@@ -47,87 +48,89 @@ const App = () => (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <AuthProvider>
-          <AppProvider>
-            <TooltipProvider>
-              <Toaster />
-              <Sonner />
-              <Routes>
-                <Route path="/" element={<Landing />} />
-                <Route path="/auth" element={<Auth />} />
-                <Route
-                  path="/dashboard"
-                  element={
-                    <PrivateRoute>
-                      <Layout>
-                        <Dashboard />
-                      </Layout>
-                    </PrivateRoute>
-                  }
-                />
-                <Route
-                  path="/novo-projeto"
-                  element={
-                    <PrivateRoute>
-                      <Layout>
-                        <NewProject />
-                      </Layout>
-                    </PrivateRoute>
-                  }
-                />
-                <Route
-                  path="/projeto/:projectId"
-                  element={
-                    <PrivateRoute>
-                      <Layout>
-                        <ProjectDetails />
-                      </Layout>
-                    </PrivateRoute>
-                  }
-                />
-                <Route
-                  path="/agenda"
-                  element={
-                    <PrivateRoute>
-                      <Layout>
-                        <Agenda />
-                      </Layout>
-                    </PrivateRoute>
-                  }
-                />
-                <Route
-                  path="/tarefas"
-                  element={
-                    <PrivateRoute>
-                      <Layout>
-                        <Tasks />
-                      </Layout>
-                    </PrivateRoute>
-                  }
-                />
-                <Route
-                  path="/relatorios"
-                  element={
-                    <PrivateRoute>
-                      <Layout>
-                        <Reports />
-                      </Layout>
-                    </PrivateRoute>
-                  }
-                />
-                <Route
-                  path="/configuracoes"
-                  element={
-                    <PrivateRoute>
-                      <Layout>
-                        <Settings />
-                      </Layout>
-                    </PrivateRoute>
-                  }
-                />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </TooltipProvider>
-          </AppProvider>
+          <PlanProvider>
+            <AppProvider>
+              <TooltipProvider>
+                <Toaster />
+                <Sonner />
+                <Routes>
+                  <Route path="/" element={<Landing />} />
+                  <Route path="/auth" element={<Auth />} />
+                  <Route
+                    path="/dashboard"
+                    element={
+                      <PrivateRoute>
+                        <Layout>
+                          <Dashboard />
+                        </Layout>
+                      </PrivateRoute>
+                    }
+                  />
+                  <Route
+                    path="/novo-projeto"
+                    element={
+                      <PrivateRoute>
+                        <Layout>
+                          <NewProject />
+                        </Layout>
+                      </PrivateRoute>
+                    }
+                  />
+                  <Route
+                    path="/projeto/:projectId"
+                    element={
+                      <PrivateRoute>
+                        <Layout>
+                          <ProjectDetails />
+                        </Layout>
+                      </PrivateRoute>
+                    }
+                  />
+                  <Route
+                    path="/agenda"
+                    element={
+                      <PrivateRoute>
+                        <Layout>
+                          <Agenda />
+                        </Layout>
+                      </PrivateRoute>
+                    }
+                  />
+                  <Route
+                    path="/tarefas"
+                    element={
+                      <PrivateRoute>
+                        <Layout>
+                          <Tasks />
+                        </Layout>
+                      </PrivateRoute>
+                    }
+                  />
+                  <Route
+                    path="/relatorios"
+                    element={
+                      <PrivateRoute>
+                        <Layout>
+                          <Reports />
+                        </Layout>
+                      </PrivateRoute>
+                    }
+                  />
+                  <Route
+                    path="/configuracoes"
+                    element={
+                      <PrivateRoute>
+                        <Layout>
+                          <Settings />
+                        </Layout>
+                      </PrivateRoute>
+                    }
+                  />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </TooltipProvider>
+            </AppProvider>
+          </PlanProvider>
         </AuthProvider>
       </BrowserRouter>
     </QueryClientProvider>

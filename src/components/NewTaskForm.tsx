@@ -20,9 +20,13 @@ import { useToast } from '@/hooks/use-toast';
 const formSchema = z.object({
   name: z.string().min(3, 'O nome da tarefa deve ter pelo menos 3 caracteres'),
   description: z.string().optional(),
-  estimatedTime: z.preprocess(
+  estimatedHours: z.preprocess(
     (val) => (val === '' ? 0 : Number(val)),
-    z.number().min(0, 'O tempo estimado deve ser um número positivo')
+    z.number().min(0, 'As horas devem ser um número positivo')
+  ),
+  estimatedMinutes: z.preprocess(
+    (val) => (val === '' ? 0 : Number(val)),
+    z.number().min(0, 'Os minutos devem ser um número positivo').max(59, 'Os minutos devem ser menor que 60')
   ),
   scheduledStartTime: z.string().refine(val => !!val, {
     message: 'Selecione uma data e hora de início',
@@ -40,22 +44,30 @@ const NewTaskForm: React.FC<NewTaskFormProps> = ({ projectId, onSuccess }) => {
   const { addTask } = useAppContext();
   const { toast } = useToast();
   
+  // Get current date in Brazil timezone
+  const now = new Date();
+  const brasilDate = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+  
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: '',
       description: '',
-      estimatedTime: 0,
-      scheduledStartTime: new Date().toISOString().slice(0, 16),
+      estimatedHours: 0,
+      estimatedMinutes: 0,
+      scheduledStartTime: brasilDate,
     },
   });
   
   const onSubmit = (data: FormValues) => {
+    const totalMinutes = (Number(data.estimatedHours) * 60) + Number(data.estimatedMinutes);
+    const estimatedTime = totalMinutes * 60; // Convert to seconds for backend
+    
     addTask({
       projectId,
       name: data.name,
       description: data.description || '',
-      estimatedTime: data.estimatedTime,
+      estimatedTime,
       scheduledStartTime: new Date(data.scheduledStartTime),
     });
     
@@ -67,8 +79,9 @@ const NewTaskForm: React.FC<NewTaskFormProps> = ({ projectId, onSuccess }) => {
     form.reset({
       name: '',
       description: '',
-      estimatedTime: 0,
-      scheduledStartTime: new Date().toISOString().slice(0, 16),
+      estimatedHours: 0,
+      estimatedMinutes: 0,
+      scheduledStartTime: brasilDate,
     });
     
     if (onSuccess) {
@@ -110,18 +123,37 @@ const NewTaskForm: React.FC<NewTaskFormProps> = ({ projectId, onSuccess }) => {
           )}
         />
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <FormField
             control={form.control}
-            name="estimatedTime"
+            name="estimatedHours"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Tempo Estimado (minutos)</FormLabel>
+                <FormLabel>Horas Estimadas</FormLabel>
                 <FormControl>
                   <Input 
                     type="number" 
-                    min="0" 
-                    {...field} 
+                    min="0"
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          
+          <FormField
+            control={form.control}
+            name="estimatedMinutes"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Minutos Estimados</FormLabel>
+                <FormControl>
+                  <Input 
+                    type="number" 
+                    min="0"
+                    max="59"
+                    {...field}
                   />
                 </FormControl>
                 <FormMessage />
@@ -137,8 +169,8 @@ const NewTaskForm: React.FC<NewTaskFormProps> = ({ projectId, onSuccess }) => {
                 <FormLabel>Data e Hora de Início</FormLabel>
                 <FormControl>
                   <Input 
-                    type="datetime-local" 
-                    {...field} 
+                    type="datetime-local"
+                    {...field}
                   />
                 </FormControl>
                 <FormMessage />

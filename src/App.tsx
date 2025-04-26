@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -16,6 +15,7 @@ import Agenda from "@/pages/Agenda";
 import Tasks from "@/pages/Tasks";
 import Reports from "@/pages/Reports";
 import NotFound from "@/pages/NotFound";
+import Settings from "@/pages/Settings";
 import { useAuth } from "@/contexts/AuthContext";
 
 const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
@@ -101,6 +101,16 @@ const App = () => (
                     <PrivateRoute>
                       <Layout>
                         <Reports />
+                      </Layout>
+                    </PrivateRoute>
+                  }
+                />
+                <Route
+                  path="/configuracoes"
+                  element={
+                    <PrivateRoute>
+                      <Layout>
+                        <Settings />
                       </Layout>
                     </PrivateRoute>
                   }

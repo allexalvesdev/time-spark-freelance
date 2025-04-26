@@ -60,7 +60,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             <span className="w-8 h-8 bg-timespark-primary rounded-md flex items-center justify-center">
               <ClipboardList size={20} className="text-white" />
             </span>
-            <h1 className="text-xl font-semibold">TimeSpark</h1>
+            <h1 className="text-xl font-semibold">Workly</h1>
           </Link>
           
           <div className="flex items-center gap-2">
@@ -77,7 +77,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                     <span className="w-8 h-8 bg-timespark-primary rounded-md flex items-center justify-center">
                       <ClipboardList size={20} className="text-white" />
                     </span>
-                    <h1 className="text-xl font-semibold">TimeSpark</h1>
+                    <h1 className="text-xl font-semibold">Workly</h1>
                   </Link>
                   
                   <Separator />
@@ -113,7 +113,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               <span className="w-8 h-8 bg-timespark-primary rounded-md flex items-center justify-center">
                 <ClipboardList size={20} className="text-white" />
               </span>
-              <h1 className="text-xl font-semibold">TimeSpark</h1>
+              <h1 className="text-xl font-semibold">Workly</h1>
             </Link>
           </div>
           
@@ -134,18 +134,18 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   </div>
                 </div>
               )}
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="w-full flex items-center gap-2"
-                asChild
-              >
-                <Link to="/configuracoes">
-                  <Settings size={16} />
-                  <span>Configurações</span>
-                </Link>
-              </Button>
             </div>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="w-full flex items-center gap-2"
+              asChild
+            >
+              <Link to="/configuracoes">
+                <Settings size={16} />
+                <span>Configurações</span>
+              </Link>
+            </Button>
           </div>
         </aside>
 

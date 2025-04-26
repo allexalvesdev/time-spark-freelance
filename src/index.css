@@ -107,10 +107,22 @@ html {
 
 /* Fix for navbar text in light mode */
 .landing-page .text-white {
-  @apply text-foreground dark:text-white;
+  color: var(--foreground);
+}
+
+.dark .landing-page .text-white {
+  color: white;
 }
 
 /* Better contrast for light mode links */
 .landing-page a {
-  @apply text-foreground dark:text-white hover:text-primary;
+  color: var(--foreground);
+}
+
+.landing-page a:hover {
+  color: hsl(var(--primary));
+}
+
+.dark .landing-page a {
+  color: white;
 }

@@ -30,3 +30,21 @@ export const formatDuration = (seconds: number): string => {
 
   return parts.join(' ');
 };
+
+// Add the missing formatCurrency function
+export const formatCurrency = (value: number): string => {
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+    minimumFractionDigits: 2
+  }).format(value);
+};
+
+// Add the missing formatDate function
+export const formatDate = (date: Date): string => {
+  return date.toLocaleDateString('pt-BR', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  });
+};

@@ -1,5 +1,5 @@
 
-import { Project, Task, TimeEntry } from './index';
+import { Project, Task, TimeEntry, ReportData } from './index';
 
 export interface AppState {
   projects: Project[];
@@ -25,4 +25,3 @@ export interface AppContextType {
   setCurrentTask: (task: Task | null) => void;
   generateReport: (projectId: string) => ReportData | null;
 }
-

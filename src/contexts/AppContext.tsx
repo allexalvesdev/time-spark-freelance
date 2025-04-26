@@ -1,5 +1,6 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { ReportData } from '../types';
+import { Project, Task, TimeEntry, ReportData } from '../types';
 import { AppState, AppContextType } from '../types/app';
 import { useAuth } from './AuthContext';
 import { useToast } from '@/hooks/use-toast';

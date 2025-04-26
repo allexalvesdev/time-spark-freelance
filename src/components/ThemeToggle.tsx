@@ -28,7 +28,10 @@ export function ThemeToggle() {
     <Button
       variant="ghost"
       size="icon"
-      onClick={() => setTheme(currentTheme === "dark" ? "light" : "dark")}
+      onClick={() => {
+        console.log('Current theme before change:', currentTheme);
+        setTheme(currentTheme === "dark" ? "light" : "dark");
+      }}
       title={`Mudar para tema ${currentTheme === 'dark' ? 'claro' : 'escuro'}`}
     >
       <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />

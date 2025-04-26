@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -34,7 +35,7 @@ const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
 const queryClient = new QueryClient();
 
 const App = () => (
-  <ThemeProvider defaultTheme="system" enableSystem>
+  <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <AuthProvider>

@@ -42,6 +42,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     timeEntries,
     setTimeEntries,
     activeTimeEntry,
+    setActiveTimeEntry,
     startTimer,
     stopTimer,
   } = useTimerManagement(user?.id || '');

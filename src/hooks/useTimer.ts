@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { TimeEntry } from '@/types';
 import { databaseService } from '@/services/databaseService';
 import { useToast } from '@/hooks/use-toast';
@@ -76,3 +76,80 @@ export const useTimerManagement = (userId: string) => {
     stopTimer,
   };
 };
+
+interface UseTimerOptions {
+  autoStart?: boolean;
+  initialTime?: number;
+}
+
+const useTimer = (options: UseTimerOptions = {}) => {
+  const { autoStart = false, initialTime = 0 } = options;
+  const [isRunning, setIsRunning] = useState(autoStart);
+  const [elapsedTime, setElapsedTime] = useState(initialTime);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const startTimeRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (isRunning) {
+      startTimeRef.current = Date.now() - elapsedTime * 1000;
+      intervalRef.current = setInterval(() => {
+        if (startTimeRef.current !== null) {
+          const currentElapsed = Math.floor((Date.now() - startTimeRef.current) / 1000);
+          setElapsedTime(currentElapsed);
+        }
+      }, 1000);
+    } else {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    }
+
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    };
+  }, [isRunning]);
+
+  const start = () => {
+    if (!isRunning) {
+      setIsRunning(true);
+    }
+  };
+
+  const stop = () => {
+    if (isRunning) {
+      setIsRunning(false);
+    }
+  };
+
+  const reset = () => {
+    setElapsedTime(0);
+    startTimeRef.current = null;
+  };
+
+  const getFormattedTime = () => {
+    const hours = Math.floor(elapsedTime / 3600);
+    const minutes = Math.floor((elapsedTime % 3600) / 60);
+    const seconds = elapsedTime % 60;
+
+    return [
+      hours.toString().padStart(2, '0'),
+      minutes.toString().padStart(2, '0'),
+      seconds.toString().padStart(2, '0'),
+    ].join(':');
+  };
+
+  return {
+    isRunning,
+    elapsedTime,
+    start,
+    stop,
+    reset,
+    getFormattedTime,
+  };
+};
+
+export default useTimer;

@@ -1,14 +1,13 @@
-
 import React, { useState, useEffect } from 'react';
 import { Task, Project } from '@/types';
 import { useAppContext } from '@/contexts/AppContext';
+import useTimerState from '@/hooks/useTimerState';
 import EditTaskModal from './EditTaskModal';
 import CompleteTaskModal from './CompleteTaskModal';
 import TaskHeader from './task/TaskHeader';
 import TaskDetails from './task/TaskDetails';
 import TaskTimer from './task/TaskTimer';
 import TaskActions from './task/TaskActions';
-import useTimer from '@/hooks/useTimer';
 import { calculateEarnings } from '@/utils/dateUtils';
 
 interface TaskItemProps {
@@ -31,7 +30,7 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, project }) => {
     stop,
     reset,
     getFormattedTime 
-  } = useTimer({
+  } = useTimerState({
     autoStart: false,
     persistKey: `task-${task.id}` // Use task ID for persistence
   });

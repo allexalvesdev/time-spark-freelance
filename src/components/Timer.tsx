@@ -1,7 +1,6 @@
-
 import React, { useEffect } from 'react';
 import { useAppContext } from '@/contexts/AppContext';
-import useTimer from '@/hooks/useTimer';
+import useTimerState from '@/hooks/useTimerState';
 import { Button } from '@/components/ui/button';
 import { Play, Square } from 'lucide-react';
 import { formatDuration, calculateEarnings } from '@/utils/dateUtils';
@@ -25,7 +24,7 @@ const Timer: React.FC<TimerProps> = ({ taskId, projectId, hourlyRate }) => {
     stop, 
     reset,
     getFormattedTime 
-  } = useTimer({
+  } = useTimerState({
     autoStart: false,
     persistKey: `task-${taskId}` // Use task ID as persistence key
   });

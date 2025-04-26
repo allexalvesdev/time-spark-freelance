@@ -1,13 +1,12 @@
-
 import React, { createContext, useContext, useEffect } from 'react';
 import { Project, Task, TimeEntry, ReportData } from '@/types';
 import { AppState, AppContextType } from '@/types/app';
 import { useAuth } from './AuthContext';
-import { databaseService } from '@/services/databaseService';
+import { projectService, taskService, timeEntryService } from '@/services';
 import { useReportGenerator } from '@/hooks/useReportGenerator';
 import { useProjects } from '@/hooks/useProjects';
 import { useTasks } from '@/hooks/useTasks';
-import { useTimerManagement } from '@/hooks/useTimer';
+import { useTimerManagement } from '@/hooks/useTimerManagement';
 import { useToast } from '@/hooks/use-toast';
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -56,9 +55,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const loadUserData = async () => {
     try {
       const [projectsData, tasksData, timeEntriesData] = await Promise.all([
-        databaseService.loadProjects(),
-        databaseService.loadTasks(),
-        databaseService.loadTimeEntries()
+        projectService.loadProjects(),
+        taskService.loadTasks(),
+        timeEntryService.loadTimeEntries()
       ]);
 
       const activeEntry = timeEntriesData.find(entry => entry.isRunning) || null;

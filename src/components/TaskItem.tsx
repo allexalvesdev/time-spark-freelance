@@ -32,7 +32,8 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, project }) => {
     reset,
     getFormattedTime 
   } = useTimer({
-    autoStart: false
+    autoStart: false,
+    persistKey: `task-${task.id}` // Use task ID for persistence
   });
   
   useEffect(() => {

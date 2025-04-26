@@ -26,7 +26,8 @@ const Timer: React.FC<TimerProps> = ({ taskId, projectId, hourlyRate }) => {
     reset,
     getFormattedTime 
   } = useTimer({
-    autoStart: false
+    autoStart: false,
+    persistKey: `task-${taskId}` // Use task ID as persistence key
   });
   
   useEffect(() => {
@@ -38,13 +39,13 @@ const Timer: React.FC<TimerProps> = ({ taskId, projectId, hourlyRate }) => {
     }
   }, [isActive, isRunning, start, stop, reset]);
   
-  const handleStartTimer = () => {
-    startTimer(taskId, projectId);
+  const handleStartTimer = async () => {
+    await startTimer(taskId, projectId);
     start();
   };
   
-  const handleStopTimer = () => {
-    stopTimer();
+  const handleStopTimer = async () => {
+    await stopTimer();
     stop();
   };
   

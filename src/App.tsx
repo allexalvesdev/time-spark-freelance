@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -18,6 +19,7 @@ import NotFound from "@/pages/NotFound";
 import Settings from "@/pages/Settings";
 import { useAuth } from "@/contexts/AuthContext";
 
+// PrivateRoute component needs to be defined outside of the App component
 const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, isLoading } = useAuth();
   

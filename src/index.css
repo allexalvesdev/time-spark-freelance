@@ -2,86 +2,53 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
+ 
 @layer base {
   :root {
-    --background: 175 52% 96%;
-    --foreground: 174 25% 13%;
-
+    --background: 0 0% 100%;
+    --foreground: 0 0% 3.9%;
     --card: 0 0% 100%;
-    --card-foreground: 174 25% 13%;
-
+    --card-foreground: 0 0% 3.9%;
     --popover: 0 0% 100%;
-    --popover-foreground: 174 25% 13%;
-
-    --primary: 174 48% 46%;
-    --primary-foreground: 0 0% 100%;
-
-    --secondary: 175 47% 32%;
-    --secondary-foreground: 0 0% 100%;
-
-    --muted: 175 29% 90%;
-    --muted-foreground: 174 10% 40%;
-
-    --accent: 26 100% 63%;
-    --accent-foreground: 0 0% 100%;
-
+    --popover-foreground: 0 0% 3.9%;
+    --primary: 0 0% 9%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 0 0% 96.1%;
+    --secondary-foreground: 0 0% 9%;
+    --muted: 0 0% 96.1%;
+    --muted-foreground: 0 0% 45.1%;
+    --accent: 0 0% 96.1%;
+    --accent-foreground: 0 0% 9%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
-
-    --border: 175 29% 90%;
-    --input: 175 29% 90%;
-    --ring: 174 48% 46%;
-
-    --radius: 0.5rem;
-
-    --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 174 25% 13%;
-    --sidebar-primary: 174 48% 46%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 175 29% 95%;
-    --sidebar-accent-foreground: 174 25% 13%;
-    --sidebar-border: 175 29% 90%;
-    --sidebar-ring: 174 48% 46%;
+    --border: 0 0% 89.8%;
+    --input: 0 0% 89.8%;
+    --ring: 0 0% 3.9%;
+    --radius: 0.75rem;
+    --timespark-accent: 262 83% 58%;
   }
-
+ 
   .dark {
-    --background: 174 25% 13%;
-    --foreground: 175 52% 96%;
-
-    --card: 173 23% 18%;
-    --card-foreground: 175 52% 96%;
-
-    --popover: 173 23% 18%;
-    --popover-foreground: 175 52% 96%;
-
-    --primary: 174 48% 46%;
-    --primary-foreground: 0 0% 100%;
-
-    --secondary: 175 47% 32%;
+    --background: 0 0% 3.9%;
+    --foreground: 0 0% 98%;
+    --card: 0 0% 3.9%;
+    --card-foreground: 0 0% 98%;
+    --popover: 0 0% 3.9%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 0 0% 98%;
+    --primary-foreground: 0 0% 9%;
+    --secondary: 0 0% 14.9%;
     --secondary-foreground: 0 0% 98%;
-
-    --muted: 173 23% 25%;
-    --muted-foreground: 174 10% 70%;
-
-    --accent: 26 100% 63%;
-    --accent-foreground: 0 0% 100%;
-
-    --destructive: 0 84.2% 60.2%;
+    --muted: 0 0% 14.9%;
+    --muted-foreground: 0 0% 63.9%;
+    --accent: 0 0% 14.9%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
-
-    --border: 173 23% 25%;
-    --input: 173 23% 25%;
-    --ring: 174 48% 46%;
-    
-    --sidebar-background: 173 23% 18%;
-    --sidebar-foreground: 175 52% 96%;
-    --sidebar-primary: 174 48% 46%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 173 23% 25%;
-    --sidebar-accent-foreground: 175 52% 96%;
-    --sidebar-border: 173 23% 25%;
-    --sidebar-ring: 174 48% 46%;
+    --border: 0 0% 14.9%;
+    --input: 0 0% 14.9%;
+    --ring: 0 0% 83.1%;
+    --timespark-accent: 262 83% 68%;
   }
 }
 
@@ -89,33 +56,32 @@
   * {
     @apply border-border;
   }
-
   body {
     @apply bg-background text-foreground;
-    font-feature-settings: "rlig" 1, "calt" 1;
   }
 }
 
-@layer components {
-  .timer-button {
-    @apply flex items-center justify-center rounded-full transition-all duration-300;
-  }
-  
-  .timer-button-start {
-    @apply bg-timespark-accent hover:bg-timespark-accent/90 text-white;
-  }
-  
-  .timer-button-stop {
-    @apply bg-destructive hover:bg-destructive/90 text-white;
-  }
-  
-  .project-card {
-    @apply bg-card hover:shadow-md transition-all duration-300
-           border border-border rounded-lg overflow-hidden;
-  }
-  
-  .task-item {
-    @apply border border-border rounded-md p-4 mb-2
-           hover:shadow-sm transition-all duration-200;
-  }
+/* Timer Button Styles */
+.timer-button-start {
+  @apply bg-green-500 hover:bg-green-600;
+}
+
+.timer-button-stop {
+  @apply bg-red-500 hover:bg-red-600;
+}
+
+/* Landing Page Custom Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.6s ease-out forwards;
+  opacity: 0;
+}
+
+/* Smooth scrolling for the entire page */
+html {
+  scroll-behavior: smooth;
 }

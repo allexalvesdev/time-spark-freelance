@@ -18,6 +18,7 @@ import Reports from "@/pages/Reports";
 import NotFound from "@/pages/NotFound";
 import Settings from "@/pages/Settings";
 import { useAuth } from "@/contexts/AuthContext";
+import Landing from "@/pages/Landing";
 
 // PrivateRoute component needs to be defined outside of the App component
 const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
@@ -46,9 +47,10 @@ const App = () => (
               <Toaster />
               <Sonner />
               <Routes>
+                <Route path="/" element={<Landing />} />
                 <Route path="/auth" element={<Auth />} />
                 <Route
-                  path="/"
+                  path="/dashboard"
                   element={
                     <PrivateRoute>
                       <Layout>

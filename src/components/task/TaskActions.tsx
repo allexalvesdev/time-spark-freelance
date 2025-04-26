@@ -14,6 +14,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface TaskActionsProps {
   task: Task;
@@ -34,23 +35,25 @@ const TaskActions: React.FC<TaskActionsProps> = ({
   onStartTimer,
   onStopTimer,
 }) => {
+  const isMobile = useIsMobile();
+
   return (
-    <div className="flex justify-between items-center">
-      <div className="flex gap-2">
+    <div className={`flex flex-col md:flex-row ${isMobile ? 'gap-3' : 'justify-between items-center'}`}>
+      <div className="flex flex-wrap gap-2">
         <Button
           variant="outline"
-          size="sm"
+          size={isMobile ? "icon" : "sm"}
           onClick={onEdit}
         >
-          <Edit size={16} className="mr-2" />
-          Editar
+          <Edit size={16} />
+          {!isMobile && <span className="ml-2">Editar</span>}
         </Button>
         
         <AlertDialog>
           <AlertDialogTrigger asChild>
-            <Button variant="destructive" size="sm">
-              <Trash2 size={16} className="mr-2" />
-              Excluir
+            <Button variant="destructive" size={isMobile ? "icon" : "sm"}>
+              <Trash2 size={16} />
+              {!isMobile && <span className="ml-2">Excluir</span>}
             </Button>
           </AlertDialogTrigger>
           <AlertDialogContent>
@@ -70,36 +73,36 @@ const TaskActions: React.FC<TaskActionsProps> = ({
         </AlertDialog>
       </div>
       
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         {!task.completed && (
           <>
             <Button
               variant="outline"
-              size="sm"
+              size={isMobile ? "icon" : "sm"}
               onClick={onComplete}
             >
-              <Check size={16} className="mr-2" />
-              Finalizar
+              <Check size={16} />
+              {!isMobile && <span className="ml-2">Finalizar</span>}
             </Button>
             
             {isTimerRunning ? (
               <Button 
                 variant="destructive" 
-                size="sm" 
+                size={isMobile ? "icon" : "sm"} 
                 onClick={onStopTimer}
               >
-                <Square size={16} className="mr-2" />
-                Parar
+                <Square size={16} />
+                {!isMobile && <span className="ml-2">Parar</span>}
               </Button>
             ) : (
               <Button 
                 variant="default" 
-                size="sm" 
+                size={isMobile ? "icon" : "sm"} 
                 onClick={onStartTimer}
                 className="bg-timespark-accent hover:bg-timespark-accent/90"
               >
-                <Play size={16} className="mr-2" />
-                Iniciar
+                <Play size={16} />
+                {!isMobile && <span className="ml-2">Iniciar</span>}
               </Button>
             )}
           </>

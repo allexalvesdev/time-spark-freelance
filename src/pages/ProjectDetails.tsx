@@ -36,6 +36,7 @@ import {
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { ReportData } from '@/types';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const ProjectDetails: React.FC = () => {
   const { projectId } = useParams<{ projectId: string }>();
@@ -43,6 +44,7 @@ const ProjectDetails: React.FC = () => {
   const { toast } = useToast();
   const { state, deleteProject, generateReport } = useAppContext();
   const { projects, tasks } = state;
+  const isMobile = useIsMobile();
   
   const [showNewTaskForm, setShowNewTaskForm] = useState(false);
   const [reportData, setReportData] = useState<ReportData | null>(null);
@@ -135,40 +137,41 @@ const ProjectDetails: React.FC = () => {
           </div>
         </div>
         
-        <Tabs defaultValue="tasks">
-          <TabsList>
+        <Tabs defaultValue="tasks" className="w-full">
+          <TabsList className={`${isMobile ? 'flex w-full overflow-x-auto space-x-1' : ''}`}>
             <TabsTrigger value="tasks" className="flex items-center gap-2">
               <ClipboardList size={16} />
-              <span>Tarefas</span>
+              <span>{isMobile ? '' : 'Tarefas'}</span>
             </TabsTrigger>
             <TabsTrigger value="calendar" className="flex items-center gap-2">
               <CalendarDays size={16} />
-              <span>Agenda</span>
+              <span>{isMobile ? '' : 'Agenda'}</span>
             </TabsTrigger>
             <TabsTrigger value="timer" className="flex items-center gap-2">
               <Clock size={16} />
-              <span>Cronômetro</span>
+              <span>{isMobile ? '' : 'Cronômetro'}</span>
             </TabsTrigger>
             <TabsTrigger value="report" className="flex items-center gap-2">
               <FileText size={16} />
-              <span>Relatório</span>
+              <span>{isMobile ? '' : 'Relatório'}</span>
             </TabsTrigger>
           </TabsList>
           
           <TabsContent value="tasks" className="mt-6">
-            <div className="flex justify-between items-center mb-4">
+            <div className="flex flex-wrap justify-between items-center mb-4 gap-2">
               <h2 className="text-lg font-medium">Lista de Tarefas</h2>
               <Button 
                 onClick={() => setShowNewTaskForm(!showNewTaskForm)}
                 className="flex items-center gap-2"
+                size={isMobile ? "sm" : "default"}
               >
                 <Plus size={16} />
-                <span>Nova Tarefa</span>
+                <span>{isMobile ? 'Nova' : 'Nova Tarefa'}</span>
               </Button>
             </div>
             
             {showNewTaskForm && (
-              <div className="bg-card rounded-lg border p-6 mb-6">
+              <div className="bg-card rounded-lg border p-4 md:p-6 mb-6">
                 <h3 className="text-lg font-medium mb-4">Adicionar Nova Tarefa</h3>
                 <NewTaskForm 
                   projectId={project.id} 
@@ -251,11 +254,12 @@ const ProjectDetails: React.FC = () => {
           </TabsContent>
           
           <TabsContent value="report" className="mt-6">
-            <div className="flex justify-between items-center mb-6">
+            <div className="flex flex-wrap justify-between items-center mb-6 gap-2">
               <h2 className="text-lg font-medium">Relatório do Projeto</h2>
               <Button 
                 onClick={handleGenerateReport}
                 className="flex items-center gap-2"
+                size={isMobile ? "sm" : "default"}
               >
                 <FileText size={16} />
                 <span>Gerar Relatório</span>
@@ -272,7 +276,7 @@ const ProjectDetails: React.FC = () => {
               </div>
             ) : (
               <div className="bg-card rounded-lg border overflow-hidden">
-                <div className="p-6">
+                <div className="p-4 md:p-6">
                   <h3 className="text-xl font-semibold mb-2">{reportData.projectName}</h3>
                   <p className="text-muted-foreground mb-6">
                     Taxa horária: {formatCurrency(reportData.hourlyRate)}

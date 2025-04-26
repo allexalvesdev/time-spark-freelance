@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
@@ -13,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useAppContext } from '@/contexts/AppContext';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -22,6 +24,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const location = useLocation();
   const { state } = useAppContext();
   const { activeTimeEntry } = state;
+  const isMobile = useIsMobile();
 
   const isActive = (path: string) => {
     return location.pathname === path;
@@ -38,6 +41,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     const active = isActive(path);
     return (
       <Link 
+        key={path}
         to={path}
         className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
           active 

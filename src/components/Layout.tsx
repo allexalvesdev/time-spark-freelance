@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
@@ -9,6 +8,7 @@ import {
   Settings,
   Menu
 } from 'lucide-react';
+import { ThemeToggle } from './ThemeToggle';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -63,42 +63,45 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             <h1 className="text-xl font-semibold">TimeSpark</h1>
           </Link>
           
-          <Sheet>
-            <SheetTrigger asChild>
-              <Button variant="outline" size="icon">
-                <Menu size={20} />
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="left">
-              <div className="flex flex-col gap-6 py-4">
-                <Link to="/" className="flex items-center gap-2">
-                  <span className="w-8 h-8 bg-timespark-primary rounded-md flex items-center justify-center">
-                    <ClipboardList size={20} className="text-white" />
-                  </span>
-                  <h1 className="text-xl font-semibold">TimeSpark</h1>
-                </Link>
-                
-                <Separator />
-                
-                <nav className="flex flex-col gap-1">
-                  {navItems.map((item) => (
-                    <Link 
-                      key={item.path}
-                      to={item.path}
-                      className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                        isActive(item.path) 
-                          ? 'bg-timespark-primary text-white font-medium' 
-                          : 'hover:bg-timespark-light'
-                      }`}
-                    >
-                      {item.icon}
-                      <span>{item.label}</span>
-                    </Link>
-                  ))}
-                </nav>
-              </div>
-            </SheetContent>
-          </Sheet>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="outline" size="icon">
+                  <Menu size={20} />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left">
+                <div className="flex flex-col gap-6 py-4">
+                  <Link to="/" className="flex items-center gap-2">
+                    <span className="w-8 h-8 bg-timespark-primary rounded-md flex items-center justify-center">
+                      <ClipboardList size={20} className="text-white" />
+                    </span>
+                    <h1 className="text-xl font-semibold">TimeSpark</h1>
+                  </Link>
+                  
+                  <Separator />
+                  
+                  <nav className="flex flex-col gap-1">
+                    {navItems.map((item) => (
+                      <Link 
+                        key={item.path}
+                        to={item.path}
+                        className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                          isActive(item.path) 
+                            ? 'bg-timespark-primary text-white font-medium' 
+                            : 'hover:bg-timespark-light'
+                        }`}
+                      >
+                        {item.icon}
+                        <span>{item.label}</span>
+                      </Link>
+                    ))}
+                  </nav>
+                </div>
+              </SheetContent>
+            </Sheet>
+          </div>
         </div>
       </header>
 
@@ -121,25 +124,28 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           </nav>
           
           <div className="p-4 border-t">
-            {activeTimeEntry && (
-              <div className="p-3 bg-timespark-light rounded-md mb-4">
-                <div className="text-sm font-medium text-timespark-dark">Timer ativo</div>
-                <div className="text-xs text-timespark-secondary animate-pulse-subtle">
-                  Gravando tempo...
+            <div className="flex items-center justify-between mb-4">
+              <ThemeToggle />
+              {activeTimeEntry && (
+                <div className="p-3 bg-timespark-light rounded-md mb-4">
+                  <div className="text-sm font-medium text-timespark-dark">Timer ativo</div>
+                  <div className="text-xs text-timespark-secondary animate-pulse-subtle">
+                    Gravando tempo...
+                  </div>
                 </div>
-              </div>
-            )}
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="w-full flex items-center gap-2"
-              asChild
-            >
-              <Link to="/configuracoes">
-                <Settings size={16} />
-                <span>Configurações</span>
-              </Link>
-            </Button>
+              )}
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="w-full flex items-center gap-2"
+                asChild
+              >
+                <Link to="/configuracoes">
+                  <Settings size={16} />
+                  <span>Configurações</span>
+                </Link>
+              </Button>
+            </div>
           </div>
         </aside>
 

@@ -1,7 +1,8 @@
-
 import React, { useState } from 'react';
 import { useAppContext } from '@/contexts/AppContext';
 import { BarChart2, FileText, Download } from 'lucide-react';
+import { PDFDownloadLink } from '@react-pdf/renderer';
+import { ReportPDF } from '@/components/ReportPDF';
 import {
   Select,
   SelectContent,
@@ -88,10 +89,17 @@ const Reports: React.FC = () => {
                   Taxa horária: {formatCurrency(reportData.hourlyRate)}
                 </p>
               </div>
-              <Button variant="outline" className="flex items-center gap-2">
-                <Download size={16} />
-                <span>Exportar</span>
-              </Button>
+              <PDFDownloadLink
+                document={<ReportPDF data={reportData} />}
+                fileName={`relatorio-${reportData.projectName}.pdf`}
+              >
+                {({ loading }) => (
+                  <Button variant="outline" className="flex items-center gap-2" disabled={loading}>
+                    <Download size={16} />
+                    <span>{loading ? "Gerando PDF..." : "Exportar PDF"}</span>
+                  </Button>
+                )}
+              </PDFDownloadLink>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">

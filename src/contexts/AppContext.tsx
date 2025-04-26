@@ -1,10 +1,9 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Project, Task, TimeEntry, ReportData } from '../types';
-import { calculateElapsedTime, calculateEarnings } from '../utils/dateUtils';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { databaseService } from '@/services/databaseService';
+import { useReportGenerator } from '@/hooks/useReportGenerator';
 
 interface AppState {
   projects: Project[];
@@ -46,8 +45,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [state, setState] = useState<AppState>(initialState);
   const { user } = useAuth();
   const { toast } = useToast();
+  const { generateReport } = useReportGenerator();
 
-  // Load initial data
   useEffect(() => {
     if (user) {
       loadUserData();
@@ -56,37 +55,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const loadUserData = async () => {
     try {
-      // Load projects
-      const { data: projects, error: projectsError } = await supabase
-        .from('projects')
-        .select('*')
-        .order('created_at', { ascending: false });
+      const [projects, tasks, timeEntries] = await Promise.all([
+        databaseService.loadProjects(),
+        databaseService.loadTasks(),
+        databaseService.loadTimeEntries()
+      ]);
 
-      if (projectsError) throw projectsError;
-
-      // Load tasks
-      const { data: tasks, error: tasksError } = await supabase
-        .from('tasks')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (tasksError) throw tasksError;
-
-      // Load time entries
-      const { data: timeEntries, error: timeEntriesError } = await supabase
-        .from('time_entries')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (timeEntriesError) throw timeEntriesError;
-
-      // Find active time entry
-      const activeEntry = timeEntries?.find(entry => entry.is_running) || null;
+      const activeEntry = timeEntries.find(entry => entry.isRunning) || null;
 
       setState({
-        projects: projects || [],
-        tasks: tasks || [],
-        timeEntries: timeEntries || [],
+        projects,
+        tasks,
+        timeEntries,
         activeTimeEntry: activeEntry,
         currentProject: null,
         currentTask: null,
@@ -103,20 +83,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const addProject = async (projectData: Omit<Project, 'id' | 'createdAt'>) => {
     try {
-      const { data, error } = await supabase
-        .from('projects')
-        .insert([{ ...projectData, user_id: user?.id }])
-        .select()
-        .single();
-
-      if (error) throw error;
-
+      const newProject = await databaseService.createProject({ ...projectData, userId: user?.id || '' });
       setState(prev => ({
         ...prev,
-        projects: [data, ...prev.projects],
-        currentProject: data,
+        projects: [newProject, ...prev.projects],
+        currentProject: newProject,
       }));
-
     } catch (error: any) {
       console.error('Error adding project:', error);
       toast({
@@ -130,19 +102,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const updateProject = async (project: Project) => {
     try {
-      const { error } = await supabase
-        .from('projects')
-        .update(project)
-        .eq('id', project.id);
-
-      if (error) throw error;
-
+      await databaseService.updateProject(project);
       setState(prev => ({
         ...prev,
         projects: prev.projects.map(p => p.id === project.id ? project : p),
         currentProject: prev.currentProject?.id === project.id ? project : prev.currentProject,
       }));
-
     } catch (error: any) {
       console.error('Error updating project:', error);
       toast({
@@ -185,24 +150,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const addTask = async (taskData: Omit<Task, 'id' | 'completed' | 'actualStartTime' | 'actualEndTime' | 'elapsedTime'>) => {
     try {
-      const { data, error } = await supabase
-        .from('tasks')
-        .insert([{ 
-          ...taskData, 
-          user_id: user?.id,
-          completed: false 
-        }])
-        .select()
-        .single();
-
-      if (error) throw error;
-
+      const newTask = await databaseService.createTask({ ...taskData, userId: user?.id || '' });
       setState(prev => ({
         ...prev,
-        tasks: [data, ...prev.tasks],
-        currentTask: data,
+        tasks: [newTask, ...prev.tasks],
+        currentTask: newTask,
       }));
-
     } catch (error: any) {
       console.error('Error adding task:', error);
       toast({
@@ -216,19 +169,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const updateTask = async (task: Task) => {
     try {
-      const { error } = await supabase
-        .from('tasks')
-        .update(task)
-        .eq('id', task.id);
-
-      if (error) throw error;
-
+      await databaseService.updateTask(task);
       setState(prev => ({
         ...prev,
         tasks: prev.tasks.map(t => t.id === task.id ? task : t),
         currentTask: prev.currentTask?.id === task.id ? task : prev.currentTask,
       }));
-
     } catch (error: any) {
       console.error('Error updating task:', error);
       toast({
@@ -300,38 +246,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         await stopTimer();
       }
 
-      const timeEntry = {
-        task_id: taskId,
-        project_id: projectId,
-        user_id: user?.id,
-        start_time: new Date(),
-        is_running: true
-      };
+      const newTimeEntry = await databaseService.createTimeEntry({
+        taskId,
+        projectId,
+        userId: user?.id || '',
+        startTime: new Date(),
+        isRunning: true,
+      });
 
-      const { data, error } = await supabase
-        .from('time_entries')
-        .insert([timeEntry])
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      // Update task with actual start time
       const task = state.tasks.find(t => t.id === taskId);
       if (task && !task.actualStartTime) {
         await updateTask({
           ...task,
           actualStartTime: new Date(),
-          completed: false
+          completed: false,
         });
       }
 
       setState(prev => ({
         ...prev,
-        timeEntries: [data, ...prev.timeEntries],
-        activeTimeEntry: data,
+        timeEntries: [newTimeEntry, ...prev.timeEntries],
+        activeTimeEntry: newTimeEntry,
       }));
-
     } catch (error: any) {
       console.error('Error starting timer:', error);
       toast({
@@ -348,35 +284,27 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (!state.activeTimeEntry) return;
 
       const endTime = new Date();
-      const duration = calculateElapsedTime(state.activeTimeEntry.startTime, endTime);
+      const duration = Math.floor((endTime.getTime() - state.activeTimeEntry.startTime.getTime()) / 1000);
 
-      const { error } = await supabase
-        .from('time_entries')
-        .update({
-          end_time: endTime,
-          duration,
-          is_running: false
-        })
-        .eq('id', state.activeTimeEntry.id);
+      const updatedTimeEntry: TimeEntry = {
+        ...state.activeTimeEntry,
+        endTime,
+        duration,
+        isRunning: false,
+      };
 
-      if (error) throw error;
+      await databaseService.updateTimeEntry(updatedTimeEntry);
 
       setState(prev => ({
         ...prev,
         timeEntries: prev.timeEntries.map(entry => {
           if (entry.id === prev.activeTimeEntry?.id) {
-            return {
-              ...entry,
-              endTime,
-              duration,
-              isRunning: false
-            };
+            return updatedTimeEntry;
           }
           return entry;
         }),
         activeTimeEntry: null,
       }));
-
     } catch (error: any) {
       console.error('Error stopping timer:', error);
       toast({
@@ -403,57 +331,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }));
   };
 
-  const generateReport = (projectId: string): ReportData | null => {
-    const project = state.projects.find(p => p.id === projectId);
-    if (!project) return null;
-    
-    const projectTasks = state.tasks.filter(t => t.projectId === projectId);
-    const taskReports = projectTasks.map(task => {
-      // Calcular tempo total gasto na tarefa
-      let timeSpent = 0;
-      
-      if (task.completed && task.actualStartTime && task.actualEndTime) {
-        timeSpent = calculateElapsedTime(task.actualStartTime, task.actualEndTime);
-      } else if (task.elapsedTime) {
-        timeSpent = task.elapsedTime;
-      } else {
-        // Somar tempo de todas as entradas de tempo para essa tarefa
-        const taskEntries = state.timeEntries.filter(entry => entry.taskId === task.id);
-        timeSpent = taskEntries.reduce((total, entry) => {
-          if (entry.duration) {
-            return total + entry.duration;
-          } else if (entry.startTime && entry.endTime) {
-            return total + calculateElapsedTime(entry.startTime, entry.endTime);
-          }
-          return total;
-        }, 0);
-      }
-      
-      // Calcular ganhos para essa tarefa
-      const earnings = calculateEarnings(timeSpent, project.hourlyRate);
-      
-      return {
-        id: task.id,
-        name: task.name,
-        timeSpent,
-        earnings
-      };
-    });
-    
-    // Calcular totais
-    const totalTime = taskReports.reduce((sum, task) => sum + task.timeSpent, 0);
-    const totalEarnings = taskReports.reduce((sum, task) => sum + task.earnings, 0);
-    
-    return {
-      projectId,
-      projectName: project.name,
-      hourlyRate: project.hourlyRate,
-      tasks: taskReports,
-      totalTime,
-      totalEarnings
-    };
-  };
-
   const contextValue: AppContextType = {
     state,
     addProject,
@@ -467,7 +344,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     stopTimer,
     setCurrentProject,
     setCurrentTask,
-    generateReport
+    generateReport: (projectId: string) => generateReport(projectId, state.projects, state.tasks),
   };
 
   return (

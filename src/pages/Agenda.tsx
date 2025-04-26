@@ -77,7 +77,7 @@ const Agenda: React.FC = () => {
                             {getProjectName(task.projectId)}
                           </p>
                         </div>
-                        <Badge variant={task.completed ? "success" : "outline"}>
+                        <Badge variant={task.completed ? "secondary" : "outline"}>
                           {task.completed ? "Concluída" : formatTime(task.scheduledStartTime)}
                         </Badge>
                       </div>

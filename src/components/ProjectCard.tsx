@@ -37,7 +37,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project, tasks }) => {
               {formatCurrency(project.hourlyRate)}/hora
             </p>
           </div>
-          <Badge variant={completedTasks === totalTasks && totalTasks > 0 ? "success" : "default"}>
+          <Badge variant={completedTasks === totalTasks && totalTasks > 0 ? "secondary" : "default"}>
             {completedTasks}/{totalTasks} tarefas
           </Badge>
         </div>

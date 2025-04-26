@@ -16,7 +16,7 @@ const TaskHeader: React.FC<TaskHeaderProps> = ({ task }) => {
           {task.description || "Sem descrição"}
         </p>
       </div>
-      <Badge variant="outline">
+      <Badge variant={task.completed ? "secondary" : "outline"}>
         {task.completed ? "Concluída" : "Em andamento"}
       </Badge>
     </div>

@@ -4,6 +4,7 @@ export interface Project {
   name: string;
   hourlyRate: number;
   createdAt: Date;
+  userId: string;
 }
 
 export interface Task {
@@ -17,6 +18,7 @@ export interface Task {
   actualEndTime?: Date;
   elapsedTime?: number; // em segundos
   completed: boolean;
+  userId: string;
 }
 
 export interface TimeEntry {
@@ -27,6 +29,7 @@ export interface TimeEntry {
   endTime?: Date;
   duration?: number; // em segundos
   isRunning: boolean;
+  userId: string;
 }
 
 export interface ReportData {

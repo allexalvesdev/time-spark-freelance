@@ -1,9 +1,12 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Project, Task, TimeEntry, ReportData } from '../types';
 import { useAuth } from './AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { databaseService } from '@/services/databaseService';
 import { useReportGenerator } from '@/hooks/useReportGenerator';
+import { supabase } from '@/integrations/supabase/client';
+import { calculateElapsedTime } from '@/utils/dateUtils';
 
 interface AppState {
   projects: Project[];
@@ -16,10 +19,10 @@ interface AppState {
 
 interface AppContextType {
   state: AppState;
-  addProject: (project: Omit<Project, 'id' | 'createdAt'>) => Promise<void>;
+  addProject: (project: Omit<Project, 'id' | 'createdAt' | 'userId'>) => Promise<void>;
   updateProject: (project: Project) => Promise<void>;
   deleteProject: (projectId: string) => Promise<void>;
-  addTask: (task: Omit<Task, 'id' | 'completed' | 'actualStartTime' | 'actualEndTime' | 'elapsedTime'>) => Promise<void>;
+  addTask: (task: Omit<Task, 'id' | 'completed' | 'actualStartTime' | 'actualEndTime' | 'elapsedTime' | 'userId'>) => Promise<void>;
   updateTask: (task: Task) => Promise<void>;
   completeTask: (taskId: string) => Promise<void>;
   deleteTask: (taskId: string) => Promise<void>;
@@ -81,9 +84,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  const addProject = async (projectData: Omit<Project, 'id' | 'createdAt'>) => {
+  const addProject = async (projectData: Omit<Project, 'id' | 'createdAt' | 'userId'>) => {
     try {
-      const newProject = await databaseService.createProject({ ...projectData, userId: user?.id || '' });
+      const newProject = await databaseService.createProject({ 
+        ...projectData, 
+        userId: user?.id || '' 
+      });
       setState(prev => ({
         ...prev,
         projects: [newProject, ...prev.projects],
@@ -121,12 +127,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const deleteProject = async (projectId: string) => {
     try {
-      const { error } = await supabase
-        .from('projects')
-        .delete()
-        .eq('id', projectId);
-
-      if (error) throw error;
+      await databaseService.deleteProject(projectId);
 
       setState(prev => ({
         ...prev,
@@ -148,9 +149,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  const addTask = async (taskData: Omit<Task, 'id' | 'completed' | 'actualStartTime' | 'actualEndTime' | 'elapsedTime'>) => {
+  const addTask = async (taskData: Omit<Task, 'id' | 'completed' | 'actualStartTime' | 'actualEndTime' | 'elapsedTime' | 'userId'>) => {
     try {
-      const newTask = await databaseService.createTask({ ...taskData, userId: user?.id || '' });
+      const newTask = await databaseService.createTask({ 
+        ...taskData, 
+        userId: user?.id || '' 
+      });
       setState(prev => ({
         ...prev,
         tasks: [newTask, ...prev.tasks],
@@ -215,12 +219,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const deleteTask = async (taskId: string) => {
     try {
-      const { error } = await supabase
-        .from('tasks')
-        .delete()
-        .eq('id', taskId);
-
-      if (error) throw error;
+      await databaseService.deleteTask(taskId);
 
       setState(prev => ({
         ...prev,

@@ -96,7 +96,7 @@ export const databaseService = {
         description: task.description,
         project_id: task.projectId,
         estimated_time: task.estimatedTime,
-        scheduled_start_time: task.scheduledStartTime,
+        scheduled_start_time: task.scheduledStartTime.toISOString(),
         user_id: task.userId,
         completed: false,
       }])
@@ -128,9 +128,9 @@ export const databaseService = {
         description: task.description,
         project_id: task.projectId,
         estimated_time: task.estimatedTime,
-        scheduled_start_time: task.scheduledStartTime,
-        actual_start_time: task.actualStartTime,
-        actual_end_time: task.actualEndTime,
+        scheduled_start_time: task.scheduledStartTime ? task.scheduledStartTime.toISOString() : null,
+        actual_start_time: task.actualStartTime ? task.actualStartTime.toISOString() : null,
+        actual_end_time: task.actualEndTime ? task.actualEndTime.toISOString() : null,
         elapsed_time: task.elapsedTime,
         completed: task.completed,
       })
@@ -175,7 +175,7 @@ export const databaseService = {
       .insert([{
         task_id: entry.taskId,
         project_id: entry.projectId,
-        start_time: entry.startTime,
+        start_time: entry.startTime.toISOString(),
         is_running: entry.isRunning,
         user_id: entry.userId,
       }])
@@ -200,7 +200,7 @@ export const databaseService = {
     const { error } = await supabase
       .from('time_entries')
       .update({
-        end_time: entry.endTime,
+        end_time: entry.endTime ? entry.endTime.toISOString() : null,
         duration: entry.duration,
         is_running: entry.isRunning,
       })

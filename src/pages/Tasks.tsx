@@ -15,7 +15,8 @@ import { Card } from '@/components/ui/card';
 
 const Tasks: React.FC = () => {
   const { state } = useAppContext();
-  const { tasks, projects } = state;
+  const tasks = state.tasks ?? [];
+  const projects = state.projects ?? [];
   
   const [filter, setFilter] = useState<string>('all');
   

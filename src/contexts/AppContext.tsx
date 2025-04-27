@@ -79,9 +79,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const state: AppState = {
-    projects: projects ?? [],
-    tasks: tasks ?? [],
-    timeEntries: timeEntries ?? [],
+    projects,
+    tasks,
+    timeEntries,
     activeTimeEntry,
     currentProject,
     currentTask,

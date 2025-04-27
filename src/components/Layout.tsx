@@ -34,7 +34,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     { path: '/dashboard', label: 'Dashboard', icon: <LayoutDashboard size={20} /> },
     { path: '/agenda', label: 'Agenda', icon: <CalendarDays size={20} /> },
     { path: '/tarefas', label: 'Tarefas', icon: <ClipboardList size={20} /> },
-    { path: '/relatorios', label: 'Relatórios', icon: <BarChart2 size={20} /> }
+    { path: '/relatorios', label: 'Relatórios', icon: <BarChart2 size={20} /> },
+    { path: '/configuracoes', label: 'Configurações', icon: <Settings size={20} /> }
   ];
   
   const renderNavLink = (path: string, label: string, icon: React.ReactNode) => {
@@ -139,17 +140,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 </div>
               )}
             </div>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="w-full flex items-center gap-2"
-              asChild
-            >
-              <Link to="/configuracoes">
-                <Settings size={16} />
-                <span>Configurações</span>
-              </Link>
-            </Button>
           </div>
         </aside>
 

@@ -15,7 +15,7 @@ const TaskTimer: React.FC<TaskTimerProps> = ({
   currentEarnings,
   formattedTime,
 }) => {
-  // Sempre exibimos a seção do timer se estiver rodando, mesmo se não houver tempo anterior
+  // Sempre exibimos a seção do timer se estiver rodando ou se houver tempo registrado
   if (elapsedTime === 0 && !isRunning) return null;
 
   return (

@@ -50,7 +50,7 @@ const Dashboard: React.FC = () => {
             <ProjectCard 
               key={project.id} 
               project={project} 
-              tasks={Array.isArray(tasks) ? tasks.filter(task => task.projectId === project.id) : []}
+              tasks={tasks.filter(task => task.projectId === project.id)} 
             />
           ))}
         </div>

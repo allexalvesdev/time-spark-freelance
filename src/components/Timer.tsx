@@ -20,6 +20,9 @@ const Timer: React.FC<TimerProps> = ({ taskId, projectId, hourlyRate }) => {
   
   const isActive = activeTimeEntry?.taskId === taskId;
   
+  // Criamos um identificador consistente para este timer
+  const timerKey = `task-${taskId}`;
+  
   const { 
     isRunning, 
     elapsedTime, 
@@ -29,38 +32,46 @@ const Timer: React.FC<TimerProps> = ({ taskId, projectId, hourlyRate }) => {
     getFormattedTime 
   } = useTimerState({
     autoStart: false,
-    persistKey: `task-${taskId}` // Use task ID como chave de persistência
+    persistKey: timerKey
   });
   
-  // Sincroniza o estado do timer do componente com o estado global do aplicativo
+  // Este efeito lida com a sincronização entre o estado do timer local e o estado global
   useEffect(() => {
+    console.log(`[Timer:${taskId}] Sync effect - isActive: ${isActive}, isRunning: ${isRunning}`);
+    
     // Se a entrada de tempo está ativa no contexto global mas não no estado local
     if (isActive && !isRunning) {
+      console.log(`[Timer:${taskId}] Global active but local stopped - starting local timer`);
       start();
     } 
     // Se a entrada de tempo não está mais ativa no contexto global mas ainda está rodando localmente
     else if (!isActive && isRunning) {
+      console.log(`[Timer:${taskId}] Global inactive but local running - stopping local timer`);
       stop();
-      // Não resetamos aqui para preservar o tempo decorrido mesmo quando mudamos de página
+      // Mantemos o tempo decorrido (não resetamos)
     }
-  }, [isActive, isRunning, start, stop]);
+  }, [isActive, isRunning, taskId, start, stop]);
   
+  // Handler para iniciar o timer global e local
   const handleStartTimer = async () => {
     try {
+      console.log(`[Timer:${taskId}] Starting timer for task`);
       await startTimer(taskId, projectId);
       start();
     } catch (error) {
-      console.error("Erro ao iniciar timer:", error);
+      console.error(`[Timer:${taskId}] Error starting timer:`, error);
     }
   };
   
+  // Handler para parar o timer global e local
   const handleStopTimer = async () => {
     try {
+      console.log(`[Timer:${taskId}] Stopping timer for task`);
       await stopTimer();
       stop();
       // Não resetamos aqui para manter o último tempo registrado visível
     } catch (error) {
-      console.error("Erro ao parar timer:", error);
+      console.error(`[Timer:${taskId}] Error stopping timer:`, error);
     }
   };
   
@@ -70,7 +81,7 @@ const Timer: React.FC<TimerProps> = ({ taskId, projectId, hourlyRate }) => {
   return (
     <div className="p-4 border rounded-lg bg-card">
       <div className="text-center mb-4 md:mb-6">
-        <div className="text-2xl md:text-3xl font-mono font-semibold mb-2">
+        <div className="text-2xl md:text-3xl font-mono font-semibold mb-2" data-testid={`timer-${taskId}`}>
           {getFormattedTime()}
         </div>
         <div className="text-sm text-muted-foreground">

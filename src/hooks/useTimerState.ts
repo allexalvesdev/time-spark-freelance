@@ -14,19 +14,34 @@ const useTimerState = (options: UseTimerOptions = {}) => {
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef<number | null>(null);
   const lastSyncTimeRef = useRef<number>(Date.now());
+  const initialSetupDoneRef = useRef<boolean>(false);
 
-  // Função para salvar o estado do timer no localStorage
+  // Global storage key for the active timer (shared across all components)
+  const globalActiveTaskId = localStorage.getItem('activeTaskId');
+  const isActiveTask = persistKey?.includes(globalActiveTaskId || '');
+  
+  // Function to save timer state in localStorage with a more robust approach
   const persistTimerState = (running: boolean, elapsed: number, startTime: number | null) => {
     if (!persistKey) return;
     
     try {
+      // Store all timer state atomically to prevent partial updates
+      const timerState = JSON.stringify({
+        running,
+        elapsed,
+        startTime,
+        lastUpdate: Date.now()
+      });
+      
+      localStorage.setItem(`timerState-${persistKey}`, timerState);
+      
+      // Also store individual values for backward compatibility
       localStorage.setItem(`timerIsRunning-${persistKey}`, running ? 'true' : 'false');
       localStorage.setItem(`timerElapsedTime-${persistKey}`, elapsed.toString());
       
       if (running && startTime) {
         localStorage.setItem(`timerStartTime-${persistKey}`, startTime.toString());
       } else if (!running) {
-        // Se não está rodando, removemos o startTime para evitar cálculos incorretos
         localStorage.removeItem(`timerStartTime-${persistKey}`);
       }
       
@@ -36,54 +51,112 @@ const useTimerState = (options: UseTimerOptions = {}) => {
     }
   };
 
-  // Carrega dados persistidos do localStorage quando o componente monta
+  // Load persisted data from localStorage when the component mounts
   useEffect(() => {
-    if (!persistKey) return;
+    if (!persistKey || initialSetupDoneRef.current) return;
     
     try {
-      const savedIsRunning = localStorage.getItem(`timerIsRunning-${persistKey}`);
-      const savedStartTime = localStorage.getItem(`timerStartTime-${persistKey}`);
-      const savedElapsedTime = localStorage.getItem(`timerElapsedTime-${persistKey}`);
+      // First try to load the full timer state object (more robust)
+      const timerStateJSON = localStorage.getItem(`timerState-${persistKey}`);
       
-      console.log(`[Timer:${persistKey}] Carregando estado:`, { 
-        savedIsRunning, 
-        savedStartTime, 
-        savedElapsedTime 
-      });
-      
-      // Se o cronômetro estava rodando quando o usuário saiu/recarregou a página
-      if (savedIsRunning === 'true' && savedStartTime) {
-        const startTimeMs = parseInt(savedStartTime, 10);
-        const currentElapsed = Math.floor((Date.now() - startTimeMs) / 1000);
+      if (timerStateJSON) {
+        const timerState = JSON.parse(timerStateJSON);
+        console.log(`[Timer:${persistKey}] Carregando estado completo:`, timerState);
         
-        console.log(`[Timer:${persistKey}] Restaurando timer em execução:`, { 
-          startTimeMs,
-          currentElapsed
+        // If timer was running, calculate elapsed time since last update
+        if (timerState.running && timerState.startTime) {
+          const startTimeMs = timerState.startTime;
+          // Calculate time elapsed since timer started
+          const currentElapsed = Math.floor((Date.now() - startTimeMs) / 1000);
+          
+          console.log(`[Timer:${persistKey}] Restaurando timer em execução:`, { 
+            startTimeMs,
+            currentElapsed
+          });
+          
+          setElapsedTime(currentElapsed);
+          setIsRunning(true);
+          startTimeRef.current = startTimeMs;
+        } 
+        // If timer was paused, just load the elapsed time
+        else if (!timerState.running) {
+          setElapsedTime(timerState.elapsed);
+          setIsRunning(false);
+          startTimeRef.current = null;
+        }
+      }
+      // Fall back to loading individual values
+      else {
+        const savedIsRunning = localStorage.getItem(`timerIsRunning-${persistKey}`);
+        const savedStartTime = localStorage.getItem(`timerStartTime-${persistKey}`);
+        const savedElapsedTime = localStorage.getItem(`timerElapsedTime-${persistKey}`);
+        
+        console.log(`[Timer:${persistKey}] Carregando estado:`, { 
+          savedIsRunning, 
+          savedStartTime, 
+          savedElapsedTime 
         });
         
-        setElapsedTime(currentElapsed);
-        setIsRunning(true);
-        startTimeRef.current = startTimeMs;
-      } 
-      // Se o cronômetro estava pausado, apenas recuperamos o tempo decorrido
-      else if (savedElapsedTime && savedIsRunning === 'false') {
-        const elapsed = parseInt(savedElapsedTime, 10);
-        
-        console.log(`[Timer:${persistKey}] Restaurando timer pausado:`, { elapsed });
-        
-        setElapsedTime(elapsed);
-        setIsRunning(false);
-        // Garantimos que startTimeRef seja null quando pausado
-        startTimeRef.current = null;
+        // If timer was running when user left/reloaded the page
+        if (savedIsRunning === 'true' && savedStartTime) {
+          const startTimeMs = parseInt(savedStartTime, 10);
+          const currentElapsed = Math.floor((Date.now() - startTimeMs) / 1000);
+          
+          console.log(`[Timer:${persistKey}] Restaurando timer em execução:`, { 
+            startTimeMs,
+            currentElapsed
+          });
+          
+          setElapsedTime(currentElapsed);
+          setIsRunning(true);
+          startTimeRef.current = startTimeMs;
+        } 
+        // If timer was paused, just restore the elapsed time
+        else if (savedElapsedTime && savedIsRunning === 'false') {
+          const elapsed = parseInt(savedElapsedTime, 10);
+          
+          console.log(`[Timer:${persistKey}] Restaurando timer pausado:`, { elapsed });
+          
+          setElapsedTime(elapsed);
+          setIsRunning(false);
+          startTimeRef.current = null;
+        }
       }
+      
+      initialSetupDoneRef.current = true;
     } catch (e) {
       console.error('Error loading timer state:', e);
     }
   }, [persistKey]);
 
-  // Este efeito cuida da inicialização e limpeza do intervalo
+  // Handle the active task global timer synchronization
   useEffect(() => {
-    // Função para atualizar o tempo a cada tick
+    if (!persistKey) return;
+    
+    // If this is the active task's timer and we have a global active timer state
+    if (isActiveTask && globalActiveTaskId) {
+      const globalStartTimeStr = localStorage.getItem('timerStartTime');
+      
+      if (globalStartTimeStr && !isRunning) {
+        // Global timer is running but local timer is not
+        const globalStartTime = parseInt(globalStartTimeStr, 10);
+        const currentElapsed = Math.floor((Date.now() - globalStartTime) / 1000);
+        
+        console.log(`[Timer:${persistKey}] Synchronizing with global timer:`, {
+          globalStartTime,
+          currentElapsed
+        });
+        
+        startTimeRef.current = globalStartTime;
+        setElapsedTime(currentElapsed);
+        setIsRunning(true);
+      }
+    }
+  }, [persistKey, isActiveTask, globalActiveTaskId, isRunning]);
+
+  // This effect handles starting/stopping the interval
+  useEffect(() => {
+    // Function to update elapsed time on each tick
     const updateElapsedTime = () => {
       if (startTimeRef.current !== null) {
         const now = Date.now();
@@ -91,7 +164,7 @@ const useTimerState = (options: UseTimerOptions = {}) => {
         
         setElapsedTime(currentElapsed);
         
-        // Sincroniza o estado a cada 2 segundos para garantir persistência
+        // Sync state every 2 seconds to ensure persistence
         if (now - lastSyncTimeRef.current > 2000) {
           persistTimerState(true, currentElapsed, startTimeRef.current);
           lastSyncTimeRef.current = now;
@@ -100,7 +173,7 @@ const useTimerState = (options: UseTimerOptions = {}) => {
     };
 
     if (isRunning) {
-      // Se começando a correr agora, inicializa o tempo de início
+      // If just starting now, initialize start time
       if (startTimeRef.current === null) {
         startTimeRef.current = Date.now() - elapsedTime * 1000;
         console.log(`[Timer:${persistKey}] Iniciando timer:`, { 
@@ -110,30 +183,30 @@ const useTimerState = (options: UseTimerOptions = {}) => {
         persistTimerState(true, elapsedTime, startTimeRef.current);
       }
       
-      // Limpa qualquer intervalo existente para evitar duplicações
+      // Clear any existing interval to avoid duplications
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
       }
       
-      // Atualiza o tempo decorrido a cada segundo
+      // Update elapsed time every second
       intervalRef.current = setInterval(updateElapsedTime, 1000);
       console.log(`[Timer:${persistKey}] Timer iniciado/continuado`);
     } else {
-      // Limpa o intervalo quando para de correr
+      // Clear interval when stopped
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
         intervalRef.current = null;
         console.log(`[Timer:${persistKey}] Timer parado`);
       }
       
-      // Salva o estado de parado e o tempo decorrido
+      // Save stopped state and elapsed time
       if (persistKey) {
         persistTimerState(false, elapsedTime, null);
       }
     }
 
     return () => {
-      // Cleanup do intervalo quando o componente desmonta
+      // Cleanup interval when component unmounts
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
         intervalRef.current = null;
@@ -142,10 +215,10 @@ const useTimerState = (options: UseTimerOptions = {}) => {
     };
   }, [isRunning, persistKey, elapsedTime]);
 
-  // Evita potenciais problemas de memória/vazamento
+  // Avoid potential memory leaks
   useEffect(() => {
     return () => {
-      // Guarda o tempo atual antes de desmontar se estiver rodando
+      // Save current time before unmounting if running
       if (isRunning && persistKey) {
         persistTimerState(isRunning, elapsedTime, startTimeRef.current);
         console.log(`[Timer:${persistKey}] Salvando estado antes de desmontar:`, {
@@ -161,13 +234,18 @@ const useTimerState = (options: UseTimerOptions = {}) => {
     if (!isRunning) {
       console.log(`[Timer:${persistKey}] Iniciando timer manualmente`);
       
-      // Configuramos o startTimeRef para considerar o tempo já decorrido
+      // Set startTimeRef to consider already elapsed time
       startTimeRef.current = Date.now() - elapsedTime * 1000;
       setIsRunning(true);
       
-      // Persistimos imediatamente ao iniciar
+      // Persist immediately when starting
       if (persistKey) {
         persistTimerState(true, elapsedTime, startTimeRef.current);
+        
+        // Also update global timer state if this is the active task
+        if (isActiveTask) {
+          localStorage.setItem('timerStartTime', startTimeRef.current.toString());
+        }
       }
     }
   };
@@ -177,12 +255,12 @@ const useTimerState = (options: UseTimerOptions = {}) => {
       console.log(`[Timer:${persistKey}] Parando timer manualmente`);
       setIsRunning(false);
       
-      // Quando paramos o timer, salvamos o último tempo decorrido
+      // Save last elapsed time when stopping
       if (persistKey) {
         persistTimerState(false, elapsedTime, null);
       }
       
-      // Garantimos que startTimeRef seja limpo ao parar
+      // Clear startTimeRef when stopping
       startTimeRef.current = null;
     }
   };
@@ -193,6 +271,7 @@ const useTimerState = (options: UseTimerOptions = {}) => {
     startTimeRef.current = null;
     
     if (persistKey) {
+      localStorage.removeItem(`timerState-${persistKey}`);
       localStorage.removeItem(`timerStartTime-${persistKey}`);
       localStorage.removeItem(`timerIsRunning-${persistKey}`);
       localStorage.removeItem(`timerElapsedTime-${persistKey}`);

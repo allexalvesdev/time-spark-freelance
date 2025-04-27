@@ -4,14 +4,14 @@ import { Task } from '@/types';
 
 export const taskService = {
   async loadTasks() {
-    const { data: tasks, error } = await supabase
+    const { data: tasksData, error } = await supabase
       .from('tasks')
       .select('*')
       .order('created_at', { ascending: false });
     
     if (error) throw error;
     
-    return tasks?.map(task => ({
+    const tasks = tasksData?.map(task => ({
       id: task.id,
       name: task.name,
       description: task.description || '',
@@ -24,6 +24,8 @@ export const taskService = {
       completed: task.completed,
       userId: task.user_id,
     })) || [];
+    
+    return { tasks };
   },
 
   async createTask(task: Omit<Task, 'id' | 'completed' | 'actualStartTime' | 'actualEndTime' | 'elapsedTime'>) {

@@ -1,12 +1,14 @@
 
 import React from 'react';
 import { formatDuration } from '@/utils/dateUtils';
+import useTimerState from '@/hooks/useTimerState';
 
 interface TaskTimerProps {
   elapsedTime: number;
   isRunning: boolean;
   currentEarnings: number;
   formattedTime: string;
+  taskId?: string;
 }
 
 const TaskTimer: React.FC<TaskTimerProps> = ({
@@ -14,8 +16,18 @@ const TaskTimer: React.FC<TaskTimerProps> = ({
   isRunning,
   currentEarnings,
   formattedTime,
+  taskId
 }) => {
-  // Sempre exibimos a seção do timer se estiver rodando ou se houver tempo registrado
+  // Use the global timer if we have a taskId
+  const globalTimerKey = taskId ? `global-timer-${taskId}` : undefined;
+  
+  const { getFormattedTime } = useTimerState({
+    initialTime: elapsedTime,
+    autoStart: isRunning,
+    persistKey: globalTimerKey
+  });
+  
+  // Always display the timer section if running or if there's time recorded
   if (elapsedTime === 0 && !isRunning) return null;
 
   return (
@@ -23,7 +35,7 @@ const TaskTimer: React.FC<TaskTimerProps> = ({
       <div className="text-sm">
         <span className="text-muted-foreground">Tempo: </span>
         <span className="font-medium">
-          {isRunning ? formattedTime : formatDuration(elapsedTime)}
+          {isRunning && taskId ? getFormattedTime() : formatDuration(elapsedTime)}
         </span>
       </div>
       <div className="text-sm">

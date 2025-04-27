@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Task, Project } from '@/types';
 import { useAppContext } from '@/contexts/AppContext';
@@ -23,6 +24,9 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, project }) => {
   
   const isTimerRunning = activeTimeEntry?.taskId === task.id;
   
+  // Use global timer key for persistence
+  const timerKey = `global-timer-${task.id}`;
+  
   const { 
     isRunning, 
     elapsedTime,
@@ -32,7 +36,8 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, project }) => {
     getFormattedTime 
   } = useTimerState({
     autoStart: false,
-    persistKey: `task-${task.id}` // Use task ID for persistence
+    initialTime: task.elapsedTime || 0,
+    persistKey: timerKey
   });
   
   useEffect(() => {
@@ -50,21 +55,20 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, project }) => {
   };
   
   const handleStopTimer = () => {
-    stopTimer();
+    stopTimer(true); // Auto-complete task
     stop();
   };
   
   const handleDeleteTask = () => {
     if (isTimerRunning) {
-      stopTimer();
+      stopTimer(false); // Don't complete task on delete
     }
     deleteTask(task.id);
   };
   
-  const currentEarnings = calculateEarnings(
-    isTimerRunning ? elapsedTime : (task.elapsedTime || 0), 
-    project.hourlyRate
-  );
+  // Pass the total time (either from active timer or from saved task)
+  const totalTime = isTimerRunning ? elapsedTime : (task.elapsedTime || 0);
+  const currentEarnings = calculateEarnings(totalTime, project.hourlyRate);
   
   return (
     <div className="task-item rounded-lg border p-4 bg-card">
@@ -75,6 +79,7 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, project }) => {
         isRunning={isTimerRunning}
         currentEarnings={currentEarnings}
         formattedTime={getFormattedTime()}
+        taskId={task.id}
       />
       <TaskActions 
         task={task}

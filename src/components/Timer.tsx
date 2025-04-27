@@ -20,8 +20,8 @@ const Timer: React.FC<TimerProps> = ({ taskId, projectId, hourlyRate }) => {
   
   const isActive = activeTimeEntry?.taskId === taskId;
   
-  // Criamos um identificador consistente para este timer
-  const timerKey = `task-${taskId}`;
+  // Use a global timer key for better persistence across tabs
+  const timerKey = `global-timer-${taskId}`;
   
   const { 
     isRunning, 
@@ -35,24 +35,21 @@ const Timer: React.FC<TimerProps> = ({ taskId, projectId, hourlyRate }) => {
     persistKey: timerKey
   });
   
-  // Este efeito lida com a sincronização entre o estado do timer local e o estado global
+  // This effect handles syncing between local timer state and global state
   useEffect(() => {
-    console.log(`[Timer:${taskId}] Sync effect - isActive: ${isActive}, isRunning: ${isRunning}`);
-    
-    // Se a entrada de tempo está ativa no contexto global mas não no estado local
+    // If time entry is active in global context but not in local state
     if (isActive && !isRunning) {
       console.log(`[Timer:${taskId}] Global active but local stopped - starting local timer`);
       start();
     } 
-    // Se a entrada de tempo não está mais ativa no contexto global mas ainda está rodando localmente
+    // If time entry is no longer active in global context but still running locally
     else if (!isActive && isRunning) {
       console.log(`[Timer:${taskId}] Global inactive but local running - stopping local timer`);
       stop();
-      // Mantemos o tempo decorrido (não resetamos)
     }
   }, [isActive, isRunning, taskId, start, stop]);
   
-  // Handler para iniciar o timer global e local
+  // Handler to start the global and local timer
   const handleStartTimer = async () => {
     try {
       console.log(`[Timer:${taskId}] Starting timer for task`);
@@ -63,19 +60,19 @@ const Timer: React.FC<TimerProps> = ({ taskId, projectId, hourlyRate }) => {
     }
   };
   
-  // Handler para parar o timer global e local
+  // Handler to stop the global and local timer
   const handleStopTimer = async () => {
     try {
       console.log(`[Timer:${taskId}] Stopping timer for task`);
-      await stopTimer();
+      // Pass true to complete the task automatically
+      await stopTimer(true);
       stop();
-      // Não resetamos aqui para manter o último tempo registrado visível
     } catch (error) {
       console.error(`[Timer:${taskId}] Error stopping timer:`, error);
     }
   };
   
-  // Calculamos ganhos com base no tempo registrado e na taxa horária
+  // Calculate earnings based on recorded time and hourly rate
   const currentEarnings = calculateEarnings(elapsedTime, hourlyRate);
   
   return (

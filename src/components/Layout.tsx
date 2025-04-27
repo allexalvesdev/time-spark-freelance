@@ -7,7 +7,8 @@ import {
   ClipboardList, 
   BarChart2, 
   Settings,
-  Menu
+  Menu,
+  Timer
 } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
 import { Button } from '@/components/ui/button';
@@ -15,6 +16,7 @@ import { Separator } from '@/components/ui/separator';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useAppContext } from '@/contexts/AppContext';
 import { useIsMobile } from '@/hooks/use-mobile';
+import ActiveTimerDisplay from './ActiveTimerDisplay';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -103,6 +105,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                       </Link>
                     ))}
                   </nav>
+                  
+                  {activeTimeEntry && (
+                    <div className="mt-4 p-4 bg-muted rounded-lg">
+                      <ActiveTimerDisplay />
+                    </div>
+                  )}
                 </div>
               </SheetContent>
             </Sheet>
@@ -131,15 +139,13 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           <div className="p-4 border-t">
             <div className="flex items-center justify-between mb-4">
               <ThemeToggle />
-              {activeTimeEntry && (
-                <div className="p-3 bg-muted rounded-md mb-4">
-                  <div className="text-sm font-medium">Timer ativo</div>
-                  <div className="text-xs text-muted-foreground animate-pulse-subtle">
-                    Gravando tempo...
-                  </div>
-                </div>
-              )}
             </div>
+            
+            {activeTimeEntry && (
+              <div className="p-3 bg-muted rounded-md">
+                <ActiveTimerDisplay />
+              </div>
+            )}
           </div>
         </aside>
 

@@ -16,16 +16,18 @@ const Agenda: React.FC = () => {
   const { tasks, projects } = state;
   
   // Agrupar tarefas por data
-  const tasksByDate = tasks.reduce((acc, task) => {
-    const dateKey = formatDate(task.scheduledStartTime);
-    
-    if (!acc[dateKey]) {
-      acc[dateKey] = [];
-    }
-    
-    acc[dateKey].push(task);
-    return acc;
-  }, {} as Record<string, typeof tasks>);
+  const tasksByDate = Array.isArray(tasks)
+  ? tasks.reduce((acc, task) => {
+      const dateKey = formatDate(task.scheduledStartTime);
+
+      if (!acc[dateKey]) {
+        acc[dateKey] = [];
+      }
+
+      acc[dateKey].push(task);
+      return acc;
+    }, {} as Record<string, typeof tasks>)
+  : {};
   
   // Ordenar as datas
   const sortedDates = Object.keys(tasksByDate).sort((a, b) => {

@@ -14,23 +14,32 @@ const useTimerState = (options: UseTimerOptions = {}) => {
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef<number | null>(null);
 
+  // Carrega dados persistidos do localStorage quando o componente monta
   useEffect(() => {
     if (persistKey) {
       const savedStartTime = localStorage.getItem(`timerStartTime-${persistKey}`);
       const savedIsRunning = localStorage.getItem(`timerIsRunning-${persistKey}`);
+      const savedElapsedTime = localStorage.getItem(`timerElapsedTime-${persistKey}`);
       
+      // Se o cronômetro estava rodando quando o usuário saiu/recarregou a página
       if (savedStartTime && savedIsRunning === 'true') {
         const startTimeMs = parseInt(savedStartTime, 10);
         const currentElapsed = Math.floor((Date.now() - startTimeMs) / 1000);
         setElapsedTime(currentElapsed);
         setIsRunning(true);
         startTimeRef.current = startTimeMs;
+      } 
+      // Se o cronômetro estava pausado, apenas recuperamos o tempo decorrido
+      else if (savedElapsedTime && savedIsRunning === 'false') {
+        setElapsedTime(parseInt(savedElapsedTime, 10));
+        setIsRunning(false);
       }
     }
   }, [persistKey]);
 
   useEffect(() => {
     if (isRunning) {
+      // Se começando a correr agora, inicializa o tempo de início
       if (startTimeRef.current === null) {
         startTimeRef.current = Date.now() - elapsedTime * 1000;
         
@@ -40,20 +49,29 @@ const useTimerState = (options: UseTimerOptions = {}) => {
         }
       }
       
+      // Atualiza o tempo decorrido a cada segundo
       intervalRef.current = setInterval(() => {
         if (startTimeRef.current !== null) {
           const currentElapsed = Math.floor((Date.now() - startTimeRef.current) / 1000);
           setElapsedTime(currentElapsed);
+          
+          // Persistimos também o tempo decorrido para casos de intermitência
+          if (persistKey) {
+            localStorage.setItem(`timerElapsedTime-${persistKey}`, currentElapsed.toString());
+          }
         }
       }, 1000);
     } else {
+      // Limpa o intervalo quando para de correr
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
         intervalRef.current = null;
       }
       
-      if (!isRunning && persistKey) {
+      // Salva o estado de parado e o tempo decorrido
+      if (persistKey) {
         localStorage.setItem(`timerIsRunning-${persistKey}`, 'false');
+        localStorage.setItem(`timerElapsedTime-${persistKey}`, elapsedTime.toString());
       }
     }
 
@@ -63,7 +81,7 @@ const useTimerState = (options: UseTimerOptions = {}) => {
         intervalRef.current = null;
       }
     };
-  }, [isRunning, persistKey]);
+  }, [isRunning, persistKey, elapsedTime]);
 
   const start = () => {
     if (!isRunning) {
@@ -74,6 +92,10 @@ const useTimerState = (options: UseTimerOptions = {}) => {
   const stop = () => {
     if (isRunning) {
       setIsRunning(false);
+      // Quando paramos o timer, salvamos o último tempo decorrido
+      if (persistKey) {
+        localStorage.setItem(`timerElapsedTime-${persistKey}`, elapsedTime.toString());
+      }
     }
   };
 
@@ -84,6 +106,7 @@ const useTimerState = (options: UseTimerOptions = {}) => {
     if (persistKey) {
       localStorage.removeItem(`timerStartTime-${persistKey}`);
       localStorage.removeItem(`timerIsRunning-${persistKey}`);
+      localStorage.removeItem(`timerElapsedTime-${persistKey}`);
     }
   };
 

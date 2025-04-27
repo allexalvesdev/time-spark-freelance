@@ -29,29 +29,42 @@ const Timer: React.FC<TimerProps> = ({ taskId, projectId, hourlyRate }) => {
     getFormattedTime 
   } = useTimerState({
     autoStart: false,
-    persistKey: `task-${taskId}` // Use task ID as persistence key
+    persistKey: `task-${taskId}` // Use task ID como chave de persistência
   });
   
+  // Sincroniza o estado do timer do componente com o estado global do aplicativo
   useEffect(() => {
+    // Se a entrada de tempo está ativa no contexto global mas não no estado local
     if (isActive && !isRunning) {
       start();
-    } else if (!isActive && isRunning) {
+    } 
+    // Se a entrada de tempo não está mais ativa no contexto global mas ainda está rodando localmente
+    else if (!isActive && isRunning) {
       stop();
-      reset();
+      // Não resetamos aqui para preservar o tempo decorrido mesmo quando mudamos de página
     }
-  }, [isActive, isRunning, start, stop, reset]);
+  }, [isActive, isRunning, start, stop]);
   
   const handleStartTimer = async () => {
-    await startTimer(taskId, projectId);
-    start();
+    try {
+      await startTimer(taskId, projectId);
+      start();
+    } catch (error) {
+      console.error("Erro ao iniciar timer:", error);
+    }
   };
   
   const handleStopTimer = async () => {
-    await stopTimer();
-    stop();
+    try {
+      await stopTimer();
+      stop();
+      // Não resetamos aqui para manter o último tempo registrado visível
+    } catch (error) {
+      console.error("Erro ao parar timer:", error);
+    }
   };
   
-  // Calcular ganhos com base no tempo registrado e na taxa horária
+  // Calculamos ganhos com base no tempo registrado e na taxa horária
   const currentEarnings = calculateEarnings(elapsedTime, hourlyRate);
   
   return (

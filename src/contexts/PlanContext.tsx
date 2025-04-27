@@ -2,6 +2,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 export type PlanType = 'free' | 'pro' | 'enterprise';
 
@@ -13,7 +14,7 @@ interface PlanContextType {
   currentPlan: PlanType;
   planLimits: PlanLimits;
   canCreateProject: (currentProjectCount: number) => boolean;
-  upgradePlan: (newPlan: PlanType) => void;
+  upgradePlan: (newPlan: PlanType) => Promise<void>;
 }
 
 const planLimitsMap: Record<PlanType, PlanLimits> = {
@@ -32,25 +33,59 @@ export const PlanProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     if (user) {
-      // Aqui você pode carregar o plano do usuário do banco de dados
-      // Por enquanto, vamos assumir que todos começam no plano gratuito
+      loadUserPlan();
+    }
+  }, [user]);
+
+  const loadUserPlan = async () => {
+    try {
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('user_plan')
+        .eq('id', user?.id)
+        .single();
+
+      if (error) throw error;
+
+      const plan = (profile?.user_plan || 'free') as PlanType;
+      setCurrentPlan(plan);
+      setPlanLimits(planLimitsMap[plan]);
+    } catch (error) {
+      console.error('Error loading user plan:', error);
+      // Fallback to free plan if there's an error
       setCurrentPlan('free');
       setPlanLimits(planLimitsMap.free);
     }
-  }, [user]);
+  };
 
   const canCreateProject = (currentProjectCount: number): boolean => {
     return currentProjectCount < planLimits.maxProjects;
   };
 
-  const upgradePlan = (newPlan: PlanType) => {
-    // Aqui você implementaria a lógica para atualizar o plano no banco de dados
-    setCurrentPlan(newPlan);
-    setPlanLimits(planLimitsMap[newPlan]);
-    toast({
-      title: 'Plano atualizado',
-      description: `Seu plano foi atualizado para ${newPlan.toUpperCase()}.`,
-    });
+  const upgradePlan = async (newPlan: PlanType) => {
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ user_plan: newPlan })
+        .eq('id', user?.id);
+
+      if (error) throw error;
+
+      setCurrentPlan(newPlan);
+      setPlanLimits(planLimitsMap[newPlan]);
+      
+      toast({
+        title: 'Plano atualizado',
+        description: `Seu plano foi atualizado para ${newPlan.toUpperCase()}.`,
+      });
+    } catch (error) {
+      console.error('Error upgrading plan:', error);
+      toast({
+        title: 'Erro ao atualizar plano',
+        description: 'Não foi possível atualizar seu plano. Tente novamente.',
+        variant: 'destructive',
+      });
+    }
   };
 
   return (
@@ -67,3 +102,4 @@ export const usePlan = (): PlanContextType => {
   }
   return context;
 };
+

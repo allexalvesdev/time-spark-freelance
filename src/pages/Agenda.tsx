@@ -6,11 +6,6 @@ import { formatDate, formatTime } from '@/utils/dateUtils';
 import { Badge } from '@/components/ui/badge';
 import { Link } from 'react-router-dom';
 
-const initialState = {
-  projects: [],
-  tasks: [],
-};
-
 const Agenda: React.FC = () => {
   const { state } = useAppContext();
   const { tasks, projects } = state;

@@ -1,12 +1,13 @@
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import { useAppContext } from '@/contexts/AppContext';
-import { Timer } from 'lucide-react';
 import useTimerState from '@/hooks/useTimerState';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { Button } from './ui/button';
+import { Square } from 'lucide-react';
 
 const ActiveTimerDisplay: React.FC = () => {
-  const { state, getActiveTaskName } = useAppContext();
+  const { state, getActiveTaskName, stopTimer } = useAppContext();
   const { activeTimeEntry } = state;
   const isMobile = useIsMobile();
   
@@ -14,26 +15,35 @@ const ActiveTimerDisplay: React.FC = () => {
     persistKey: activeTimeEntry ? `global-timer-${activeTimeEntry.taskId}` : undefined,
     autoStart: true
   });
-  
+
   if (!activeTimeEntry) return null;
   
   const taskName = getActiveTaskName();
+
+  const handleStopTimer = () => {
+    stopTimer(true); // Auto-complete task on stop
+  };
   
   return (
-    <div className="flex flex-col space-y-1">
-      <div className="flex items-center text-sm font-medium gap-2">
-        <Timer size={16} className="text-primary" />
-        <span>Timer ativo</span>
+    <div className="flex items-center justify-between w-full gap-4">
+      <div className="flex flex-col">
+        <div className="text-base font-mono font-bold">{getFormattedTime()}</div>
+        {taskName && (
+          <div className="text-sm opacity-90 truncate max-w-[200px]">
+            {taskName}
+          </div>
+        )}
       </div>
-      <div className="text-base font-mono">{getFormattedTime()}</div>
-      {taskName && (
-        <div className="text-xs text-muted-foreground truncate">
-          {taskName}
-        </div>
-      )}
-      <div className="text-xs text-muted-foreground animate-pulse">
-        Gravando tempo...
-      </div>
+      
+      <Button 
+        variant="secondary" 
+        size="sm" 
+        onClick={handleStopTimer}
+        className="shrink-0"
+      >
+        <Square className="h-4 w-4 mr-2" />
+        Parar
+      </Button>
     </div>
   );
 };

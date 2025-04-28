@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
@@ -60,8 +59,18 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      {/* Header para Mobile */}
-      <header className="lg:hidden border-b p-4 bg-card shadow-sm">
+      {activeTimeEntry && (
+        <div className="fixed top-0 left-0 right-0 z-50 bg-primary text-primary-foreground shadow-md">
+          <div className="container flex items-center justify-between px-4 py-2 max-w-7xl">
+            <div className="flex items-center gap-2">
+              <Timer className="animate-pulse" size={20} />
+              <ActiveTimerDisplay />
+            </div>
+          </div>
+        </div>
+      )}
+
+      <header className={`lg:hidden border-b p-4 bg-card shadow-sm ${activeTimeEntry ? 'mt-12' : ''}`}>
         <div className="flex items-center justify-between">
           <Link to="/dashboard" className="flex items-center gap-2">
             <span className="w-8 h-8 bg-primary rounded-md flex items-center justify-center">
@@ -118,8 +127,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         </div>
       </header>
 
-      <div className="flex-1 flex">
-        {/* Sidebar para Desktop */}
+      <div className={`flex-1 flex ${activeTimeEntry ? 'mt-12' : ''}`}>
         <aside className="hidden lg:flex w-64 flex-col border-r bg-card">
           <div className="p-6">
             <Link to="/dashboard" className="flex items-center gap-2">
@@ -149,7 +157,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           </div>
         </aside>
 
-        {/* Main Content */}
         <main className="flex-1 overflow-auto">
           <div className="container px-4 py-6 max-w-7xl">
             {children}

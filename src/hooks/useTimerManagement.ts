@@ -1,8 +1,8 @@
-
 import { useState } from 'react';
 import { TimeEntry, Task } from '@/types';
 import { timeEntryService, taskService } from '@/services';
 import { useToast } from '@/hooks/use-toast';
+import { formatDuration, calculateEarnings } from '@/utils/dateUtils';
 
 export const useTimerManagement = (userId: string, tasks: Task[] = []) => {
   const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([]);
@@ -62,33 +62,29 @@ export const useTimerManagement = (userId: string, tasks: Task[] = []) => {
         entry.id === activeTimeEntry.id ? updatedTimeEntry : entry
       ));
       
-      // If completeTask is true, also mark the task as completed
+      // If completeTask is true, mark the task as completed
       if (completeTask) {
         try {
           const taskId = activeTimeEntry.taskId;
-          
-          // First, get the current task data
           const { tasks } = await taskService.loadTasks();
           const task = tasks.find(t => t.id === taskId);
           
           if (task) {
+            // Get the current task's project to calculate earnings
             const updatedTask: Task = {
               ...task,
               completed: true,
               actualEndTime: endTime,
+              actualStartTime: task.actualStartTime || startTime,
               elapsedTime: (task.elapsedTime || 0) + duration,
             };
             
-            // If task had no actual start time, set it to the time entry start time
-            if (!updatedTask.actualStartTime) {
-              updatedTask.actualStartTime = startTime;
-            }
-            
             await taskService.updateTask(updatedTask);
             
+            const timeFormatted = formatDuration(updatedTask.elapsedTime);
             toast({
               title: 'Tarefa concluída',
-              description: `A tarefa foi marcada como concluída com ${duration} segundos registrados.`,
+              description: `Tempo registrado: ${timeFormatted}`,
             });
           }
         } catch (taskError) {
@@ -103,21 +99,15 @@ export const useTimerManagement = (userId: string, tasks: Task[] = []) => {
 
       setActiveTimeEntry(null);
       
-      // Clear the storage when timer stops
+      // Clear all timer-related localStorage entries
       localStorage.removeItem('activeTimeEntryId');
       localStorage.removeItem('activeTaskId');
       localStorage.removeItem('timerStartTime');
       
-      // Remove global timer key
       const taskId = activeTimeEntry.taskId;
       localStorage.removeItem(`timerIsRunning-global-timer-${taskId}`);
       localStorage.removeItem(`timerStartTime-global-timer-${taskId}`);
       localStorage.removeItem(`timerElapsedTime-global-timer-${taskId}`);
-      
-      // Also remove task-specific timer
-      localStorage.removeItem(`timerIsRunning-task-${taskId}`);
-      localStorage.removeItem(`timerStartTime-task-${taskId}`);
-      localStorage.removeItem(`timerElapsedTime-task-${taskId}`);
     } catch (error: any) {
       console.error('Error stopping timer:', error);
       toast({

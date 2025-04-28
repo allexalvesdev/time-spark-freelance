@@ -8,7 +8,11 @@ import ProjectCard from '@/components/ProjectCard';
 
 const Dashboard: React.FC = () => {
   const { state } = useAppContext();
-  const { projects, tasks } = state;
+  const { projects = [], tasks = [] } = state;
+  
+  // Ensure projects and tasks are always arrays
+  const projectsArray = Array.isArray(projects) ? projects : [];
+  const tasksArray = Array.isArray(tasks) ? tasks : [];
   
   return (
     <div>
@@ -27,7 +31,7 @@ const Dashboard: React.FC = () => {
         </Button>
       </div>
       
-      {projects.length === 0 ? (
+      {projectsArray.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-12 space-y-4">
           <div className="p-4 bg-muted rounded-full">
             <ClipboardList size={36} className="text-muted-foreground" />
@@ -46,11 +50,11 @@ const Dashboard: React.FC = () => {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {projects.map((project) => (
+          {projectsArray.map((project) => (
             <ProjectCard 
               key={project.id} 
               project={project} 
-              tasks={tasks.filter(task => task.projectId === project.id)} 
+              tasks={tasksArray.filter(task => task.projectId === project.id)} 
             />
           ))}
         </div>

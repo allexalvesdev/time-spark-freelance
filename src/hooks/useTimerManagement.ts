@@ -4,7 +4,7 @@ import { TimeEntry, Task } from '@/types';
 import { timeEntryService, taskService } from '@/services';
 import { useToast } from '@/hooks/use-toast';
 
-export const useTimerManagement = (userId: string) => {
+export const useTimerManagement = (userId: string, tasks: Task[] = []) => {
   const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([]);
   const [activeTimeEntry, setActiveTimeEntry] = useState<TimeEntry | null>(null);
   const { toast } = useToast();
@@ -96,7 +96,7 @@ export const useTimerManagement = (userId: string) => {
           toast({
             title: 'Aviso',
             description: 'O timer foi parado mas não foi possível finalizar a tarefa automaticamente.',
-            variant: 'warning',
+            variant: 'default',
           });
         }
       }

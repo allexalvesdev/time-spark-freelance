@@ -8,10 +8,13 @@ import { Link } from 'react-router-dom';
 
 const Agenda: React.FC = () => {
   const { state } = useAppContext();
-  const { tasks, projects } = state;
+  const { tasks = [], projects = [] } = state;
+  
+  // Ensure tasks is always an array before using array methods
+  const tasksArray = Array.isArray(tasks) ? tasks : [];
   
   // Agrupar tarefas por data
-  const tasksByDate = tasks.reduce((acc, task) => {
+  const tasksByDate = tasksArray.reduce((acc, task) => {
     const dateKey = formatDate(task.scheduledStartTime);
     
     if (!acc[dateKey]) {
@@ -20,7 +23,7 @@ const Agenda: React.FC = () => {
     
     acc[dateKey].push(task);
     return acc;
-  }, {} as Record<string, typeof tasks>);
+  }, {} as Record<string, typeof tasksArray>);
   
   // Ordenar as datas
   const sortedDates = Object.keys(tasksByDate).sort((a, b) => {

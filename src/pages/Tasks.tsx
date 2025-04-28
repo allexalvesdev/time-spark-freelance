@@ -15,11 +15,14 @@ import { Card } from '@/components/ui/card';
 
 const Tasks: React.FC = () => {
   const { state } = useAppContext();
-  const { tasks, projects } = state;
+  const { tasks = [], projects = [] } = state;
   
   const [filter, setFilter] = useState<string>('all');
   
-  const filteredTasks = tasks.filter(task => {
+  // Ensure tasks is always an array
+  const tasksArray = Array.isArray(tasks) ? tasks : [];
+  
+  const filteredTasks = tasksArray.filter(task => {
     if (filter === 'all') return true;
     if (filter === 'completed') return task.completed;
     if (filter === 'pending') return !task.completed;

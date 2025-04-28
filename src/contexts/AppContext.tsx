@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useEffect } from 'react';
 import { Project, Task, TimeEntry, ReportData } from '@/types';
 import { AppState, AppContextType } from '@/types/app';
@@ -44,7 +45,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setActiveTimeEntry,
     startTimer,
     stopTimer,
-  } = useTimerManagement(user?.id || '');
+    getActiveTaskName,
+  } = useTimerManagement(user?.id || '', tasks);
 
   useEffect(() => {
     if (user) {
@@ -60,10 +62,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         timeEntryService.loadTimeEntries()
       ]);
 
+      // Ensure tasks is always an array
+      const tasksArray = tasksData.tasks || [];
       const activeEntry = timeEntriesData.find(entry => entry.isRunning) || null;
 
       setProjects(projectsData);
-      setTasks(tasksData);
+      setTasks(tasksArray);
       setTimeEntries(timeEntriesData);
       setActiveTimeEntry(activeEntry);
       setCurrentProject(null);
@@ -101,6 +105,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setCurrentProject,
     setCurrentTask,
     generateReport: (projectId: string) => generateReport(projectId, projects, tasks),
+    getActiveTaskName,
   };
 
   return (

@@ -80,6 +80,15 @@ export const taskService = {
   },
 
   async deleteTask(taskId: string) {
+    // First, delete all time entries associated with this task
+    const { error: timeEntriesError } = await supabase
+      .from('time_entries')
+      .delete()
+      .eq('task_id', taskId);
+
+    if (timeEntriesError) throw timeEntriesError;
+
+    // Now delete the task itself
     const { error } = await supabase
       .from('tasks')
       .delete()

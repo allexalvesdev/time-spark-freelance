@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { TimeEntry, Task } from '@/types';
 import { timeEntryService, taskService } from '@/services';
@@ -66,8 +67,8 @@ export const useTimerManagement = (userId: string, tasks: Task[] = []) => {
       if (completeTask) {
         try {
           const taskId = activeTimeEntry.taskId;
-          const { tasks } = await taskService.loadTasks();
-          const task = tasks.find(t => t.id === taskId);
+          const { tasks: currentTasks } = await taskService.loadTasks();
+          const task = currentTasks.find(t => t.id === taskId);
           
           if (task) {
             // Get the current task's project to calculate earnings
@@ -78,6 +79,12 @@ export const useTimerManagement = (userId: string, tasks: Task[] = []) => {
               actualStartTime: task.actualStartTime || startTime,
               elapsedTime: (task.elapsedTime || 0) + duration,
             };
+            
+            // Update local state immediately to reflect changes in UI
+            // This is important so the user doesn't need to reload the page
+            window.dispatchEvent(new CustomEvent('task-completed', { 
+              detail: { taskId, updatedTask } 
+            }));
             
             await taskService.updateTask(updatedTask);
             

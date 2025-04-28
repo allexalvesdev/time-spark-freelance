@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Task, Project } from '@/types';
 import { useAppContext } from '@/contexts/AppContext';
@@ -21,6 +20,7 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, project }) => {
   const { activeTimeEntry } = state;
   const [showEditModal, setShowEditModal] = useState(false);
   const [showCompleteModal, setShowCompleteModal] = useState(false);
+  const [currentTask, setCurrentTask] = useState<Task>(task);
   
   const isTimerRunning = activeTimeEntry?.taskId === task.id;
   
@@ -39,6 +39,27 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, project }) => {
     initialTime: task.elapsedTime || 0,
     persistKey: timerKey
   });
+
+  // Keep local task state updated with props
+  useEffect(() => {
+    setCurrentTask(task);
+  }, [task]);
+  
+  // Listen for task-completed events to update this specific task
+  useEffect(() => {
+    const handleTaskCompleted = (event: CustomEvent) => {
+      const { taskId, updatedTask } = event.detail;
+      if (taskId === task.id) {
+        setCurrentTask(updatedTask);
+      }
+    };
+    
+    window.addEventListener('task-completed', handleTaskCompleted as EventListener);
+    
+    return () => {
+      window.removeEventListener('task-completed', handleTaskCompleted as EventListener);
+    };
+  }, [task.id]);
   
   useEffect(() => {
     if (isTimerRunning && !isRunning) {
@@ -67,22 +88,22 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, project }) => {
   };
   
   // Pass the total time (either from active timer or from saved task)
-  const totalTime = isTimerRunning ? elapsedTime : (task.elapsedTime || 0);
+  const totalTime = isTimerRunning ? elapsedTime : (currentTask.elapsedTime || 0);
   const currentEarnings = calculateEarnings(totalTime, project.hourlyRate);
   
   return (
     <div className="task-item rounded-lg border p-4 bg-card">
-      <TaskHeader task={task} />
-      <TaskDetails task={task} />
+      <TaskHeader task={currentTask} />
+      <TaskDetails task={currentTask} />
       <TaskTimer 
-        elapsedTime={task.elapsedTime || 0}
+        elapsedTime={currentTask.elapsedTime || 0}
         isRunning={isTimerRunning}
         currentEarnings={currentEarnings}
         formattedTime={getFormattedTime()}
-        taskId={task.id}
+        taskId={currentTask.id}
       />
       <TaskActions 
-        task={task}
+        task={currentTask}
         isTimerRunning={isTimerRunning}
         onEdit={() => setShowEditModal(true)}
         onDelete={handleDeleteTask}
@@ -92,13 +113,13 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, project }) => {
       />
       
       <EditTaskModal 
-        task={task}
+        task={currentTask}
         isOpen={showEditModal}
         onClose={() => setShowEditModal(false)}
       />
       
       <CompleteTaskModal 
-        task={task}
+        task={currentTask}
         isOpen={showCompleteModal}
         onClose={() => setShowCompleteModal(false)}
       />

@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, 
@@ -35,22 +34,42 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
-import { ReportData } from '@/types';
+import { ReportData, Task } from '@/types';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 const ProjectDetails: React.FC = () => {
   const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { state, deleteProject, generateReport } = useAppContext();
+  const { state, deleteProject, generateReport, updateTask } = useAppContext();
   const { projects, tasks } = state;
   const isMobile = useIsMobile();
   
   const [showNewTaskForm, setShowNewTaskForm] = useState(false);
   const [reportData, setReportData] = useState<ReportData | null>(null);
+  const [projectTasks, setProjectTasks] = useState<Task[]>([]);
   
   const project = projects.find(p => p.id === projectId);
-  const projectTasks = tasks.filter(t => t.projectId === projectId);
+  
+  useEffect(() => {
+    if (Array.isArray(tasks)) {
+      setProjectTasks(tasks.filter(t => t.projectId === projectId));
+    }
+    
+    const handleTaskCompleted = (event: CustomEvent) => {
+      const { taskId, updatedTask } = event.detail;
+      
+      setProjectTasks(currentTasks => 
+        currentTasks.map(task => task.id === taskId ? updatedTask : task)
+      );
+    };
+    
+    window.addEventListener('task-completed', handleTaskCompleted as EventListener);
+    
+    return () => {
+      window.removeEventListener('task-completed', handleTaskCompleted as EventListener);
+    };
+  }, [tasks, projectId]);
   
   if (!project) {
     return (

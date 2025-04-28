@@ -31,7 +31,7 @@ const Timer: React.FC<TimerProps> = ({ taskId, projectId, hourlyRate }) => {
     reset,
     getFormattedTime 
   } = useTimerState({
-    autoStart: false,
+    autoStart: isActive, // Start automatically if this is the active task
     persistKey: timerKey
   });
   

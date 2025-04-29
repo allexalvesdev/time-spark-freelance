@@ -4,16 +4,17 @@ import React, {
   useState,
   useEffect,
   useContext,
-  useCallback,
 } from 'react';
-import { projectService, taskService, timeEntryService, tagService } from '@/services';
 import { AppState, AppContextType } from '@/types/app';
-import { Project, Task, TimeEntry, ReportData, Tag, TaskPriority } from '@/types';
 import { useAuth } from './AuthContext';
+import { useToast } from '@/hooks/use-toast';
 import { useProjects } from '@/hooks/useProjects';
 import { useTasks } from '@/hooks/useTasks';
 import { useTimeEntries } from '@/hooks/useTimeEntries';
-import { useToast } from '@/hooks/use-toast';
+import { useTags } from '@/hooks/useTags';
+import { useReportGenerator } from '@/hooks/useReportGenerator';
+import { useAppServices } from '@/hooks/useAppServices';
+import { useInitialDataLoader } from '@/hooks/useInitialDataLoader';
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
@@ -24,6 +25,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
   const { toast } = useToast();
   const userId = user?.id || '';
   
+  // Core hooks for state management
   const {
     projects: storedProjects,
     setProjects: setStoredProjects,
@@ -53,7 +55,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
     startTimeEntry: startStoredTimeEntry,
     stopTimeEntry: stopStoredTimeEntry,
   } = useTimeEntries(userId);
+
+  const {
+    tags,
+    setTags,
+    addTag: addStoredTag,
+    loadTags,
+    getTaskTags,
+    addTaskTag: addStoredTaskTag,
+    removeTaskTag: removeStoredTaskTag,
+  } = useTags(userId);
   
+  // Combined state
   const [state, setState] = useState<AppState>({
     projects: storedProjects,
     tasks: storedTasks,
@@ -61,9 +74,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
     activeTimeEntry: storedActiveTimeEntry,
     currentProject: storedCurrentProject,
     currentTask: storedCurrentTask,
-    tags: [],
+    tags: tags,
   });
   
+  // Sync state from individual hooks
   useEffect(() => {
     setState(prevState => ({ ...prevState, projects: storedProjects }));
   }, [storedProjects]);
@@ -79,240 +93,68 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
       activeTimeEntry: storedActiveTimeEntry,
     }));
   }, [storedTimeEntries, storedActiveTimeEntry]);
-  
+
   useEffect(() => {
-    const loadInitialData = async () => {
-      if (!user) return;
-      
-      try {
-        const projects = await projectService.loadProjects();
-        setStoredProjects(projects);
-        
-        const { tasks } = await taskService.loadTasks();
-        setStoredTasks(tasks);
-        
-        // Fix the destructuring to match what timeEntryService.loadTimeEntries() actually returns
-        const timeEntriesResult = await timeEntryService.loadTimeEntries();
-        
-        // Check the structure of the returned data and handle accordingly
-        if (Array.isArray(timeEntriesResult)) {
-          setStoredTimeEntries(timeEntriesResult);
-          // Find any active entry in the array
-          const activeEntry = timeEntriesResult.find(entry => entry.isRunning) || null;
-          setStoredActiveTimeEntry(activeEntry);
-        } else if (typeof timeEntriesResult === 'object' && timeEntriesResult !== null) {
-          // If it's returning an object with timeEntries and activeTimeEntry properties
-          const { timeEntries = [], activeTimeEntry = null } = timeEntriesResult as {
-            timeEntries: TimeEntry[];
-            activeTimeEntry: TimeEntry | null;
-          };
-          setStoredTimeEntries(timeEntries);
-          setStoredActiveTimeEntry(activeTimeEntry);
-        }
-      } catch (error) {
-        console.error("Failed to load initial data:", error);
-        toast({
-          title: 'Erro',
-          description: 'Falha ao carregar os dados. Por favor, tente novamente.',
-          variant: 'destructive',
-        });
-      }
-    };
-    
+    setState(prevState => ({ ...prevState, tags }));
+  }, [tags]);
+  
+  // Initialize data
+  const { loadInitialData } = useInitialDataLoader({
+    user,
+    setStoredProjects,
+    setStoredTasks,
+    setStoredTimeEntries, 
+    setStoredActiveTimeEntry,
+    toast,
+    setTags
+  });
+
+  useEffect(() => {
     loadInitialData();
-  }, [user, setStoredProjects, setStoredTasks, setStoredTimeEntries, setStoredActiveTimeEntry, toast]);
+  }, [loadInitialData]);
   
-  const addProject = async (projectData: Omit<Project, 'id' | 'createdAt' | 'userId'>) => {
-    try {
-      await addStoredProject(projectData);
-    } catch (error) {
-      console.error('Error adding project:', error);
-      throw error;
-    }
-  };
+  // Service functions
+  const { 
+    addProject, 
+    updateProject, 
+    deleteProject,
+    addTask, 
+    updateTask, 
+    completeTask,
+    deleteTask,
+    startTimer,
+    stopTimer,
+    getActiveTaskName,
+    addTag,
+    getTags,
+    addTaskTag,
+    removeTaskTag,
+    getTaskTags 
+  } = useAppServices({
+    state,
+    user,
+    addStoredProject,
+    updateStoredProject,
+    deleteStoredProject,
+    addStoredTask,
+    updateStoredTask,
+    completeStoredTask,
+    deleteStoredTask,
+    startStoredTimeEntry,
+    stopStoredTimeEntry,
+    setStoredCurrentProject,
+    setStoredCurrentTask,
+    addStoredTag,
+    loadTags,
+    getTaskTags: getTaskTags,
+    addStoredTaskTag,
+    removeStoredTaskTag
+  });
   
-  const updateProject = async (project: Project) => {
-    try {
-      await updateStoredProject(project);
-    } catch (error) {
-      console.error('Error updating project:', error);
-      throw error;
-    }
-  };
+  // Report generation
+  const { generateReport } = useReportGenerator();
   
-  const deleteProject = async (projectId: string) => {
-    try {
-      await deleteStoredProject(projectId);
-    } catch (error) {
-      console.error('Error deleting project:', error);
-      throw error;
-    }
-  };
-  
-  const addTask = async (taskData: Omit<Task, 'id' | 'completed' | 'actualStartTime' | 'actualEndTime' | 'elapsedTime' | 'userId' | 'tags'>) => {
-    try {
-      return await addStoredTask(taskData);
-    } catch (error) {
-      console.error('Error adding task:', error);
-      throw error;
-    }
-  };
-  
-  const updateTask = async (task: Task) => {
-    try {
-      await updateStoredTask(task);
-    } catch (error) {
-      console.error('Error updating task:', error);
-      throw error;
-    }
-  };
-  
-  const completeTask = async (taskId: string) => {
-    try {
-      await completeStoredTask(taskId);
-      
-      const task = state.tasks.find(t => t.id === taskId);
-      if (task) {
-        const event = new CustomEvent('task-completed', {
-          detail: { taskId: task.id, updatedTask: task },
-        });
-        window.dispatchEvent(event);
-      }
-    } catch (error) {
-      console.error('Error completing task:', error);
-      throw error;
-    }
-  };
-  
-  const deleteTask = async (taskId: string) => {
-    try {
-      await deleteStoredTask(taskId);
-    } catch (error) {
-      console.error('Error deleting task:', error);
-      throw error;
-    }
-  };
-  
-  const startTimer = async (taskId: string, projectId: string) => {
-    try {
-      await startStoredTimeEntry(taskId, projectId);
-    } catch (error) {
-      console.error('Error starting timer:', error);
-      throw error;
-    }
-  };
-  
-  const stopTimer = async (completeTaskFlag: boolean = false) => {
-    try {
-      const stoppedEntry = await stopStoredTimeEntry(completeTaskFlag);
-      
-      if (completeTaskFlag && stoppedEntry) {
-        await completeStoredTask(stoppedEntry.taskId);
-      }
-    } catch (error) {
-      console.error('Error stopping timer:', error);
-      throw error;
-    }
-  };
-  
-  const setCurrentProject = (project: Project | null) => {
-    setStoredCurrentProject(project);
-  };
-  
-  const setCurrentTask = (task: Task | null) => {
-    setStoredCurrentTask(task);
-  };
-  
-  const generateReport = (projectId: string): ReportData | null => {
-    const project = state.projects.find((p) => p.id === projectId);
-    const tasks = state.tasks.filter((task) => task.projectId === projectId);
-    
-    if (!project) {
-      console.error(`Project with ID ${projectId} not found`);
-      return null;
-    }
-    
-    const reportTasks = tasks.map(task => {
-      const timeSpent = task.elapsedTime || 0;
-      const earnings = (timeSpent / 3600) * project.hourlyRate;
-      return {
-        id: task.id,
-        name: task.name,
-        timeSpent,
-        earnings,
-      };
-    });
-    
-    const totalTime = reportTasks.reduce((sum, task) => sum + task.timeSpent, 0);
-    const totalEarnings = reportTasks.reduce((sum, task) => sum + task.earnings, 0);
-    
-    return {
-      projectId: project.id,
-      projectName: project.name,
-      hourlyRate: project.hourlyRate,
-      tasks: reportTasks,
-      totalTime,
-      totalEarnings,
-    };
-  };
-  
-  const getActiveTaskName = (): string | null => {
-    if (!state.activeTimeEntry) return null;
-    const task = state.tasks.find(task => task.id === state.activeTimeEntry?.taskId);
-    return task ? task.name : null;
-  };
-  
-  const addTag = async (name: string) => {
-    const userId = user?.id;
-    if (!userId) return { id: '', name, userId: '' };
-
-    try {
-      const newTag = await tagService.createTag(name, userId);
-      return newTag;
-    } catch (error) {
-      console.error('Error adding tag:', error);
-      throw error;
-    }
-  };
-
-  const getTags = async () => {
-    try {
-      const { tags } = await tagService.loadTags();
-      return tags;
-    } catch (error) {
-      console.error('Error getting tags:', error);
-      return [];
-    }
-  };
-
-  const getTaskTags = async (taskId: string) => {
-    try {
-      const tags = await tagService.getTaskTags(taskId);
-      return tags;
-    } catch (error) {
-      console.error('Error getting task tags:', error);
-      return [];
-    }
-  };
-
-  const addTaskTag = async (taskId: string, tagId: string) => {
-    try {
-      await tagService.addTaskTag(taskId, tagId);
-    } catch (error) {
-      console.error('Error adding task tag:', error);
-      throw error;
-    }
-  };
-
-  const removeTaskTag = async (taskId: string, tagId: string) => {
-    try {
-      await tagService.removeTaskTag(taskId, tagId);
-    } catch (error) {
-      console.error('Error removing task tag:', error);
-      throw error;
-    }
-  };
-  
+  // Prepare context value
   const value: AppContextType = {
     state,
     addProject,

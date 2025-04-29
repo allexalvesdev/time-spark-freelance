@@ -61,7 +61,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
     setTags,
     addTag: addStoredTag,
     loadTags,
-    getTaskTags,
+    getTaskTags: getStoredTaskTags,
     addTaskTag: addStoredTaskTag,
     removeTaskTag: removeStoredTaskTag,
   } = useTags(userId);
@@ -146,7 +146,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
     setStoredCurrentTask,
     addStoredTag,
     loadTags,
-    getTaskTags: getTaskTags,
+    getTaskTags: getStoredTaskTags,
     addStoredTaskTag,
     removeStoredTaskTag
   });
@@ -166,8 +166,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
     deleteTask,
     startTimer,
     stopTimer,
-    setCurrentProject,
-    setCurrentTask,
+    setCurrentProject: setStoredCurrentProject,
+    setCurrentTask: setStoredCurrentTask,
     generateReport,
     getActiveTaskName,
     addTag,

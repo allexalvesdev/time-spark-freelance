@@ -1,6 +1,6 @@
-
 import { useCallback } from 'react';
-import { Project, Task, TimeEntry, Tag, AppState, TaskPriority } from '@/types';
+import { Project, Task, TimeEntry, Tag } from '@/types';
+import { AppState } from '@/types/app';
 import { tagService } from '@/services';
 
 type AppServicesProps = {

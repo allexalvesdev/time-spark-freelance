@@ -1,4 +1,3 @@
-
 import * as React from "react";
 import { X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -30,7 +29,7 @@ export function TagInput({
   setTags,
   suggestions = [],
   className,
-  onCreateTag
+  onCreateTag,
 }: TagInputProps) {
   const inputRef = React.useRef<HTMLInputElement>(null);
   const [inputValue, setInputValue] = React.useState("");
@@ -38,59 +37,67 @@ export function TagInput({
   const [isLoading, setIsLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
-  // Filter suggestions based on input value and already selected tags
+  /* ------------------------------------------------------------------ */
+  /* Utils                                                              */
+  /* ------------------------------------------------------------------ */
+  const focusInput = () => {
+    // Aguarda o toggle do pop‑over antes de focar
+    requestAnimationFrame(() => inputRef.current?.focus());
+  };
+
+  /* ------------------------------------------------------------------ */
+  /* Suggestions filtering                                               */
+  /* ------------------------------------------------------------------ */
   const filteredSuggestions = suggestions
     .filter(
-      (suggestion) =>
-        suggestion.toLowerCase().includes(inputValue.toLowerCase()) &&
-        !tags.includes(suggestion)
+      (s) =>
+        s.toLowerCase().includes(inputValue.toLowerCase()) && !tags.includes(s)
     )
     .slice(0, 5);
 
-  // Add a tag to the list
+  /* ------------------------------------------------------------------ */
+  /* Tag handlers                                                        */
+  /* ------------------------------------------------------------------ */
   const handleAddTag = async (tag: string) => {
     if (!tag.trim() || tags.includes(tag)) return;
-    
+
     try {
       setIsLoading(true);
       setError(null);
-      
-      // Add to local state immediately for responsive UI
-      setTags(prev => [...prev, tag]);
+
+      // Estado otimista
+      setTags((prev) => [...prev, tag]);
       setInputValue("");
-      
-      // Then try to persist via callback
+
       if (onCreateTag) {
         await onCreateTag(tag);
       }
-    } catch (error) {
-      console.error("Error creating tag:", error);
+    } catch (err) {
+      console.error("Error creating tag:", err);
       setError("Failed to create tag. Used offline mode.");
-      // Tag is kept in local state anyway for better UX
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Remove a tag from the list
   const handleRemoveTag = (tag: string) => {
     setTags(tags.filter((t) => t !== tag));
   };
 
-  // Handle keyboard input
-  const handleKeyDown = async (e: React.KeyboardEvent<HTMLInputElement>) => {
-    // Submit the form on Enter, but not if the popover is open
+  const handleKeyDown = async (
+    e: React.KeyboardEvent<HTMLInputElement>
+  ) => {
     if (e.key === "Enter" && !open) {
       e.preventDefault();
-      if (inputValue) {
-        await handleAddTag(inputValue);
-      }
+      if (inputValue) await handleAddTag(inputValue);
     } else if (e.key === "Backspace" && !inputValue && tags.length > 0) {
-      // Remove the last tag if backspace is pressed and input is empty
       handleRemoveTag(tags[tags.length - 1]);
     }
   };
 
+  /* ------------------------------------------------------------------ */
+  /* Render                                                              */
+  /* ------------------------------------------------------------------ */
   return (
     <div className={cn("flex flex-col w-full gap-1", className)}>
       <div className="flex min-h-10 w-full flex-wrap items-center gap-1 rounded-md border border-input px-3 py-2 text-sm ring-offset-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
@@ -108,23 +115,35 @@ export function TagInput({
             </button>
           </Badge>
         ))}
+
+        {/* Pop‑over e Input */}
         <Popover open={open} onOpenChange={setOpen}>
+          {/* Trigger é o botão — não o input — para não perder foco */}
           <PopoverTrigger asChild>
-            <input
-              ref={inputRef}
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder={tags.length === 0 ? placeholder : ""}
-              className="flex-1 bg-transparent outline-none placeholder:text-muted-foreground min-w-20"
+            <button
+              type="button"
+              className="flex-1 text-left outline-none"
+              onClick={() => {
+                setOpen((o) => !o);
+                focusInput();
+              }}
               disabled={isLoading}
-            />
+            >
+              {/* Input dentro do botão */}
+              <input
+                ref={inputRef}
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                onKeyDown={handleKeyDown}
+                onFocus={() => setOpen(true)}
+                placeholder={tags.length === 0 ? placeholder : ""}
+                className="w-full bg-transparent outline-none placeholder:text-muted-foreground min-w-20"
+                disabled={isLoading}
+              />
+            </button>
           </PopoverTrigger>
-          <PopoverContent
-            className="p-0 w-64"
-            align="start"
-            sideOffset={4}
-          >
+
+          <PopoverContent className="p-0 w-64" align="start" sideOffset={4}>
             <Command>
               <CommandList>
                 {filteredSuggestions.length > 0 ? (
@@ -135,7 +154,7 @@ export function TagInput({
                         value={suggestion}
                         onSelect={async () => {
                           await handleAddTag(suggestion);
-                          inputRef.current?.focus();
+                          focusInput();
                         }}
                       >
                         {suggestion}
@@ -147,7 +166,7 @@ export function TagInput({
                     <CommandItem
                       onSelect={async () => {
                         await handleAddTag(inputValue);
-                        inputRef.current?.focus();
+                        focusInput();
                       }}
                     >
                       Criar tag "{inputValue}"
@@ -163,14 +182,9 @@ export function TagInput({
           </PopoverContent>
         </Popover>
       </div>
-      
-      {error && (
-        <p className="text-xs text-destructive mt-1">{error}</p>
-      )}
-      
-      {isLoading && (
-        <p className="text-xs text-muted-foreground mt-1">Processando...</p>
-      )}
+
+      {error && <p className="text-xs text-destructive mt-1">{error}</p>}
+      {isLoading && <p className="text-xs text-muted-foreground mt-1">Processando...</p>}
     </div>
   );
 }

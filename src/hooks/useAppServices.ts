@@ -162,23 +162,23 @@ export const useAppServices = ({
     if (!userId) return { id: '', name, userId: '' };
 
     try {
-      const newTag = await tagService.createTag(name, userId);
+      const newTag = await addStoredTag(name);
       return newTag;
     } catch (error) {
       console.error('Error adding tag:', error);
       throw error;
     }
-  }, [user]);
+  }, [user, addStoredTag]);
 
   const getTags = useCallback(async () => {
     try {
-      const { tags } = await tagService.loadTags();
+      const tags = await loadTags();
       return tags;
     } catch (error) {
       console.error('Error getting tags:', error);
       return [];
     }
-  }, []);
+  }, [loadTags]);
 
   const addTaskTag = useCallback(async (taskId: string, tagId: string) => {
     try {

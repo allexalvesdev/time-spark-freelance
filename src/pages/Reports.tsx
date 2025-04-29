@@ -26,7 +26,7 @@ const Reports: React.FC = () => {
   
   const handleGenerateReport = () => {
     if (selectedProjectId) {
-      const report = generateReport(selectedProjectId, projects, tasks);
+      const report = generateReport(selectedProjectId);
       setReportData(report);
     }
   };

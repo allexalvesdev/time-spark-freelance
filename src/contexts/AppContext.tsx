@@ -152,7 +152,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
   });
   
   // Report generation
-  const { generateReport } = useReportGenerator();
+  const { generateReport: generateReportRaw } = useReportGenerator();
+
+  const generateReport = (projectId: string) =>
+    generateReportRaw(projectId, state.projects, state.tasks);
   
   // Prepare context value
   const value: AppContextType = {

@@ -14,17 +14,19 @@ export const projectService = {
     return projects?.map(project => ({
       id: project.id,
       name: project.name,
+      description: project.description,
       hourlyRate: project.hourly_rate,
       createdAt: new Date(project.created_at),
       userId: project.user_id,
     })) || [];
   },
 
-  async createProject(project: Omit<Project, 'id' | 'createdAt'>) {
+  async createProject(project: Omit<Project, 'id' | 'createdAt' | 'userId'>) {
     const { data, error } = await supabase
       .from('projects')
       .insert([{ 
         name: project.name,
+        description: project.description,
         hourly_rate: project.hourlyRate,
         user_id: project.userId 
       }])
@@ -36,6 +38,7 @@ export const projectService = {
     return {
       id: data.id,
       name: data.name,
+      description: data.description,
       hourlyRate: data.hourly_rate,
       createdAt: new Date(data.created_at),
       userId: data.user_id,
@@ -47,6 +50,7 @@ export const projectService = {
       .from('projects')
       .update({ 
         name: project.name,
+        description: project.description,
         hourly_rate: project.hourlyRate 
       })
       .eq('id', project.id);

@@ -2,8 +2,15 @@
 export interface Project {
   id: string;
   name: string;
+  description?: string;
   hourlyRate: number;
   createdAt: Date;
+  userId: string;
+}
+
+export interface Tag {
+  id: string;
+  name: string;
   userId: string;
 }
 
@@ -18,7 +25,15 @@ export interface Task {
   actualEndTime?: Date;
   elapsedTime?: number; // em segundos
   completed: boolean;
+  priority: 'Low' | 'Medium' | 'High' | 'Urgent';
   userId: string;
+  tags?: Tag[];
+}
+
+export interface TaskTag {
+  id: string;
+  taskId: string;
+  tagId: string;
 }
 
 export interface TimeEntry {

@@ -22,13 +22,14 @@ export const taskService = {
       actualEndTime: task.actual_end_time ? new Date(task.actual_end_time) : undefined,
       elapsedTime: task.elapsed_time,
       completed: task.completed,
+      priority: task.priority || 'Medium',
       userId: task.user_id,
     })) || [];
     
     return { tasks };
   },
 
-  async createTask(task: Omit<Task, 'id' | 'completed' | 'actualStartTime' | 'actualEndTime' | 'elapsedTime'>) {
+  async createTask(task: Omit<Task, 'id' | 'completed' | 'actualStartTime' | 'actualEndTime' | 'elapsedTime' | 'userId' | 'tags'>) {
     const { data, error } = await supabase
       .from('tasks')
       .insert([{
@@ -37,6 +38,7 @@ export const taskService = {
         project_id: task.projectId,
         estimated_time: task.estimatedTime,
         scheduled_start_time: task.scheduledStartTime.toISOString(),
+        priority: task.priority || 'Medium',
         user_id: task.userId,
         completed: false,
       }])
@@ -56,6 +58,7 @@ export const taskService = {
       actualEndTime: undefined,
       elapsedTime: 0,
       completed: false,
+      priority: data.priority || 'Medium',
       userId: data.user_id,
     };
   },
@@ -73,6 +76,7 @@ export const taskService = {
         actual_end_time: task.actualEndTime ? task.actualEndTime.toISOString() : null,
         elapsed_time: task.elapsedTime,
         completed: task.completed,
+        priority: task.priority || 'Medium',
       })
       .eq('id', task.id);
 
@@ -87,6 +91,14 @@ export const taskService = {
       .eq('task_id', taskId);
 
     if (timeEntriesError) throw timeEntriesError;
+
+    // Delete all task-tag relationships
+    const { error: taskTagsError } = await supabase
+      .from('task_tags')
+      .delete()
+      .eq('task_id', taskId);
+
+    if (taskTagsError) throw taskTagsError;
 
     // Now delete the task itself
     const { error } = await supabase

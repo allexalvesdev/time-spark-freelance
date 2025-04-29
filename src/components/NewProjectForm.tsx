@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
 import { useAppContext } from '@/contexts/AppContext';
 import { usePlan } from '@/contexts/PlanContext';
 import { useToast } from '@/hooks/use-toast';
@@ -22,6 +23,7 @@ import { CreditCard } from 'lucide-react';
 
 const formSchema = z.object({
   name: z.string().min(3, 'O nome do projeto deve ter pelo menos 3 caracteres'),
+  description: z.string().optional(),
   hourlyRate: z.preprocess(
     (val) => (val === '' ? 0 : Number(val)),
     z.number().min(0, 'A taxa horária deve ser um número positivo')
@@ -42,6 +44,7 @@ const NewProjectForm: React.FC = () => {
     resolver: zodResolver(formSchema),
     defaultValues: {
       name: '',
+      description: '',
       hourlyRate: 0,
     },
   });
@@ -56,6 +59,7 @@ const NewProjectForm: React.FC = () => {
     try {
       await addProject({
         name: data.name,
+        description: data.description,
         hourlyRate: data.hourlyRate,
       });
       
@@ -91,6 +95,24 @@ const NewProjectForm: React.FC = () => {
                 <FormLabel>Nome do Projeto</FormLabel>
                 <FormControl>
                   <Input placeholder="Ex: Website para Cliente X" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          
+          <FormField
+            control={form.control}
+            name="description"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Descrição do Projeto</FormLabel>
+                <FormControl>
+                  <Textarea 
+                    placeholder="Descreva os detalhes, requisitos e especificações do projeto" 
+                    className="min-h-32"
+                    {...field} 
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>

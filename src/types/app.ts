@@ -1,5 +1,5 @@
 
-import { Project, Task, TimeEntry, ReportData } from './index';
+import { Project, Task, TimeEntry, ReportData, Tag } from './index';
 
 export interface AppState {
   projects: Project[];
@@ -8,6 +8,7 @@ export interface AppState {
   activeTimeEntry: TimeEntry | null;
   currentProject: Project | null;
   currentTask: Task | null;
+  tags: Tag[];
 }
 
 export interface AppContextType {
@@ -15,7 +16,7 @@ export interface AppContextType {
   addProject: (project: Omit<Project, 'id' | 'createdAt' | 'userId'>) => Promise<void>;
   updateProject: (project: Project) => Promise<void>;
   deleteProject: (projectId: string) => Promise<void>;
-  addTask: (task: Omit<Task, 'id' | 'completed' | 'actualStartTime' | 'actualEndTime' | 'elapsedTime' | 'userId'>) => Promise<void>;
+  addTask: (task: Omit<Task, 'id' | 'completed' | 'actualStartTime' | 'actualEndTime' | 'elapsedTime' | 'userId' | 'priority' | 'tags'>) => Promise<void>;
   updateTask: (task: Task) => Promise<void>;
   completeTask: (taskId: string) => Promise<void>;
   deleteTask: (taskId: string) => Promise<void>;
@@ -25,4 +26,9 @@ export interface AppContextType {
   setCurrentTask: (task: Task | null) => void;
   generateReport: (projectId: string) => ReportData | null;
   getActiveTaskName: () => string | null;
+  addTag: (name: string) => Promise<Tag>;
+  getTags: () => Promise<Tag[]>;
+  addTaskTag: (taskId: string, tagId: string) => Promise<void>;
+  removeTaskTag: (taskId: string, tagId: string) => Promise<void>;
+  getTaskTags: (taskId: string) => Promise<Tag[]>;
 }

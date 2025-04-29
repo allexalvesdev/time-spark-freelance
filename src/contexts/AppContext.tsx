@@ -1,3 +1,4 @@
+
 import React, {
   createContext,
   useState,
@@ -90,9 +91,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
         const { tasks } = await taskService.loadTasks();
         setStoredTasks(tasks);
         
-        const { timeEntries, activeTimeEntry } = await timeEntryService.loadTimeEntries();
-        setStoredTimeEntries(timeEntries);
-        setStoredActiveTimeEntry(activeTimeEntry);
+        // Fix the destructuring to match what timeEntryService.loadTimeEntries() actually returns
+        const timeEntriesResult = await timeEntryService.loadTimeEntries();
+        
+        // Check the structure of the returned data and handle accordingly
+        if (Array.isArray(timeEntriesResult)) {
+          setStoredTimeEntries(timeEntriesResult);
+          // Find any active entry in the array
+          const activeEntry = timeEntriesResult.find(entry => entry.isRunning) || null;
+          setStoredActiveTimeEntry(activeEntry);
+        } else if (typeof timeEntriesResult === 'object' && timeEntriesResult !== null) {
+          // If it's returning an object with timeEntries and activeTimeEntry properties
+          const { timeEntries = [], activeTimeEntry = null } = timeEntriesResult as {
+            timeEntries: TimeEntry[];
+            activeTimeEntry: TimeEntry | null;
+          };
+          setStoredTimeEntries(timeEntries);
+          setStoredActiveTimeEntry(activeTimeEntry);
+        }
       } catch (error) {
         console.error("Failed to load initial data:", error);
         toast({

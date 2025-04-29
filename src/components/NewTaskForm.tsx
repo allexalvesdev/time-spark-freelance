@@ -18,7 +18,7 @@ import { useAppContext } from '@/contexts/AppContext';
 import { useToast } from '@/hooks/use-toast';
 import { TagInput } from '@/components/ui/tag-input';
 import { PrioritySelector } from '@/components/ui/priority-selector';
-import { Tag } from '@/types';
+import { Tag, TaskPriority } from '@/types';
 
 const formSchema = z.object({
   name: z.string().min(3, 'O nome da tarefa deve ter pelo menos 3 caracteres'),

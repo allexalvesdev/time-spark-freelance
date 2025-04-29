@@ -1,6 +1,6 @@
 
 import * as React from "react";
-import { Check, ChevronDown, AlertTriangle, AlertCircle, Alert } from "lucide-react";
+import { Check, ChevronDown, AlertTriangle, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   DropdownMenu,
@@ -10,23 +10,22 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-
-export type PriorityType = "Low" | "Medium" | "High" | "Urgent";
+import { TaskPriority } from "@/types";
 
 interface PrioritySelectorProps {
-  value: PriorityType;
-  onChange: (priority: PriorityType) => void;
+  value: TaskPriority;
+  onChange: (priority: TaskPriority) => void;
   className?: string;
 }
 
-const priorityConfig: Record<PriorityType, { icon: React.ReactNode, color: string, bgColor: string }> = {
+const priorityConfig: Record<TaskPriority, { icon: React.ReactNode, color: string, bgColor: string }> = {
   Low: {
-    icon: <Alert className="h-3.5 w-3.5" />,
+    icon: <AlertCircle className="h-3.5 w-3.5" />,
     color: "text-blue-500",
     bgColor: "bg-blue-100 dark:bg-blue-900/20"
   },
   Medium: {
-    icon: <Alert className="h-3.5 w-3.5" />,
+    icon: <AlertCircle className="h-3.5 w-3.5" />,
     color: "text-yellow-500",
     bgColor: "bg-yellow-100 dark:bg-yellow-900/20"
   },
@@ -62,7 +61,7 @@ export function PrioritySelector({ value, onChange, className }: PrioritySelecto
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-[200px]">
-        {(Object.keys(priorityConfig) as PriorityType[]).map((priority) => {
+        {(Object.keys(priorityConfig) as TaskPriority[]).map((priority) => {
           const priorityData = priorityConfig[priority];
           return (
             <DropdownMenuItem

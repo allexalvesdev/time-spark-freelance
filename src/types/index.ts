@@ -14,6 +14,8 @@ export interface Tag {
   userId: string;
 }
 
+export type TaskPriority = 'Low' | 'Medium' | 'High' | 'Urgent';
+
 export interface Task {
   id: string;
   projectId: string;
@@ -25,7 +27,7 @@ export interface Task {
   actualEndTime?: Date;
   elapsedTime?: number; // em segundos
   completed: boolean;
-  priority: 'Low' | 'Medium' | 'High' | 'Urgent';
+  priority: TaskPriority;
   userId: string;
   tags?: Tag[];
 }

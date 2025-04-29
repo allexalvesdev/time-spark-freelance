@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Project } from '@/types';
 
@@ -21,7 +20,7 @@ export const projectService = {
     })) || [];
   },
 
-  async createProject(project: Omit<Project, 'id' | 'createdAt' | 'userId'>) {
+  async createProject(project: Omit<Project, 'id' | 'createdAt'> & { userId: string }) {
     const { data, error } = await supabase
       .from('projects')
       .insert([{ 

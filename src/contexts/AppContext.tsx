@@ -8,7 +8,7 @@ import React, {
 import { v4 as uuidv4 } from 'uuid';
 import { projectService, taskService, timeEntryService, tagService } from '@/services';
 import { AppState, AppContextType } from '@/types/app';
-import { Project, Task, TimeEntry, ReportData, Tag } from '@/types';
+import { Project, Task, TimeEntry, ReportData, Tag, TaskPriority } from '@/types';
 import { useAuth } from './AuthContext';
 import { useProjects } from '@/hooks/useProjects';
 import { useTasks } from '@/hooks/useTasks';
@@ -64,17 +64,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
     tags: [],
   });
   
-  // Sync projects from hook to state
   useEffect(() => {
     setState(prevState => ({ ...prevState, projects: storedProjects }));
   }, [storedProjects]);
   
-  // Sync tasks from hook to state
   useEffect(() => {
     setState(prevState => ({ ...prevState, tasks: storedTasks }));
   }, [storedTasks]);
   
-  // Sync time entries from hook to state
   useEffect(() => {
     setState(prevState => ({
       ...prevState,
@@ -159,7 +156,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
     try {
       await completeStoredTask(taskId);
       
-      // Dispatch a custom event to notify TaskItem about the completion
       const task = state.tasks.find(t => t.id === taskId);
       if (task) {
         const event = new CustomEvent('task-completed', {
@@ -191,11 +187,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
   
-  const stopTimer = async (completeTask: boolean = false) => {
+  const stopTimer = async (completeTaskFlag: boolean = false) => {
     try {
-      const stoppedEntry = await stopStoredTimeEntry(completeTask);
+      const stoppedEntry = await stopStoredTimeEntry(completeTaskFlag);
       
-      if (completeTask && stoppedEntry) {
+      if (completeTaskFlag && stoppedEntry) {
         await completeTask(stoppedEntry.taskId);
       }
     } catch (error) {

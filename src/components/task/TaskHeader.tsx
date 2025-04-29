@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { Task, Tag } from '@/types';
 import { Badge } from '@/components/ui/badge';
-import { AlertCircle, AlertTriangle, Alert } from 'lucide-react';
+import { AlertCircle, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAppContext } from '@/contexts/AppContext';
 
@@ -12,12 +12,12 @@ interface TaskHeaderProps {
 
 const priorityConfig: Record<string, { icon: React.ReactNode, color: string, bgColor: string }> = {
   Low: {
-    icon: <Alert className="h-3.5 w-3.5" />,
+    icon: <AlertCircle className="h-3.5 w-3.5" />,
     color: "text-blue-500",
     bgColor: "bg-blue-100 dark:bg-blue-900/20"
   },
   Medium: {
-    icon: <Alert className="h-3.5 w-3.5" />,
+    icon: <AlertCircle className="h-3.5 w-3.5" />,
     color: "text-yellow-500",
     bgColor: "bg-yellow-100 dark:bg-yellow-900/20"
   },

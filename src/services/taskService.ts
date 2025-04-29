@@ -1,6 +1,5 @@
-
 import { supabase } from '@/integrations/supabase/client';
-import { Task } from '@/types';
+import { Task, TaskPriority } from '@/types';
 
 export const taskService = {
   async loadTasks() {
@@ -29,7 +28,7 @@ export const taskService = {
     return { tasks };
   },
 
-  async createTask(task: Omit<Task, 'id' | 'completed' | 'actualStartTime' | 'actualEndTime' | 'elapsedTime' | 'userId' | 'tags'>) {
+  async createTask(task: Omit<Task, 'id' | 'completed' | 'actualStartTime' | 'actualEndTime' | 'elapsedTime' | 'tags'> & { userId: string }) {
     const { data, error } = await supabase
       .from('tasks')
       .insert([{

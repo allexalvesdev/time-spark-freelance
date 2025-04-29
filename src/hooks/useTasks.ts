@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Task } from '@/types';
+import { Task, TaskPriority } from '@/types';
 import { taskService } from '@/services';
 import { useToast } from '@/hooks/use-toast';
 import { calculateElapsedTime } from '@/utils/dateUtils';
@@ -9,7 +9,7 @@ export const useTasks = (userId: string) => {
   const [currentTask, setCurrentTask] = useState<Task | null>(null);
   const { toast } = useToast();
 
-  const addTask = async (taskData: Omit<Task, 'id' | 'completed' | 'actualStartTime' | 'actualEndTime' | 'elapsedTime' | 'userId'>) => {
+  const addTask = async (taskData: Omit<Task, 'id' | 'completed' | 'actualStartTime' | 'actualEndTime' | 'elapsedTime' | 'userId' | 'tags'>) => {
     try {
       const newTask = await taskService.createTask({ 
         ...taskData, 
@@ -17,6 +17,7 @@ export const useTasks = (userId: string) => {
       });
       setTasks(prev => [newTask, ...prev]);
       setCurrentTask(newTask);
+      return newTask;
     } catch (error: any) {
       console.error('Error adding task:', error);
       toast({

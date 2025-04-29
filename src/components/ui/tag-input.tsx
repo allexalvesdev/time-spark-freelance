@@ -35,6 +35,8 @@ export function TagInput({
   const inputRef = React.useRef<HTMLInputElement>(null);
   const [inputValue, setInputValue] = React.useState("");
   const [open, setOpen] = React.useState(false);
+  const [isLoading, setIsLoading] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
 
   // Filter suggestions based on input value and already selected tags
   const filteredSuggestions = suggestions
@@ -47,12 +49,26 @@ export function TagInput({
 
   // Add a tag to the list
   const handleAddTag = async (tag: string) => {
-    if (tag && !tags.includes(tag)) {
+    if (!tag.trim() || tags.includes(tag)) return;
+    
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+      // Add to local state immediately for responsive UI
+      setTags(prev => [...prev, tag]);
+      setInputValue("");
+      
+      // Then try to persist via callback
       if (onCreateTag) {
         await onCreateTag(tag);
       }
-      setTags([...tags, tag]);
-      setInputValue("");
+    } catch (error) {
+      console.error("Error creating tag:", error);
+      setError("Failed to create tag. Used offline mode.");
+      // Tag is kept in local state anyway for better UX
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -76,7 +92,7 @@ export function TagInput({
   };
 
   return (
-    <div className={cn("flex flex-wrap gap-1", className)}>
+    <div className={cn("flex flex-col w-full gap-1", className)}>
       <div className="flex min-h-10 w-full flex-wrap items-center gap-1 rounded-md border border-input px-3 py-2 text-sm ring-offset-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
         {tags.map((tag) => (
           <Badge key={tag} variant="secondary" className="text-xs">
@@ -85,6 +101,7 @@ export function TagInput({
               type="button"
               className="ml-1 rounded-full outline-none ring-offset-background hover:text-destructive focus:ring-2 focus:ring-ring focus:ring-offset-2"
               onClick={() => handleRemoveTag(tag)}
+              disabled={isLoading}
             >
               <X className="h-3 w-3" />
               <span className="sr-only">Remove {tag}</span>
@@ -100,6 +117,7 @@ export function TagInput({
               onKeyDown={handleKeyDown}
               placeholder={tags.length === 0 ? placeholder : ""}
               className="flex-1 bg-transparent outline-none placeholder:text-muted-foreground min-w-20"
+              disabled={isLoading}
             />
           </PopoverTrigger>
           <PopoverContent
@@ -145,6 +163,14 @@ export function TagInput({
           </PopoverContent>
         </Popover>
       </div>
+      
+      {error && (
+        <p className="text-xs text-destructive mt-1">{error}</p>
+      )}
+      
+      {isLoading && (
+        <p className="text-xs text-muted-foreground mt-1">Processando...</p>
+      )}
     </div>
   );
 }

@@ -33,21 +33,24 @@ const EditTaskModal: React.FC<EditTaskModalProps> = ({ task, isOpen, onClose }) 
   const [taskTags, setTaskTags] = useState<string[]>([]);
   const [tagSuggestions, setTagSuggestions] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   
   // Load tags when the modal opens
   useEffect(() => {
     const loadData = async () => {
       setIsLoading(true);
+      setError(null);
       try {
         // Load all tags
         const allTags = await getTags();
-        setTagSuggestions(allTags.map(tag => tag.name));
+        setTagSuggestions(allTags?.map(tag => tag.name) || []);
         
         // Load task tags
         const currentTaskTags = await getTaskTags(task.id);
-        setTaskTags(currentTaskTags.map(tag => tag.name));
+        setTaskTags(currentTaskTags?.map(tag => tag.name) || []);
       } catch (error) {
         console.error("Error loading tags data:", error);
+        setError("Não foi possível carregar todas as tags. Algumas opções podem estar indisponíveis.");
       } finally {
         setIsLoading(false);
       }
@@ -73,12 +76,14 @@ const EditTaskModal: React.FC<EditTaskModalProps> = ({ task, isOpen, onClose }) 
       await addTag(tagName);
     } catch (error) {
       console.error("Error creating tag:", error);
+      // The error is already handled in the TagInput component
     }
   };
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setError(null);
     
     try {
       // First, update the task basic info
@@ -86,34 +91,53 @@ const EditTaskModal: React.FC<EditTaskModalProps> = ({ task, isOpen, onClose }) 
         ...task,
         name,
         description,
-        estimatedTime: parseInt(estimatedTime),
+        estimatedTime: parseInt(estimatedTime) || 0,
         priority: priority as 'Low' | 'Medium' | 'High' | 'Urgent',
       };
       
       await updateTask(updatedTask);
       
-      // Get current task tags
-      const currentTaskTags = await getTaskTags(task.id);
-      const currentTagNames = currentTaskTags.map(tag => tag.name);
-      
-      // Find tags to add (in taskTags but not in currentTagNames)
-      const tagsToAdd = taskTags.filter(tagName => !currentTagNames.includes(tagName));
-      
-      // Find tags to remove (in currentTagNames but not in taskTags)
-      const tagsToRemove = currentTagNames.filter(tagName => !taskTags.includes(tagName));
-      
-      // Add new tags
-      for (const tagName of tagsToAdd) {
-        const newTag = await addTag(tagName);
-        await addTaskTag(task.id, newTag.id);
-      }
-      
-      // Remove tags no longer selected
-      for (const tagName of tagsToRemove) {
-        const tagToRemove = currentTaskTags.find(tag => tag.name === tagName);
-        if (tagToRemove) {
-          await removeTaskTag(task.id, tagToRemove.id);
+      // Get current task tags - continue even if this fails
+      try {
+        const currentTaskTags = await getTaskTags(task.id);
+        const currentTagNames = currentTaskTags.map(tag => tag.name);
+        
+        // Find tags to add (in taskTags but not in currentTagNames)
+        const tagsToAdd = taskTags.filter(tagName => !currentTagNames.includes(tagName));
+        
+        // Find tags to remove (in currentTagNames but not in taskTags)
+        const tagsToRemove = currentTagNames.filter(tagName => !taskTags.includes(tagName));
+        
+        // Add new tags
+        for (const tagName of tagsToAdd) {
+          try {
+            const newTag = await addTag(tagName);
+            if (newTag && newTag.id) {
+              await addTaskTag(task.id, newTag.id);
+            }
+          } catch (e) {
+            console.error(`Failed to add tag ${tagName}`, e);
+          }
         }
+        
+        // Remove tags no longer selected
+        for (const tagName of tagsToRemove) {
+          try {
+            const tagToRemove = currentTaskTags.find(tag => tag.name === tagName);
+            if (tagToRemove) {
+              await removeTaskTag(task.id, tagToRemove.id);
+            }
+          } catch (e) {
+            console.error(`Failed to remove tag ${tagName}`, e);
+          }
+        }
+      } catch (tagError) {
+        console.error("Error updating task tags:", tagError);
+        toast({
+          title: "Alerta",
+          description: "Tarefa atualizada, mas houve um problema com as tags.",
+          variant: "default",
+        });
       }
       
       toast({
@@ -124,6 +148,7 @@ const EditTaskModal: React.FC<EditTaskModalProps> = ({ task, isOpen, onClose }) 
       onClose();
     } catch (error) {
       console.error("Error updating task:", error);
+      setError("Não foi possível atualizar a tarefa. Tente novamente.");
       toast({
         title: "Erro",
         description: "Não foi possível atualizar a tarefa. Tente novamente.",
@@ -191,6 +216,8 @@ const EditTaskModal: React.FC<EditTaskModalProps> = ({ task, isOpen, onClose }) 
               placeholder="Adicione tags..."
               onCreateTag={handleCreateTag}
             />
+            
+            {error && <p className="text-sm text-destructive">{error}</p>}
           </div>
           
           <DialogFooter>

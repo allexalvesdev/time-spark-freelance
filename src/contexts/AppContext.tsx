@@ -5,7 +5,6 @@ import React, {
   useContext,
   useCallback,
 } from 'react';
-import { v4 as uuidv4 } from 'uuid';
 import { projectService, taskService, timeEntryService, tagService } from '@/services';
 import { AppState, AppContextType } from '@/types/app';
 import { Project, Task, TimeEntry, ReportData, Tag, TaskPriority } from '@/types';
@@ -134,9 +133,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
   
-  const addTask = async (taskData: Omit<Task, 'id' | 'completed' | 'actualStartTime' | 'actualEndTime' | 'elapsedTime' | 'userId' | 'priority' | 'tags'>) => {
+  const addTask = async (taskData: Omit<Task, 'id' | 'completed' | 'actualStartTime' | 'actualEndTime' | 'elapsedTime' | 'userId' | 'tags'>) => {
     try {
-      await addStoredTask(taskData);
+      return await addStoredTask(taskData);
     } catch (error) {
       console.error('Error adding task:', error);
       throw error;
@@ -192,7 +191,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
       const stoppedEntry = await stopStoredTimeEntry(completeTaskFlag);
       
       if (completeTaskFlag && stoppedEntry) {
-        await completeTask(stoppedEntry.taskId);
+        await completeStoredTask(stoppedEntry.taskId);
       }
     } catch (error) {
       console.error('Error stopping timer:', error);

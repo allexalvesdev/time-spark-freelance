@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { Task, TaskPriority } from '@/types';
 
@@ -16,12 +17,12 @@ export const taskService = {
       description: task.description || '',
       projectId: task.project_id,
       estimatedTime: task.estimated_time,
-      scheduledStartTime: task.scheduled_start_time ? new Date(task.scheduled_start_time) : undefined,
+      scheduledStartTime: task.scheduled_start_time ? new Date(task.scheduled_start_time) : new Date(),
       actualStartTime: task.actual_start_time ? new Date(task.actual_start_time) : undefined,
       actualEndTime: task.actual_end_time ? new Date(task.actual_end_time) : undefined,
       elapsedTime: task.elapsed_time,
       completed: task.completed,
-      priority: task.priority || 'Medium',
+      priority: (task.priority || 'Medium') as TaskPriority,
       userId: task.user_id,
     })) || [];
     
@@ -37,7 +38,7 @@ export const taskService = {
         project_id: task.projectId,
         estimated_time: task.estimatedTime,
         scheduled_start_time: task.scheduledStartTime.toISOString(),
-        priority: task.priority || 'Medium',
+        priority: task.priority,
         user_id: task.userId,
         completed: false,
       }])
@@ -52,12 +53,12 @@ export const taskService = {
       description: data.description || '',
       projectId: data.project_id,
       estimatedTime: data.estimated_time,
-      scheduledStartTime: data.scheduled_start_time ? new Date(data.scheduled_start_time) : undefined,
+      scheduledStartTime: data.scheduled_start_time ? new Date(data.scheduled_start_time) : new Date(),
       actualStartTime: undefined,
       actualEndTime: undefined,
       elapsedTime: 0,
       completed: false,
-      priority: data.priority || 'Medium',
+      priority: data.priority as TaskPriority,
       userId: data.user_id,
     };
   },
@@ -75,7 +76,7 @@ export const taskService = {
         actual_end_time: task.actualEndTime ? task.actualEndTime.toISOString() : null,
         elapsed_time: task.elapsedTime,
         completed: task.completed,
-        priority: task.priority || 'Medium',
+        priority: task.priority,
       })
       .eq('id', task.id);
 

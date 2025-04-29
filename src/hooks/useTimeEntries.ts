@@ -39,7 +39,7 @@ export const useTimeEntries = (userId: string) => {
     }
   };
 
-  const stopTimeEntry = async (completeTask: boolean = false) => {
+  const stopTimeEntry = async (completeTaskFlag: boolean = false) => {
     if (!activeTimeEntry) return null;
 
     try {

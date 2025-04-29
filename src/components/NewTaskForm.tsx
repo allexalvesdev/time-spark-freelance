@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -51,7 +50,6 @@ const NewTaskForm: React.FC<NewTaskFormProps> = ({ projectId, onSuccess }) => {
   const [tagSuggestions, setTagSuggestions] = useState<string[]>([]);
   const [isLoadingTags, setIsLoadingTags] = useState(false);
   
-  // Get current date in Brazil timezone
   const now = new Date();
   const brasilDate = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
   
@@ -96,23 +94,20 @@ const NewTaskForm: React.FC<NewTaskFormProps> = ({ projectId, onSuccess }) => {
     const estimatedTime = totalMinutes; // Store in minutes for database
     
     try {
-      // First add the task
-      const task = await addTask({
+      const createdTask = await addTask({
         projectId,
         name: data.name,
         description: data.description || '',
         estimatedTime,
         scheduledStartTime: new Date(data.scheduledStartTime),
-        priority: data.priority,
+        priority: data.priority as TaskPriority,
       });
       
-      // Then add tags to the task
-      if (selectedTags.length > 0) {
-        // Get or create each tag and associate with task
+      if (selectedTags.length > 0 && createdTask) {
         for (const tagName of selectedTags) {
           try {
             const tag = await addTag(tagName);
-            await addTaskTag(task.id, tag.id);
+            await addTaskTag(createdTask.id, tag.id);
           } catch (error) {
             console.error(`Error adding tag ${tagName} to task:`, error);
           }

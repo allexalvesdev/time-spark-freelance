@@ -1,6 +1,5 @@
-
 import { useState } from 'react';
-import { TimeEntry, Task } from '@/types';
+import { TimeEntry, Task, TaskPriority } from '@/types';
 import { timeEntryService, taskService } from '@/services';
 import { useToast } from '@/hooks/use-toast';
 import { formatDuration, calculateEarnings } from '@/utils/dateUtils';
@@ -27,7 +26,6 @@ export const useTimerManagement = (userId: string, tasks: Task[] = []) => {
       setTimeEntries(prev => [newTimeEntry, ...prev]);
       setActiveTimeEntry(newTimeEntry);
       
-      // Store the active time entry ID globally for persistence
       localStorage.setItem('activeTimeEntryId', newTimeEntry.id);
       localStorage.setItem('activeTaskId', taskId);
       localStorage.setItem('timerStartTime', new Date().getTime().toString());
@@ -63,7 +61,6 @@ export const useTimerManagement = (userId: string, tasks: Task[] = []) => {
         entry.id === activeTimeEntry.id ? updatedTimeEntry : entry
       ));
       
-      // If completeTask is true, mark the task as completed
       if (completeTask) {
         try {
           const taskId = activeTimeEntry.taskId;
@@ -71,7 +68,6 @@ export const useTimerManagement = (userId: string, tasks: Task[] = []) => {
           const task = currentTasks.find(t => t.id === taskId);
           
           if (task) {
-            // Get the current task's project to calculate earnings
             const updatedTask: Task = {
               ...task,
               completed: true,
@@ -80,8 +76,6 @@ export const useTimerManagement = (userId: string, tasks: Task[] = []) => {
               elapsedTime: (task.elapsedTime || 0) + duration,
             };
             
-            // Update local state immediately to reflect changes in UI
-            // This is important so the user doesn't need to reload the page
             window.dispatchEvent(new CustomEvent('task-completed', { 
               detail: { taskId, updatedTask } 
             }));
@@ -106,7 +100,6 @@ export const useTimerManagement = (userId: string, tasks: Task[] = []) => {
 
       setActiveTimeEntry(null);
       
-      // Clear all timer-related localStorage entries
       localStorage.removeItem('activeTimeEntryId');
       localStorage.removeItem('activeTaskId');
       localStorage.removeItem('timerStartTime');
@@ -126,7 +119,6 @@ export const useTimerManagement = (userId: string, tasks: Task[] = []) => {
     }
   };
   
-  // Function to get the name of the currently active task
   const getActiveTaskName = (): string | null => {
     if (!activeTimeEntry) return null;
     

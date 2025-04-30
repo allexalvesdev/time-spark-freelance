@@ -1,8 +1,7 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAppContext } from '@/contexts/AppContext';
 import TaskItem from '@/components/TaskItem';
-import { ClipboardList } from 'lucide-react';
+import { ClipboardList, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Select,
@@ -15,11 +14,11 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 
 const Tasks: React.FC = () => {
-  const { state } = useAppContext();
+  const { state, getTaskTags } = useAppContext();
   const { tasks = [], projects = [], tags = [] } = state;
   
   const [filter, setFilter] = useState<string>('all');
-  const [tagFilter, setTagFilter] = useState<string>('all');
+  const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
   const [priorityFilter, setPriorityFilter] = useState<string>('all');
   const [taskTagsMap, setTaskTagsMap] = useState<Record<string, string[]>>({});
   
@@ -31,13 +30,12 @@ const Tasks: React.FC = () => {
     const loadTaskTags = async () => {
       try {
         const tagsByTask: Record<string, string[]> = {};
-        const promises = tasksArray.map(async (task) => {
-          const { getTaskTags } = useAppContext();
+        
+        for (const task of tasksArray) {
           const taskTagIds = await getTaskTags(task.id);
           tagsByTask[task.id] = taskTagIds;
-        });
+        }
         
-        await Promise.all(promises);
         setTaskTagsMap(tagsByTask);
       } catch (error) {
         console.error('Failed to load task tags:', error);
@@ -45,7 +43,22 @@ const Tasks: React.FC = () => {
     };
     
     loadTaskTags();
-  }, [tasksArray]);
+  }, [tasksArray, getTaskTags]);
+  
+  const handleTagSelect = (tagId: string) => {
+    setSelectedTagIds(prev => {
+      // If tag is already selected, remove it
+      if (prev.includes(tagId)) {
+        return prev.filter(id => id !== tagId);
+      }
+      // Otherwise add it
+      return [...prev, tagId];
+    });
+  };
+  
+  const clearTagFilters = () => {
+    setSelectedTagIds([]);
+  };
   
   const filteredTasks = tasksArray.filter(task => {
     // Filtro por projeto
@@ -62,10 +75,11 @@ const Tasks: React.FC = () => {
       return false;
     }
     
-    // Filtro por tag
-    if (tagFilter !== 'all') {
+    // Filtro por tag (verifica se a tarefa possui pelo menos uma das tags selecionadas)
+    if (selectedTagIds.length > 0) {
       const taskTags = taskTagsMap[task.id] || [];
-      if (!taskTags.includes(tagFilter)) {
+      // Verifica se existe pelo menos uma tag em comum entre as tags da tarefa e as tags selecionadas
+      if (!selectedTagIds.some(selectedTag => taskTags.includes(selectedTag))) {
         return false;
       }
     }
@@ -88,7 +102,7 @@ const Tasks: React.FC = () => {
       </div>
       
       <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 w-full">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 w-full">
           <div>
             <Select value={filter} onValueChange={setFilter}>
               <SelectTrigger>
@@ -124,26 +138,44 @@ const Tasks: React.FC = () => {
               </SelectContent>
             </Select>
           </div>
-          
-          {tags.length > 0 && (
-            <div>
-              <Select value={tagFilter} onValueChange={setTagFilter}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Filtrar por tag" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todas as tags</SelectItem>
-                  {tags.map(tag => (
-                    <SelectItem key={tag.id} value={tag.id}>
-                      {tag.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
         </div>
       </div>
+      
+      {/* Tag filter section */}
+      {tags.length > 0 && (
+        <div className="mb-6">
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-medium">Filtrar por tags</h3>
+              {selectedTagIds.length > 0 && (
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-8 px-2 text-xs" 
+                  onClick={clearTagFilters}
+                >
+                  Limpar filtros
+                </Button>
+              )}
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {tags.map(tag => (
+                <Badge
+                  key={tag.id}
+                  variant={selectedTagIds.includes(tag.id) ? "default" : "outline"}
+                  className={`cursor-pointer ${selectedTagIds.includes(tag.id) ? '' : 'hover:bg-secondary'}`}
+                  onClick={() => handleTagSelect(tag.id)}
+                >
+                  {tag.name}
+                  {selectedTagIds.includes(tag.id) && (
+                    <X size={14} className="ml-1" />
+                  )}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
       
       {filteredTasks.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-12 space-y-4">

@@ -1,7 +1,7 @@
 
 import { useState, useRef } from 'react';
 import { formatTime } from './timer/timerFormatters';
-import { persistTimerState, clearTimerState, updateGlobalTimerState } from './timer/timerStorage';
+import { persistTimerState, clearTimerState, updateGlobalTimerState } from './timer/timerState';
 import { useTimerInitialization } from './timer/useTimerInitialization';
 import { useTimerSync } from './timer/useTimerSync';
 import { useTimerInterval } from './timer/useTimerInterval';

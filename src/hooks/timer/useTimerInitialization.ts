@@ -1,6 +1,5 @@
-
 import { useEffect, useRef } from 'react';
-import { loadTimerState } from './timerStorage';
+import { loadTimerState } from './timerLoader';
 
 interface UseTimerInitializationProps {
   persistKey?: string;

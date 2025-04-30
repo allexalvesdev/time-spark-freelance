@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { isLocalStorageAvailable, syncStorageFromMemory, syncMemoryFromStorage } from './timerStorage';
+import { isLocalStorageAvailable, syncStorageFromMemory, syncMemoryFromStorage } from './storageCore';
 import { useToast } from '@/hooks/use-toast';
 
 /**

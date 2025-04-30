@@ -1,9 +1,8 @@
-
 import { useState } from 'react';
 import { TimeEntry } from '@/types';
 import { timeEntryService } from '@/services';
 import { useToast } from '@/hooks/use-toast';
-import { safeSetItem, safeRemoveItem, isLocalStorageAvailable } from './timer/timerStorage';
+import { safeSetItem, safeRemoveItem, isLocalStorageAvailable } from './timer/storageCore';
 
 export const useTimeEntries = (userId: string) => {
   const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([]);

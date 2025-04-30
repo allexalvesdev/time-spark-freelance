@@ -1,6 +1,6 @@
-
 import { useEffect, useRef } from 'react';
-import { persistTimerState, isLocalStorageAvailable, updateGlobalTimerState } from './timerStorage';
+import { persistTimerState, updateGlobalTimerState } from './timerState';
+import { isLocalStorageAvailable } from './storageCore';
 
 interface UseTimerIntervalProps {
   persistKey?: string;

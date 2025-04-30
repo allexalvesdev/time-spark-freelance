@@ -1,6 +1,6 @@
-
 import { useEffect } from 'react';
-import { loadTimerState, safeGetItem, isLocalStorageAvailable } from './timerStorage';
+import { loadTimerState } from './timerLoader';
+import { safeGetItem, isLocalStorageAvailable } from './storageCore';
 
 interface UseTimerSyncProps {
   persistKey?: string;

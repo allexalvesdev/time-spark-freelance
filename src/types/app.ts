@@ -16,7 +16,7 @@ export interface AppContextType {
   addProject: (project: Omit<Project, 'id' | 'createdAt' | 'userId'>) => Promise<void>;
   updateProject: (project: Project) => Promise<void>;
   deleteProject: (projectId: string) => Promise<void>;
-  addTask: (task: Omit<Task, 'id' | 'completed' | 'actualStartTime' | 'actualEndTime' | 'elapsedTime' | 'userId'>) => Promise<void>;
+  addTask: (task: Omit<Task, 'id' | 'completed' | 'actualStartTime' | 'actualEndTime' | 'elapsedTime' | 'userId'>) => Promise<Task>;
   updateTask: (task: Task) => Promise<void>;
   completeTask: (taskId: string) => Promise<void>;
   deleteTask: (taskId: string) => Promise<void>;
@@ -26,7 +26,7 @@ export interface AppContextType {
   setCurrentTask: (task: Task | null) => void;
   generateReport: (projectId: string) => ReportData | null;
   getActiveTaskName: () => string | null;
-  addTag: (name: string) => Promise<void>;
+  addTag: (name: string) => Promise<Tag>;
   deleteTag: (tagId: string) => Promise<void>;
   addTagToTask: (taskId: string, tagId: string) => Promise<void>;
   removeTagFromTask: (taskId: string, tagId: string) => Promise<void>;

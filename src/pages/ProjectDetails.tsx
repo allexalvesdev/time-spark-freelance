@@ -42,17 +42,18 @@ const ProjectDetails: React.FC = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { state, deleteProject, generateReport, updateTask } = useAppContext();
-  const { projects, tasks } = state;
+  const { projects, tasks } = state || { projects: [], tasks: [] }; // Garantir que projects e tasks são arrays
   const isMobile = useIsMobile();
   
   const [showNewTaskForm, setShowNewTaskForm] = useState(false);
   const [reportData, setReportData] = useState<ReportData | null>(null);
   const [projectTasks, setProjectTasks] = useState<Task[]>([]);
   
-  const project = projects.find(p => p.id === projectId);
+  // Verificar se projects existe antes de usar find
+  const project = projects && Array.isArray(projects) ? projects.find(p => p.id === projectId) : undefined;
   
   useEffect(() => {
-    if (Array.isArray(tasks)) {
+    if (Array.isArray(tasks) && projectId) {
       setProjectTasks(tasks.filter(t => t.projectId === projectId));
     }
     

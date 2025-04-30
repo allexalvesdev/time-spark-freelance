@@ -1,13 +1,13 @@
 
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 import { AppState, AppContextType } from '@/types/app';
-import { Project, Task, TimeEntry, ReportData } from '@/types';
+import { Project, Task, TimeEntry, ReportData, Tag } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProjects } from '@/hooks/useProjects';
 import { useTasks } from '@/hooks/useTasks';
 import { useTimerManagement } from '@/hooks/useTimerManagement';
 import { useReportGenerator } from '@/hooks/useReportGenerator';
-import { projectService, taskService, timeEntryService } from '@/services';
+import { projectService, taskService, timeEntryService, tagService } from '@/services';
 import { useTags } from '@/hooks/useTags';
 
 // Defina o estado inicial
@@ -104,9 +104,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         console.log('Loading initial data...');
         
         // Carregar projetos
-        const { projects: projectsData } = await projectService.loadProjects();
-        setProjects(projectsData);
-        console.log('Projects loaded:', projectsData.length);
+        const projectsData = await projectService.loadProjects();
+        setProjects(projectsData || []);
+        console.log('Projects loaded:', projectsData ? projectsData.length : 0);
         
         // Carregar tarefas
         const { tasks: tasksData } = await taskService.loadTasks();

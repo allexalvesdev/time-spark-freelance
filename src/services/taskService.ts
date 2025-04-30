@@ -23,8 +23,10 @@ export const taskService = {
       elapsedTime: task.elapsed_time,
       completed: task.completed,
       userId: task.user_id,
-      priority: task.priority || 'Média',
-    })) || [];
+      priority: (task.priority === 'Baixa' || task.priority === 'Média' || task.priority === 'Alta' || task.priority === 'Urgente') 
+        ? task.priority 
+        : 'Média'
+    } as Task)) || [];
     
     return { tasks };
   },
@@ -59,8 +61,10 @@ export const taskService = {
       elapsedTime: 0,
       completed: false,
       userId: data.user_id,
-      priority: data.priority || 'Média',
-    };
+      priority: (data.priority === 'Baixa' || data.priority === 'Média' || data.priority === 'Alta' || data.priority === 'Urgente') 
+        ? data.priority 
+        : 'Média'
+    } as Task;
   },
 
   async updateTask(task: Task) {

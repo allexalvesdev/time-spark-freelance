@@ -16,9 +16,16 @@ export const useTasks = (userId: string) => {
         ...taskData, 
         userId 
       });
-      setTasks(prev => [newTask, ...prev]);
-      setCurrentTask(newTask);
-      return newTask;
+      
+      // Garantir que a prioridade seja um valor válido
+      const typedTask: Task = {
+        ...newTask,
+        priority: newTask.priority as 'Baixa' | 'Média' | 'Alta' | 'Urgente'
+      };
+      
+      setTasks(prev => [typedTask, ...prev]);
+      setCurrentTask(typedTask);
+      return typedTask;
     } catch (error: any) {
       console.error('Error adding task:', error);
       toast({

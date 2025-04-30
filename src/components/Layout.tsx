@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
@@ -7,7 +8,8 @@ import {
   BarChart2, 
   Settings,
   Menu,
-  Timer
+  Timer,
+  LogOut
 } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
 import { Button } from '@/components/ui/button';
@@ -15,6 +17,7 @@ import { Separator } from '@/components/ui/separator';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useAppContext } from '@/contexts/AppContext';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useAuth } from '@/contexts/AuthContext';
 import ActiveTimerDisplay from './ActiveTimerDisplay';
 
 interface LayoutProps {
@@ -26,9 +29,19 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const { state } = useAppContext();
   const { activeTimeEntry } = state;
   const isMobile = useIsMobile();
+  const { signOut } = useAuth();
 
   const isActive = (path: string) => {
     return location.pathname === path;
+  };
+
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      // Redirect is handled by the auth context
+    } catch (error) {
+      console.error('Error logging out:', error);
+    }
   };
 
   const navItems = [
@@ -120,6 +133,15 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                       <ActiveTimerDisplay />
                     </div>
                   )}
+                  
+                  <Button 
+                    onClick={handleLogout}
+                    variant="destructive"
+                    className="flex items-center justify-center gap-2 mt-auto"
+                  >
+                    <LogOut size={18} />
+                    <span>Sair</span>
+                  </Button>
                 </div>
               </SheetContent>
             </Sheet>
@@ -150,10 +172,19 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             </div>
             
             {activeTimeEntry && (
-              <div className="p-3 bg-muted rounded-md">
+              <div className="p-3 bg-muted rounded-md mb-4">
                 <ActiveTimerDisplay />
               </div>
             )}
+            
+            <Button 
+              onClick={handleLogout}
+              variant="destructive"
+              className="flex items-center justify-center gap-2 w-full"
+            >
+              <LogOut size={18} />
+              <span>Sair</span>
+            </Button>
           </div>
         </aside>
 

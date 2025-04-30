@@ -8,28 +8,14 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { CreditCard, Check, LogOut } from 'lucide-react';
+import { CreditCard, Check } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import PlanSubscription from '@/components/PlanSubscription';
 
 const Settings = () => {
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
   const { toast } = useToast();
   const { currentPlan } = usePlan();
-
-  const handleLogout = async () => {
-    try {
-      await signOut();
-      // Redirect is handled by the auth context
-    } catch (error) {
-      console.error('Error logging out:', error);
-      toast({
-        title: 'Erro',
-        description: 'Não foi possível fazer logout. Tente novamente.',
-        variant: 'destructive',
-      });
-    }
-  };
 
   const handlePasswordReset = async () => {
     try {
@@ -59,14 +45,6 @@ const Settings = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold tracking-tight">Configurações</h1>
-        <Button 
-          onClick={handleLogout}
-          variant="destructive"
-          className="flex items-center gap-2"
-        >
-          <LogOut size={18} />
-          Sair
-        </Button>
       </div>
 
       <Tabs defaultValue="profile" className="space-y-6">

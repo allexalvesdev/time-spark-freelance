@@ -1,5 +1,5 @@
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { TimeEntry } from '@/types';
 import { timeEntryService } from '@/services';
 import { useToast } from '@/hooks/use-toast';
@@ -8,10 +8,6 @@ import {
   safeRemoveItem, 
   isLocalStorageAvailable 
 } from './storageCore';
-import { 
-  persistTimerState,
-  updateGlobalTimerState
-} from './timerState';
 
 /**
  * Core timer management functionality
@@ -20,6 +16,7 @@ export const useTimerCore = (userId: string) => {
   const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([]);
   const [activeTimeEntry, setActiveTimeEntry] = useState<TimeEntry | null>(null);
   const { toast } = useToast();
+  const previousEntryRef = useRef<TimeEntry | null>(null);
 
   const startTimeEntry = useCallback(async (taskId: string, projectId: string) => {
     try {
@@ -27,6 +24,7 @@ export const useTimerCore = (userId: string) => {
       
       // First stop any existing running timer without completing the task
       if (activeTimeEntry) {
+        previousEntryRef.current = { ...activeTimeEntry };
         await stopTimeEntry(false); // Don't complete task when switching timers
       }
 
@@ -123,7 +121,12 @@ export const useTimerCore = (userId: string) => {
 
       // Persist the updated time entry
       const result = await timeEntryService.updateTimeEntry(updatedTimeEntry);
-      console.log('[useTimerCore] Time entry update result:', result);
+      
+      if (!result) {
+        console.error('[useTimerCore] Failed to update time entry in database');
+      } else {
+        console.log('[useTimerCore] Time entry update result:', result);
+      }
 
       // Update the local state
       setTimeEntries(prev => 
@@ -150,6 +153,7 @@ export const useTimerCore = (userId: string) => {
 
       // Important: always clear the activeTimeEntry after stopping
       setActiveTimeEntry(null);
+      previousEntryRef.current = null;
       
       console.log('[useTimerCore] Time entry stopped successfully, returning:', stoppedEntry);
       return stoppedEntry;

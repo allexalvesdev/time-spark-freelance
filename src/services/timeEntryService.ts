@@ -37,7 +37,12 @@ export const timeEntryService = {
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error creating time entry:', error);
+      throw error;
+    }
+
+    console.log('Created time entry:', data);
 
     return {
       id: data.id,
@@ -59,7 +64,7 @@ export const timeEntryService = {
       isRunning: entry.isRunning
     });
     
-    // Important: Make sure we have a defined duration to persist
+    // Validate duration calculation
     if (entry.endTime && !entry.duration) {
       const startTime = new Date(entry.startTime).getTime();
       const endTime = new Date(entry.endTime).getTime();
@@ -69,7 +74,7 @@ export const timeEntryService = {
     
     const updateData = {
       end_time: entry.endTime ? entry.endTime.toISOString() : null,
-      duration: entry.duration || 0,
+      duration: entry.duration || null, // Allow null duration if not calculated yet
       is_running: entry.isRunning,
     };
     

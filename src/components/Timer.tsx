@@ -71,7 +71,8 @@ const Timer: React.FC<TimerProps> = ({ taskId, projectId, hourlyRate }) => {
   const handleStopTimer = async () => {
     try {
       console.log(`[Timer:${taskId}] Stopping timer for task with elapsed time:`, elapsedTime);
-      // CRITICAL: Always pass true to complete the task automatically when stopping from the Timer component
+      
+      // Always pass true to complete the task automatically when stopping from the Timer component
       await stopTimer(true);
       
       // Force reset of local timer to ensure a new cycle will start from zero

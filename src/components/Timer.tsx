@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Play, Square } from 'lucide-react';
 import { formatDuration, calculateEarnings } from '@/utils/dateUtils';
 import { useIsMobile } from '@/hooks/use-mobile';
+import StorageModeIndicator from './StorageModeIndicator';
 
 interface TimerProps {
   taskId: string;
@@ -87,6 +88,10 @@ const Timer: React.FC<TimerProps> = ({ taskId, projectId, hourlyRate }) => {
   
   return (
     <div className="p-4 border rounded-lg bg-card">
+      <div className="flex justify-end mb-1">
+        <StorageModeIndicator />
+      </div>
+      
       <div className="text-center mb-4 md:mb-6">
         <div className="text-2xl md:text-3xl font-mono font-semibold mb-2" data-testid={`timer-${taskId}`}>
           {getFormattedTime()}

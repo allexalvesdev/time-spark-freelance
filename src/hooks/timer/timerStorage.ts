@@ -1,7 +1,9 @@
-
 /**
  * Utilities for persisting timer state to localStorage
  */
+
+// In-memory fallback storage when localStorage isn't available
+const memoryStorage: Record<string, string> = {};
 
 interface TimerState {
   running: boolean;
@@ -26,51 +28,69 @@ export const isLocalStorageAvailable = (): boolean => {
 };
 
 /**
- * Safely get an item from localStorage with error handling
+ * Safely get an item from localStorage with fallback to memory storage
  */
 export const safeGetItem = (key: string): string | null => {
-  if (!isLocalStorageAvailable()) return null;
-  
   try {
-    return localStorage.getItem(key);
+    // Try localStorage first
+    if (isLocalStorageAvailable()) {
+      return localStorage.getItem(key);
+    }
+    
+    // Fall back to memory storage
+    return memoryStorage[key] || null;
   } catch (e) {
-    console.error(`Error retrieving ${key} from localStorage:`, e);
-    return null;
+    console.error(`Error retrieving ${key} from storage:`, e);
+    // Fall back to memory storage on any error
+    return memoryStorage[key] || null;
   }
 };
 
 /**
- * Safely set an item in localStorage with error handling
+ * Safely set an item in localStorage with fallback to memory storage
  */
 export const safeSetItem = (key: string, value: string): boolean => {
-  if (!isLocalStorageAvailable()) return false;
-  
   try {
-    localStorage.setItem(key, value);
+    // Try localStorage first
+    if (isLocalStorageAvailable()) {
+      localStorage.setItem(key, value);
+      return true;
+    }
+    
+    // Fall back to memory storage
+    memoryStorage[key] = value;
     return true;
   } catch (e) {
-    console.error(`Error saving ${key} to localStorage:`, e);
-    return false;
+    console.error(`Error saving ${key} to storage:`, e);
+    // Fall back to memory storage on any error
+    memoryStorage[key] = value;
+    return true;
   }
 };
 
 /**
- * Safely remove an item from localStorage with error handling
+ * Safely remove an item from storage with fallback to memory storage
  */
 export const safeRemoveItem = (key: string): boolean => {
-  if (!isLocalStorageAvailable()) return false;
-  
   try {
-    localStorage.removeItem(key);
+    // Try localStorage first
+    if (isLocalStorageAvailable()) {
+      localStorage.removeItem(key);
+    }
+    
+    // Also remove from memory storage
+    delete memoryStorage[key];
     return true;
   } catch (e) {
-    console.error(`Error removing ${key} from localStorage:`, e);
-    return false;
+    console.error(`Error removing ${key} from storage:`, e);
+    // At least remove from memory storage on any error
+    delete memoryStorage[key];
+    return true;
   }
 };
 
 /**
- * Saves timer state to localStorage
+ * Saves timer state to storage
  */
 export const persistTimerState = (
   persistKey: string | undefined, 
@@ -110,7 +130,7 @@ export const persistTimerState = (
 };
 
 /**
- * Loads timer state from localStorage
+ * Loads timer state from storage
  * Returns true if state was successfully loaded
  */
 export const loadTimerState = (persistKey: string | undefined): {
@@ -261,7 +281,7 @@ export const loadTimerState = (persistKey: string | undefined): {
 };
 
 /**
- * Clear timer state from localStorage
+ * Clear timer state from storage
  */
 export const clearTimerState = (persistKey: string | undefined): void => {
   if (!persistKey || !isLocalStorageAvailable()) return;
@@ -287,3 +307,53 @@ export const updateGlobalTimerState = (
     safeSetItem('timerStartTime', startTime.toString());
   }
 };
+
+/**
+ * Get storage mode (localStorage or memory) currently in use
+ */
+export const getStorageMode = (): 'localStorage' | 'memory' => {
+  return isLocalStorageAvailable() ? 'localStorage' : 'memory';
+};
+
+/**
+ * Synchronize memory storage with localStorage (when possible)
+ * Useful when localStorage becomes available again
+ */
+export const syncStorageFromMemory = (): boolean => {
+  if (!isLocalStorageAvailable()) return false;
+  
+  try {
+    Object.keys(memoryStorage).forEach(key => {
+      localStorage.setItem(key, memoryStorage[key]);
+    });
+    return true;
+  } catch (e) {
+    console.error('Error syncing from memory to localStorage:', e);
+    return false;
+  }
+};
+
+/**
+ * Attempt to sync memory from localStorage (when transitioning from localStorage to memory)
+ */
+export const syncMemoryFromStorage = (): boolean => {
+  try {
+    // Only do this if localStorage was available at some point
+    if (localStorage) {
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.includes('timer')) {
+          memoryStorage[key] = localStorage.getItem(key) || '';
+        }
+      }
+      return true;
+    }
+    return false;
+  } catch (e) {
+    console.error('Error syncing from localStorage to memory:', e);
+    return false;
+  }
+};
+
+// Try to sync memory from localStorage on module load
+syncMemoryFromStorage();

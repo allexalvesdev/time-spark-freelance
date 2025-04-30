@@ -5,6 +5,7 @@ import useTimerState from '@/hooks/useTimerState';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Button } from './ui/button';
 import { Square } from 'lucide-react';
+import StorageModeIndicator from './StorageModeIndicator';
 
 const ActiveTimerDisplay: React.FC = () => {
   const { state, getActiveTaskName, stopTimer } = useAppContext();
@@ -56,13 +57,16 @@ const ActiveTimerDisplay: React.FC = () => {
   
   return (
     <div className="flex items-center justify-between w-full gap-4">
-      <div className="flex flex-col">
-        <div className="text-base font-mono font-bold">{getFormattedTime()}</div>
-        {taskName && (
-          <div className="text-sm opacity-90 truncate max-w-[200px]">
-            {taskName}
-          </div>
-        )}
+      <div className="flex items-center gap-2">
+        <StorageModeIndicator />
+        <div className="flex flex-col">
+          <div className="text-base font-mono font-bold">{getFormattedTime()}</div>
+          {taskName && (
+            <div className="text-sm opacity-90 truncate max-w-[200px]">
+              {taskName}
+            </div>
+          )}
+        </div>
       </div>
       
       <Button 

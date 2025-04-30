@@ -87,7 +87,7 @@ export const useTimerCore = (userId: string) => {
         // Store the full timer state
         const timerState = JSON.stringify({
           running: true,
-          elapsed: a0,
+          elapsed: 0,
           startTime: startTimeMs,
           lastUpdate: Date.now()
         });

@@ -1,94 +1,139 @@
 
-import { useCallback } from 'react';
-import { Task, TimeEntry } from '@/types';
-import { useTimerCore } from './timer/useTimerCore';
-import { useTaskCompletion } from './timer/useTaskCompletion';
-import { useTimerDisplay } from './timer/useTimerDisplay';
+import { useState } from 'react';
+import { TimeEntry, Task } from '@/types';
+import { timeEntryService, taskService } from '@/services';
+import { useToast } from '@/hooks/use-toast';
+import { formatDuration, calculateEarnings } from '@/utils/dateUtils';
 
-/**
- * Primary hook for timer management functionality
- * Acts as a composition layer for more specific timer-related hooks
- */
 export const useTimerManagement = (userId: string, tasks: Task[] = []) => {
-  const {
-    timeEntries,
-    setTimeEntries,
-    activeTimeEntry,
-    setActiveTimeEntry,
-    startTimeEntry,
-    stopTimeEntry
-  } = useTimerCore(userId);
+  const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([]);
+  const [activeTimeEntry, setActiveTimeEntry] = useState<TimeEntry | null>(null);
+  const { toast } = useToast();
 
-  const { completeTask } = useTaskCompletion(tasks);
-  const { getActiveTaskName: getTaskNameInternal } = useTimerDisplay(tasks);
-  
-  // Enhanced start timer that integrates with the timer state system
-  const startTimer = useCallback(async (taskId: string, projectId: string) => {
+  const startTimer = async (taskId: string, projectId: string) => {
     try {
-      console.log('[useTimerManagement] Starting timer for task:', taskId);
-      const newTimeEntry = await startTimeEntry(taskId, projectId);
-      return newTimeEntry;
-    } catch (error) {
-      console.error('[useTimerManagement] Error starting timer:', error);
+      if (activeTimeEntry) {
+        await stopTimer(false);
+      }
+
+      const newTimeEntry = await timeEntryService.createTimeEntry({
+        taskId,
+        projectId,
+        userId,
+        startTime: new Date(),
+        isRunning: true,
+      });
+
+      setTimeEntries(prev => [newTimeEntry, ...prev]);
+      setActiveTimeEntry(newTimeEntry);
+      
+      // Store the active time entry ID globally for persistence
+      localStorage.setItem('activeTimeEntryId', newTimeEntry.id);
+      localStorage.setItem('activeTaskId', taskId);
+      localStorage.setItem('timerStartTime', new Date().getTime().toString());
+    } catch (error: any) {
+      console.error('Error starting timer:', error);
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível iniciar o cronômetro. Tente novamente.',
+        variant: 'destructive',
+      });
       throw error;
     }
-  }, [startTimeEntry]);
-  
-  // Enhanced stop timer that handles task completion
-  const stopTimer = useCallback(async (completeTaskFlag: boolean = false) => {
+  };
+
+  const stopTimer = async (completeTask: boolean = true) => {
     try {
-      console.log('[useTimerManagement] Stopping timer with completeTaskFlag:', completeTaskFlag);
+      if (!activeTimeEntry) return;
+
+      const endTime = new Date();
+      const startTime = new Date(activeTimeEntry.startTime);
+      const duration = Math.floor((endTime.getTime() - startTime.getTime()) / 1000);
+
+      const updatedTimeEntry: TimeEntry = {
+        ...activeTimeEntry,
+        endTime,
+        duration,
+        isRunning: false,
+      };
+
+      await timeEntryService.updateTimeEntry(updatedTimeEntry);
+
+      setTimeEntries(prev => prev.map(entry => 
+        entry.id === activeTimeEntry.id ? updatedTimeEntry : entry
+      ));
       
-      if (!activeTimeEntry) {
-        console.log('[useTimerManagement] No active time entry to stop');
-        return null;
+      // If completeTask is true, mark the task as completed
+      if (completeTask) {
+        try {
+          const taskId = activeTimeEntry.taskId;
+          const { tasks: currentTasks } = await taskService.loadTasks();
+          const task = currentTasks.find(t => t.id === taskId);
+          
+          if (task) {
+            // Get the current task's project to calculate earnings
+            const updatedTask: Task = {
+              ...task,
+              completed: true,
+              actualEndTime: endTime,
+              actualStartTime: task.actualStartTime || startTime,
+              elapsedTime: (task.elapsedTime || 0) + duration,
+            };
+            
+            // Update local state immediately to reflect changes in UI
+            // This is important so the user doesn't need to reload the page
+            window.dispatchEvent(new CustomEvent('task-completed', { 
+              detail: { taskId, updatedTask } 
+            }));
+            
+            await taskService.updateTask(updatedTask);
+            
+            const timeFormatted = formatDuration(updatedTask.elapsedTime);
+            toast({
+              title: 'Tarefa concluída',
+              description: `Tempo registrado: ${timeFormatted}`,
+            });
+          }
+        } catch (taskError) {
+          console.error('Failed to complete task:', taskError);
+          toast({
+            title: 'Aviso',
+            description: 'O timer foi parado mas não foi possível finalizar a tarefa automaticamente.',
+            variant: 'default',
+          });
+        }
       }
+
+      setActiveTimeEntry(null);
       
-      // Important: save relevant information before stopping
-      const entryBeforeStop = { ...activeTimeEntry };
+      // Clear all timer-related localStorage entries
+      localStorage.removeItem('activeTimeEntryId');
+      localStorage.removeItem('activeTaskId');
+      localStorage.removeItem('timerStartTime');
       
-      // Stop the timer and get the completed entry
-      const stoppedEntry = await stopTimeEntry();
-      
-      // If we want to complete the task and have a valid entry
-      if (stoppedEntry && completeTaskFlag) {
-        console.log('[useTimerManagement] Completing task after stopping timer:', { 
-          taskId: stoppedEntry.taskId, 
-          duration: stoppedEntry.duration 
-        });
-        
-        // Complete the task passing the time entry
-        await completeTask(stoppedEntry);
-      } 
-      // If the timer was stopped without a returned entry, but we have the previous active entry
-      else if (!stoppedEntry && entryBeforeStop && completeTaskFlag) {
-        console.log('[useTimerManagement] Using previous entry to complete task:', {
-          taskId: entryBeforeStop.taskId
-        });
-        
-        const now = new Date();
-        const duration = Math.floor((now.getTime() - new Date(entryBeforeStop.startTime).getTime()) / 1000);
-        
-        // Try to complete the task with the entry we had before
-        await completeTask({
-          ...entryBeforeStop,
-          endTime: now,
-          isRunning: false,
-          duration: duration
-        });
-      }
-      
-      return stoppedEntry;
-    } catch (error) {
-      console.error('[useTimerManagement] Error stopping timer:', error);
+      const taskId = activeTimeEntry.taskId;
+      localStorage.removeItem(`timerIsRunning-global-timer-${taskId}`);
+      localStorage.removeItem(`timerStartTime-global-timer-${taskId}`);
+      localStorage.removeItem(`timerElapsedTime-global-timer-${taskId}`);
+    } catch (error: any) {
+      console.error('Error stopping timer:', error);
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível parar o cronômetro. Tente novamente.',
+        variant: 'destructive',
+      });
       throw error;
     }
-  }, [stopTimeEntry, completeTask, activeTimeEntry]);
+  };
   
-  // Get active task name wrapper
-  const getActiveTaskName = useCallback(() => {
-    return getTaskNameInternal(activeTimeEntry);
-  }, [getTaskNameInternal, activeTimeEntry]);
+  // Function to get the name of the currently active task
+  const getActiveTaskName = (): string | null => {
+    if (!activeTimeEntry) return null;
+    
+    const taskId = activeTimeEntry.taskId;
+    const task = tasks.find(t => t.id === taskId);
+    return task ? task.name : null;
+  };
 
   return {
     timeEntries,
@@ -100,5 +145,3 @@ export const useTimerManagement = (userId: string, tasks: Task[] = []) => {
     getActiveTaskName,
   };
 };
-
-export default useTimerManagement;

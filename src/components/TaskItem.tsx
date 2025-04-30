@@ -35,7 +35,7 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, project }) => {
     reset,
     getFormattedTime 
   } = useTimerState({
-    autoStart: isTimerRunning,
+    autoStart: false,
     initialTime: task.elapsedTime || 0,
     persistKey: timerKey
   });
@@ -50,10 +50,6 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, project }) => {
     const handleTaskCompleted = (event: CustomEvent) => {
       const { taskId, updatedTask } = event.detail;
       if (taskId === task.id) {
-        console.log('[TaskItem] Received task-completed event:', { 
-          taskId, 
-          elapsedTime: updatedTask.elapsedTime 
-        });
         setCurrentTask(updatedTask);
       }
     };
@@ -65,51 +61,33 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, project }) => {
     };
   }, [task.id]);
   
-  // Sync timer state with active status
   useEffect(() => {
     if (isTimerRunning && !isRunning) {
       start();
     } else if (!isTimerRunning && isRunning) {
       stop();
-      // Important: reset the timer when stopped to ensure a fresh start
       reset();
     }
   }, [isTimerRunning, isRunning, start, stop, reset]);
   
-  const handleStartTimer = async () => {
-    try {
-      console.log(`[TaskItem] Starting timer for task ${task.id}`);
-      // Reset any timer before starting a new one
-      reset();
-      await startTimer(task.id, project.id);
-    } catch (error) {
-      console.error(`[TaskItem] Failed to start timer for task ${task.id}:`, error);
-    }
+  const handleStartTimer = () => {
+    startTimer(task.id, project.id);
+    start();
   };
   
-  const handleStopTimer = async () => {
-    try {
-      console.log(`[TaskItem] Stopping timer for task ${task.id} with elapsed time ${elapsedTime}`);
-      // Always pass true to complete the task automatically
-      await stopTimer(true);
-      
-      // Ensure local timer stops and resets
-      stop();
-      reset();
-    } catch (error) {
-      console.error(`[TaskItem] Failed to stop timer for task ${task.id}:`, error);
-    }
+  const handleStopTimer = () => {
+    stopTimer(true); // Auto-complete task
+    stop();
   };
   
   const handleDeleteTask = () => {
-    // Stop timer before deleting if running
     if (isTimerRunning) {
-      stopTimer(false); // Don't complete task when deleting
+      stopTimer(false); // Don't complete task on delete
     }
     deleteTask(task.id);
   };
   
-  // Use total time (from active timer or saved task)
+  // Pass the total time (either from active timer or from saved task)
   const totalTime = isTimerRunning ? elapsedTime : (currentTask.elapsedTime || 0);
   const currentEarnings = calculateEarnings(totalTime, project.hourlyRate);
   

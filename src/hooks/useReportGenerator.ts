@@ -1,10 +1,9 @@
 
-import { useState, useCallback } from 'react';
 import { Project, Task, ReportData } from '@/types';
 import { calculateElapsedTime, calculateEarnings } from '@/utils/dateUtils';
 
 export const useReportGenerator = () => {
-  const generateReport = useCallback((projectId: string, projects: Project[] = [], tasks: Task[] = []): ReportData | null => {
+  const generateReport = (projectId: string, projects: Project[], tasks: Task[]): ReportData | null => {
     const project = projects.find(p => p.id === projectId);
     if (!project) return null;
     
@@ -39,7 +38,7 @@ export const useReportGenerator = () => {
       totalTime,
       totalEarnings
     };
-  }, []);
+  };
 
   return { generateReport };
 };

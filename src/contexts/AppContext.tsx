@@ -1,164 +1,97 @@
 
-import React, {
-  createContext,
-  useState,
-  useEffect,
-  useContext,
-} from 'react';
+import React, { createContext, useContext, useEffect } from 'react';
+import { Project, Task, TimeEntry, ReportData } from '@/types';
 import { AppState, AppContextType } from '@/types/app';
 import { useAuth } from './AuthContext';
-import { useToast } from '@/hooks/use-toast';
+import { projectService, taskService, timeEntryService } from '@/services';
+import { useReportGenerator } from '@/hooks/useReportGenerator';
 import { useProjects } from '@/hooks/useProjects';
 import { useTasks } from '@/hooks/useTasks';
-import { useTimeEntries } from '@/hooks/useTimeEntries';
-import { useTags } from '@/hooks/useTags';
-import { useReportGenerator } from '@/hooks/useReportGenerator';
-import { useAppServices } from '@/hooks/useAppServices';
-import { useInitialDataLoader } from '@/hooks/useInitialDataLoader';
+import { useTimerManagement } from '@/hooks/useTimerManagement';
+import { useToast } from '@/hooks/use-toast';
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
-export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
-  children,
-}) => {
+export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const userId = user?.id || '';
-  
-  // Core hooks for state management
-  const {
-    projects: storedProjects,
-    setProjects: setStoredProjects,
-    currentProject: storedCurrentProject,
-    setCurrentProject: setStoredCurrentProject,
-    addProject: addStoredProject,
-    updateProject: updateStoredProject,
-    deleteProject: deleteStoredProject,
-  } = useProjects(userId);
-  
-  const {
-    tasks: storedTasks,
-    setTasks: setStoredTasks,
-    currentTask: storedCurrentTask,
-    setCurrentTask: setStoredCurrentTask,
-    addTask: addStoredTask,
-    updateTask: updateStoredTask,
-    completeTask: completeStoredTask,
-    deleteTask: deleteStoredTask,
-  } = useTasks(userId);
-  
-  const {
-    timeEntries: storedTimeEntries,
-    setTimeEntries: setStoredTimeEntries,
-    activeTimeEntry: storedActiveTimeEntry,
-    setActiveTimeEntry: setStoredActiveTimeEntry,
-    startTimeEntry: startStoredTimeEntry,
-    stopTimeEntry: stopStoredTimeEntry,
-  } = useTimeEntries(userId);
+  const { generateReport } = useReportGenerator();
 
   const {
-    tags,
-    setTags,
-    addTag: addStoredTag,
-    loadTags,
-    getTaskTags: getStoredTaskTags,
-    addTaskTag: addStoredTaskTag,
-    removeTaskTag: removeStoredTaskTag,
-  } = useTags(userId);
-  
-  // Combined state
-  const [state, setState] = useState<AppState>({
-    projects: storedProjects,
-    tasks: storedTasks,
-    timeEntries: storedTimeEntries,
-    activeTimeEntry: storedActiveTimeEntry,
-    currentProject: storedCurrentProject,
-    currentTask: storedCurrentTask,
-    tags: tags,
-  });
-  
-  // Sync state from individual hooks
-  useEffect(() => {
-    setState(prevState => ({ ...prevState, projects: storedProjects }));
-  }, [storedProjects]);
-  
-  useEffect(() => {
-    setState(prevState => ({ ...prevState, tasks: storedTasks }));
-  }, [storedTasks]);
-  
-  useEffect(() => {
-    setState(prevState => ({
-      ...prevState,
-      timeEntries: storedTimeEntries,
-      activeTimeEntry: storedActiveTimeEntry,
-    }));
-  }, [storedTimeEntries, storedActiveTimeEntry]);
-
-  useEffect(() => {
-    setState(prevState => ({ ...prevState, tags }));
-  }, [tags]);
-  
-  // Initialize data
-  const { loadInitialData } = useInitialDataLoader({
-    user,
-    setStoredProjects,
-    setStoredTasks,
-    setStoredTimeEntries, 
-    setStoredActiveTimeEntry,
-    toast,
-    setTags
-  });
-
-  useEffect(() => {
-    loadInitialData();
-  }, [loadInitialData]);
-  
-  // Service functions
-  const { 
-    addProject, 
-    updateProject, 
+    projects,
+    setProjects,
+    currentProject,
+    setCurrentProject,
+    addProject,
+    updateProject,
     deleteProject,
-    addTask, 
-    updateTask, 
+  } = useProjects(user?.id || '');
+
+  const {
+    tasks,
+    setTasks,
+    currentTask,
+    setCurrentTask,
+    addTask,
+    updateTask,
     completeTask,
     deleteTask,
+  } = useTasks(user?.id || '');
+
+  const {
+    timeEntries,
+    setTimeEntries,
+    activeTimeEntry,
+    setActiveTimeEntry,
     startTimer,
     stopTimer,
     getActiveTaskName,
-    addTag,
-    getTags,
-    addTaskTag,
-    removeTaskTag,
-    getTaskTags 
-  } = useAppServices({
-    state,
-    user,
-    addStoredProject,
-    updateStoredProject,
-    deleteStoredProject,
-    addStoredTask,
-    updateStoredTask,
-    completeStoredTask,
-    deleteStoredTask,
-    startStoredTimeEntry,
-    stopStoredTimeEntry,
-    setStoredCurrentProject,
-    setStoredCurrentTask,
-    addStoredTag,
-    loadTags,
-    getTaskTags: getStoredTaskTags,
-    addStoredTaskTag,
-    removeStoredTaskTag
-  });
-  
-  // Report generation
-  const { generateReport: generateReportRaw } = useReportGenerator();
+  } = useTimerManagement(user?.id || '', tasks);
 
-  const generateReport = (projectId: string) =>
-    generateReportRaw(projectId, state.projects, state.tasks);
-  
-  // Prepare context value
-  const value: AppContextType = {
+  useEffect(() => {
+    if (user) {
+      loadUserData();
+    }
+  }, [user]);
+
+  const loadUserData = async () => {
+    try {
+      const [projectsData, tasksData, timeEntriesData] = await Promise.all([
+        projectService.loadProjects(),
+        taskService.loadTasks(),
+        timeEntryService.loadTimeEntries()
+      ]);
+
+      // Ensure tasks is always an array
+      const tasksArray = tasksData.tasks || [];
+      const activeEntry = timeEntriesData.find(entry => entry.isRunning) || null;
+
+      setProjects(projectsData);
+      setTasks(tasksArray);
+      setTimeEntries(timeEntriesData);
+      setActiveTimeEntry(activeEntry);
+      setCurrentProject(null);
+      setCurrentTask(null);
+    } catch (error: any) {
+      console.error('Error loading data:', error);
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível carregar os dados. Tente novamente.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const state: AppState = {
+    projects,
+    tasks,
+    timeEntries,
+    activeTimeEntry,
+    currentProject,
+    currentTask,
+  };
+
+  const contextValue: AppContextType = {
     state,
     addProject,
     updateProject,
@@ -169,24 +102,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
     deleteTask,
     startTimer,
     stopTimer,
-    setCurrentProject: setStoredCurrentProject,
-    setCurrentTask: setStoredCurrentTask,
-    generateReport,
+    setCurrentProject,
+    setCurrentTask,
+    generateReport: (projectId: string) => generateReport(projectId, projects, tasks),
     getActiveTaskName,
-    addTag,
-    getTags,
-    addTaskTag,
-    removeTaskTag,
-    getTaskTags,
   };
-  
-  return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
+
+  return (
+    <AppContext.Provider value={contextValue}>
+      {children}
+    </AppContext.Provider>
+  );
 };
 
-export const useAppContext = () => {
+export const useAppContext = (): AppContextType => {
   const context = useContext(AppContext);
   if (context === undefined) {
-    throw new Error('useAppContext must be used within an AppProvider');
+    throw new Error('useAppContext deve ser usado dentro de um AppProvider');
   }
   return context;
 };

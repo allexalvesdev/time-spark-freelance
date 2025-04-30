@@ -2,7 +2,6 @@
 import React from 'react';
 import { formatDuration } from '@/utils/dateUtils';
 import useTimerState from '@/hooks/useTimerState';
-import StorageModeIndicator from '../StorageModeIndicator';
 
 interface TaskTimerProps {
   elapsedTime: number;
@@ -39,17 +38,14 @@ const TaskTimer: React.FC<TaskTimerProps> = ({
           {isRunning && taskId ? getFormattedTime() : formatDuration(elapsedTime)}
         </span>
       </div>
-      <div className="flex items-center gap-3">
-        <div className="text-sm">
-          <span className="text-muted-foreground">Ganhos: </span>
-          <span className="font-medium">
-            {new Intl.NumberFormat('pt-BR', {
-              style: 'currency',
-              currency: 'BRL'
-            }).format(currentEarnings)}
-          </span>
-        </div>
-        <StorageModeIndicator />
+      <div className="text-sm">
+        <span className="text-muted-foreground">Ganhos: </span>
+        <span className="font-medium">
+          {new Intl.NumberFormat('pt-BR', {
+            style: 'currency',
+            currency: 'BRL'
+          }).format(currentEarnings)}
+        </span>
       </div>
     </div>
   );

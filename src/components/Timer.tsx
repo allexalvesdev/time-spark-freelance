@@ -4,9 +4,8 @@ import { useAppContext } from '@/contexts/AppContext';
 import useTimerState from '@/hooks/useTimerState';
 import { Button } from '@/components/ui/button';
 import { Play, Square } from 'lucide-react';
-import { calculateEarnings } from '@/utils/dateUtils';
+import { formatDuration, calculateEarnings } from '@/utils/dateUtils';
 import { useIsMobile } from '@/hooks/use-mobile';
-import StorageModeIndicator from './StorageModeIndicator';
 
 interface TimerProps {
   taskId: string;
@@ -47,22 +46,15 @@ const Timer: React.FC<TimerProps> = ({ taskId, projectId, hourlyRate }) => {
     else if (!isActive && isRunning) {
       console.log(`[Timer:${taskId}] Global inactive but local running - stopping local timer`);
       stop();
-      reset(); // Reset timer when it becomes inactive
     }
-  }, [isActive, isRunning, taskId, start, stop, reset]);
+  }, [isActive, isRunning, taskId, start, stop]);
   
   // Handler to start the global and local timer
   const handleStartTimer = async () => {
     try {
       console.log(`[Timer:${taskId}] Starting timer for task`);
-      
-      // Reset the timer before starting a fresh timer
-      reset();
-      
-      // Start the global timer in the database first
       await startTimer(taskId, projectId);
-      
-      // The local timer will auto-start via useEffect when isActive becomes true
+      start();
     } catch (error) {
       console.error(`[Timer:${taskId}] Error starting timer:`, error);
     }
@@ -71,16 +63,10 @@ const Timer: React.FC<TimerProps> = ({ taskId, projectId, hourlyRate }) => {
   // Handler to stop the global and local timer
   const handleStopTimer = async () => {
     try {
-      console.log(`[Timer:${taskId}] Stopping timer for task with elapsed time:`, elapsedTime);
-      
-      // Stop the local timer first
-      stop();
-      
-      // Pass true to complete the task automatically when stopping
+      console.log(`[Timer:${taskId}] Stopping timer for task`);
+      // Pass true to complete the task automatically
       await stopTimer(true);
-      
-      // Reset the timer after stopping completely
-      reset();
+      stop();
     } catch (error) {
       console.error(`[Timer:${taskId}] Error stopping timer:`, error);
     }
@@ -91,10 +77,6 @@ const Timer: React.FC<TimerProps> = ({ taskId, projectId, hourlyRate }) => {
   
   return (
     <div className="p-4 border rounded-lg bg-card">
-      <div className="flex justify-end mb-1">
-        <StorageModeIndicator />
-      </div>
-      
       <div className="text-center mb-4 md:mb-6">
         <div className="text-2xl md:text-3xl font-mono font-semibold mb-2" data-testid={`timer-${taskId}`}>
           {getFormattedTime()}

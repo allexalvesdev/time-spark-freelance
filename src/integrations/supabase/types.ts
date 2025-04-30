@@ -42,7 +42,6 @@ export type Database = {
       projects: {
         Row: {
           created_at: string
-          description: string | null
           hourly_rate: number
           id: string
           name: string
@@ -50,7 +49,6 @@ export type Database = {
         }
         Insert: {
           created_at?: string
-          description?: string | null
           hourly_rate?: number
           id?: string
           name: string
@@ -58,70 +56,12 @@ export type Database = {
         }
         Update: {
           created_at?: string
-          description?: string | null
           hourly_rate?: number
           id?: string
           name?: string
           user_id?: string
         }
         Relationships: []
-      }
-      tags: {
-        Row: {
-          created_at: string
-          id: string
-          name: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          name: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          name?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
-      task_tags: {
-        Row: {
-          created_at: string
-          id: string
-          tag_id: string
-          task_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          tag_id: string
-          task_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          tag_id?: string
-          task_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "task_tags_tag_id_fkey"
-            columns: ["tag_id"]
-            isOneToOne: false
-            referencedRelation: "tags"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "task_tags_task_id_fkey"
-            columns: ["task_id"]
-            isOneToOne: false
-            referencedRelation: "tasks"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       tasks: {
         Row: {
@@ -134,7 +74,6 @@ export type Database = {
           estimated_time: number | null
           id: string
           name: string
-          priority: string | null
           project_id: string
           scheduled_start_time: string | null
           user_id: string
@@ -149,7 +88,6 @@ export type Database = {
           estimated_time?: number | null
           id?: string
           name: string
-          priority?: string | null
           project_id: string
           scheduled_start_time?: string | null
           user_id: string
@@ -164,7 +102,6 @@ export type Database = {
           estimated_time?: number | null
           id?: string
           name?: string
-          priority?: string | null
           project_id?: string
           scheduled_start_time?: string | null
           user_id?: string

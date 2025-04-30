@@ -19,7 +19,7 @@ import { ReportData } from '@/types';
 
 const Reports: React.FC = () => {
   const { state, generateReport } = useAppContext();
-  const { projects, tasks } = state;  
+  const { projects } = state;
   
   const [selectedProjectId, setSelectedProjectId] = useState<string>('');
   const [reportData, setReportData] = useState<ReportData | null>(null);

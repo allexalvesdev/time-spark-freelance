@@ -24,7 +24,6 @@ export const timeEntryService = {
   },
 
   async createTimeEntry(entry: Omit<TimeEntry, 'id' | 'endTime' | 'duration'>) {
-    console.log('[timeEntryService] Creating new time entry:', entry);
     const { data, error } = await supabase
       .from('time_entries')
       .insert([{
@@ -37,12 +36,7 @@ export const timeEntryService = {
       .select()
       .single();
 
-    if (error) {
-      console.error('[timeEntryService] Error creating time entry:', error);
-      throw error;
-    }
-
-    console.log('[timeEntryService] Created time entry:', data);
+    if (error) throw error;
 
     return {
       id: data.id,
@@ -57,56 +51,15 @@ export const timeEntryService = {
   },
 
   async updateTimeEntry(entry: TimeEntry) {
-    console.log('[timeEntryService] Updating time entry:', {
-      id: entry.id,
-      endTime: entry.endTime?.toISOString() || null,
-      duration: entry.duration,
-      isRunning: entry.isRunning
-    });
-    
-    // Calculate duration if endTime is provided and we have a startTime
-    let calculatedDuration = entry.duration || 0;
-    if (entry.endTime && entry.startTime) {
-      const startTime = new Date(entry.startTime).getTime();
-      const endTime = new Date(entry.endTime).getTime();
-      calculatedDuration = Math.floor((endTime - startTime) / 1000);
-      console.log('[timeEntryService] Calculated duration:', calculatedDuration);
-    }
-    
-    const updateData = {
-      end_time: entry.endTime ? entry.endTime.toISOString() : null,
-      duration: calculatedDuration,
-      is_running: entry.isRunning,
-    };
-    
-    console.log('[timeEntryService] Update payload:', updateData);
-    
-    const { error, data } = await supabase
+    const { error } = await supabase
       .from('time_entries')
-      .update(updateData)
-      .eq('id', entry.id)
-      .select();
+      .update({
+        end_time: entry.endTime ? entry.endTime.toISOString() : null,
+        duration: entry.duration,
+        is_running: entry.isRunning,
+      })
+      .eq('id', entry.id);
 
-    if (error) {
-      console.error('[timeEntryService] Error updating time entry:', error);
-      throw error;
-    }
-    
-    console.log('[timeEntryService] Time entry updated successfully:', data);
-    
-    if (data && data.length > 0) {
-      return {
-        id: data[0].id,
-        taskId: data[0].task_id,
-        projectId: data[0].project_id,
-        startTime: new Date(data[0].start_time),
-        endTime: data[0].end_time ? new Date(data[0].end_time) : undefined,
-        duration: data[0].duration,
-        isRunning: data[0].is_running,
-        userId: data[0].user_id,
-      };
-    }
-    
-    return null;
+    if (error) throw error;
   },
 };

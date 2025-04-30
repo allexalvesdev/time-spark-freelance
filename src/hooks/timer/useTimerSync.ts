@@ -58,9 +58,6 @@ export const useTimerSync = ({
     
     window.addEventListener('storage', handleStorageChange);
     
-    // Store reference to active task to prevent state updates when not needed
-    const activeTaskRef = { id: persistKey?.includes('global-timer-') ? persistKey.replace('global-timer-', '') : null };
-    
     // Check for global timer state on initial mount only
     const checkGlobalTimer = () => {
       if (persistKey?.includes('global-timer-') && isLocalStorageAvailable()) {
@@ -74,7 +71,7 @@ export const useTimerSync = ({
             const globalStartTime = parseInt(globalStartTimeStr, 10);
             const currentElapsed = Math.floor((Date.now() - globalStartTime) / 1000);
             
-            console.log(`[Timer:${persistKey}] Syncing with global timer (check):`, {
+            console.log(`[Timer:${persistKey}] Syncing with global timer:`, {
               globalStartTime,
               currentElapsed
             });
@@ -94,11 +91,11 @@ export const useTimerSync = ({
       }
     };
     
-    // Initial check for global timer state
+    // Initial check for global timer state - run only once
     checkGlobalTimer();
     
     return () => {
       window.removeEventListener('storage', handleStorageChange);
     };
-  }, [persistKey, isRunning, elapsedTime, setIsRunning, setElapsedTime, startTimeRef]);
+  }, [persistKey]);  // Remove isRunning and elapsedTime from dependency array to avoid infinite resets
 };

@@ -43,7 +43,7 @@ export const useTimerManagement = (userId: string, tasks: Task[] = []) => {
       const entryBeforeStop = activeTimeEntry ? {...activeTimeEntry} : null;
       
       // Stop the timer and get the completed entry
-      const stoppedEntry = await stopTimeEntry(false); // Important: don't complete inside stopTimeEntry
+      const stoppedEntry = await stopTimeEntry();
       
       // If we want to complete the task and have a valid entry
       if (stoppedEntry && completeTaskFlag) {

@@ -1,5 +1,5 @@
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { TimeEntry } from '@/types';
 import { timeEntryService } from '@/services';
 import { useToast } from '@/hooks/use-toast';
@@ -17,6 +17,27 @@ export const useTimerCore = (userId: string) => {
   const [activeTimeEntry, setActiveTimeEntry] = useState<TimeEntry | null>(null);
   const { toast } = useToast();
   const previousEntryRef = useRef<TimeEntry | null>(null);
+  
+  // Load time entries on mount
+  useEffect(() => {
+    const loadEntries = async () => {
+      try {
+        const loadedEntries = await timeEntryService.loadTimeEntries();
+        setTimeEntries(loadedEntries);
+        
+        // Check if there's a running entry
+        const runningEntry = loadedEntries.find(entry => entry.isRunning);
+        if (runningEntry) {
+          console.log('[useTimerCore] Found running entry on load:', runningEntry);
+          setActiveTimeEntry(runningEntry);
+        }
+      } catch (err) {
+        console.error('[useTimerCore] Error loading time entries:', err);
+      }
+    };
+    
+    loadEntries();
+  }, [userId]);
 
   const startTimeEntry = useCallback(async (taskId: string, projectId: string) => {
     try {
@@ -137,6 +158,7 @@ export const useTimerCore = (userId: string) => {
       
       const stoppedEntry = { ...updatedTimeEntry };
       
+      // Clear all storage data related to this timer
       if (isLocalStorageAvailable()) {
         // Clear the global timer state from localStorage
         safeRemoveItem('activeTimeEntryId');

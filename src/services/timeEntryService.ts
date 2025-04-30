@@ -24,7 +24,7 @@ export const timeEntryService = {
   },
 
   async createTimeEntry(entry: Omit<TimeEntry, 'id' | 'endTime' | 'duration'>) {
-    console.log('Creating new time entry:', entry);
+    console.log('[timeEntryService] Creating new time entry:', entry);
     const { data, error } = await supabase
       .from('time_entries')
       .insert([{
@@ -38,11 +38,11 @@ export const timeEntryService = {
       .single();
 
     if (error) {
-      console.error('Error creating time entry:', error);
+      console.error('[timeEntryService] Error creating time entry:', error);
       throw error;
     }
 
-    console.log('Created time entry:', data);
+    console.log('[timeEntryService] Created time entry:', data);
 
     return {
       id: data.id,
@@ -57,28 +57,29 @@ export const timeEntryService = {
   },
 
   async updateTimeEntry(entry: TimeEntry) {
-    console.log('Updating time entry in database:', {
+    console.log('[timeEntryService] Updating time entry:', {
       id: entry.id,
       endTime: entry.endTime?.toISOString() || null,
       duration: entry.duration,
       isRunning: entry.isRunning
     });
     
-    // Validate duration calculation
-    if (entry.endTime && !entry.duration) {
+    // Always calculate duration if endTime is provided
+    let calculatedDuration = entry.duration;
+    if (entry.endTime && entry.startTime) {
       const startTime = new Date(entry.startTime).getTime();
       const endTime = new Date(entry.endTime).getTime();
-      entry.duration = Math.floor((endTime - startTime) / 1000);
-      console.log('Calculated missing duration:', entry.duration);
+      calculatedDuration = Math.floor((endTime - startTime) / 1000);
+      console.log('[timeEntryService] Calculated duration:', calculatedDuration);
     }
     
     const updateData = {
       end_time: entry.endTime ? entry.endTime.toISOString() : null,
-      duration: entry.duration || null, // Allow null duration if not calculated yet
+      duration: calculatedDuration,
       is_running: entry.isRunning,
     };
     
-    console.log('Update payload:', updateData);
+    console.log('[timeEntryService] Update payload:', updateData);
     
     const { error, data } = await supabase
       .from('time_entries')
@@ -87,11 +88,11 @@ export const timeEntryService = {
       .select();
 
     if (error) {
-      console.error('Error updating time entry:', error);
+      console.error('[timeEntryService] Error updating time entry:', error);
       throw error;
     }
     
-    console.log('Time entry updated successfully:', data);
+    console.log('[timeEntryService] Time entry updated successfully:', data);
     
     if (data && data.length > 0) {
       return {

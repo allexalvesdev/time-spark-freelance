@@ -1,5 +1,5 @@
 
-import { Project, Task, TimeEntry, ReportData } from './index';
+import { Project, Task, TimeEntry, ReportData, Tag } from './index';
 
 export interface AppState {
   projects: Project[];
@@ -8,6 +8,7 @@ export interface AppState {
   activeTimeEntry: TimeEntry | null;
   currentProject: Project | null;
   currentTask: Task | null;
+  tags: Tag[];
 }
 
 export interface AppContextType {
@@ -25,4 +26,9 @@ export interface AppContextType {
   setCurrentTask: (task: Task | null) => void;
   generateReport: (projectId: string) => ReportData | null;
   getActiveTaskName: () => string | null;
+  addTag: (name: string) => Promise<void>;
+  deleteTag: (tagId: string) => Promise<void>;
+  addTagToTask: (taskId: string, tagId: string) => Promise<void>;
+  removeTagFromTask: (taskId: string, tagId: string) => Promise<void>;
+  getTaskTags: (taskId: string) => Promise<string[]>;
 }

@@ -23,6 +23,7 @@ export const taskService = {
       elapsedTime: task.elapsed_time,
       completed: task.completed,
       userId: task.user_id,
+      priority: task.priority || 'Média',
     })) || [];
     
     return { tasks };
@@ -39,6 +40,7 @@ export const taskService = {
         scheduled_start_time: task.scheduledStartTime.toISOString(),
         user_id: task.userId,
         completed: false,
+        priority: task.priority || 'Média',
       }])
       .select()
       .single();
@@ -57,6 +59,7 @@ export const taskService = {
       elapsedTime: 0,
       completed: false,
       userId: data.user_id,
+      priority: data.priority || 'Média',
     };
   },
 
@@ -73,6 +76,7 @@ export const taskService = {
         actual_end_time: task.actualEndTime ? task.actualEndTime.toISOString() : null,
         elapsed_time: task.elapsedTime,
         completed: task.completed,
+        priority: task.priority || 'Média',
       })
       .eq('id', task.id);
 
@@ -87,6 +91,14 @@ export const taskService = {
       .eq('task_id', taskId);
 
     if (timeEntriesError) throw timeEntriesError;
+
+    // Delete task tags
+    const { error: taskTagsError } = await supabase
+      .from('task_tags')
+      .delete()
+      .eq('task_id', taskId);
+
+    if (taskTagsError) throw taskTagsError;
 
     // Now delete the task itself
     const { error } = await supabase

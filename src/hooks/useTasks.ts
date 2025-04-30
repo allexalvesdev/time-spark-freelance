@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Task } from '@/types';
 import { taskService } from '@/services';
@@ -17,6 +18,7 @@ export const useTasks = (userId: string) => {
       });
       setTasks(prev => [newTask, ...prev]);
       setCurrentTask(newTask);
+      return newTask;
     } catch (error: any) {
       console.error('Error adding task:', error);
       toast({

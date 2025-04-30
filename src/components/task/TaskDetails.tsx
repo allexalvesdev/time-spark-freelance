@@ -1,38 +1,53 @@
 
 import React from 'react';
-import { Task } from '@/types';
-import { Clock, Calendar } from 'lucide-react';
-import { formatDuration, formatTime } from '@/utils/dateUtils';
+import { Task, Tag } from '@/types';
+import { Badge } from '@/components/ui/badge';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 interface TaskDetailsProps {
   task: Task;
+  tags?: Tag[];
 }
 
-const TaskDetails: React.FC<TaskDetailsProps> = ({ task }) => {
-  // Função para formatar tempo estimado em formato HH:MM:SS em vez de mostrar o total em segundos
-  const formatEstimatedTime = (seconds: number) => {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    
-    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:00`;
+const TaskDetails: React.FC<TaskDetailsProps> = ({ task, tags = [] }) => {
+  const formatDateTime = (date: Date | undefined) => {
+    if (!date) return "Não definido";
+    return format(date, "dd MMM yyyy 'às' HH:mm", { locale: ptBR });
   };
   
+  const formatTime = (minutes: number) => {
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    
+    if (hours > 0) {
+      return `${hours}h${mins > 0 ? ` ${mins}min` : ''}`;
+    }
+    return `${mins}min`;
+  };
+
   return (
-    <div className="grid grid-cols-2 gap-4 mb-4">
-      <div className="flex items-center gap-2">
-        <Clock size={16} className="text-muted-foreground" />
-        <div className="text-sm">
-          <span className="text-muted-foreground">Estimado: </span>
-          <span>{formatEstimatedTime(task.estimatedTime)}</span>
+    <div className="space-y-2 mb-3">
+      <div className="grid grid-cols-2 gap-2 text-sm">
+        <div>
+          <span className="text-muted-foreground">Início Programado: </span>
+          <span>{formatDateTime(task.scheduledStartTime)}</span>
+        </div>
+        <div>
+          <span className="text-muted-foreground">Tempo Estimado: </span>
+          <span>{formatTime(task.estimatedTime)}</span>
         </div>
       </div>
-      <div className="flex items-center gap-2">
-        <Calendar size={16} className="text-muted-foreground" />
-        <div className="text-sm">
-          <span className="text-muted-foreground">Agendado: </span>
-          <span>{formatTime(task.scheduledStartTime)}</span>
+
+      {tags && tags.length > 0 && (
+        <div className="flex flex-wrap gap-1 mt-2">
+          {tags.map(tag => (
+            <Badge key={tag.id} variant="secondary" className="text-xs">
+              {tag.name}
+            </Badge>
+          ))}
         </div>
-      </div>
+      )}
     </div>
   );
 };

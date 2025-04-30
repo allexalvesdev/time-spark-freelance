@@ -1,96 +1,147 @@
 
-import React, { createContext, useContext, useEffect } from 'react';
-import { Project, Task, TimeEntry, ReportData } from '@/types';
+import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 import { AppState, AppContextType } from '@/types/app';
-import { useAuth } from './AuthContext';
-import { projectService, taskService, timeEntryService } from '@/services';
-import { useReportGenerator } from '@/hooks/useReportGenerator';
+import { Project, Task, TimeEntry, ReportData } from '@/types';
+import { useAuth } from '@/contexts/AuthContext';
 import { useProjects } from '@/hooks/useProjects';
 import { useTasks } from '@/hooks/useTasks';
 import { useTimerManagement } from '@/hooks/useTimerManagement';
-import { useToast } from '@/hooks/use-toast';
+import { useReportGenerator } from '@/hooks/useReportGenerator';
+import { projectService, taskService, timeEntryService } from '@/services';
+import { useTags } from '@/hooks/useTags';
 
-const AppContext = createContext<AppContextType | undefined>(undefined);
+// Defina o estado inicial
+const initialState: AppState = {
+  projects: [],
+  tasks: [],
+  timeEntries: [],
+  activeTimeEntry: null,
+  currentProject: null,
+  currentTask: null,
+  tags: [],
+};
 
-export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+// Crie o contexto
+export const AppContext = createContext<AppContextType | undefined>(undefined);
+
+export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const { user } = useAuth();
-  const { toast } = useToast();
+  const [state, setState] = useState<AppState>(initialState);
+  
+  const userId = user?.id || '';
+  
+  // Use os hooks customizados
+  const { 
+    projects, 
+    setProjects, 
+    addProject, 
+    updateProject, 
+    deleteProject 
+  } = useProjects(userId);
+  
+  const { 
+    tasks, 
+    setTasks, 
+    currentTask, 
+    setCurrentTask, 
+    addTask, 
+    updateTask, 
+    completeTask, 
+    deleteTask 
+  } = useTasks(userId);
+  
+  const { 
+    timeEntries, 
+    setTimeEntries, 
+    activeTimeEntry, 
+    setActiveTimeEntry, 
+    startTimer, 
+    stopTimer 
+  } = useTimerManagement(userId);
+
+  const {
+    tags,
+    setTags,
+    addTag,
+    deleteTag,
+    addTagToTask,
+    removeTagFromTask,
+    getTaskTags
+  } = useTags(userId);
+  
   const { generateReport } = useReportGenerator();
-
-  const {
-    projects,
-    setProjects,
-    currentProject,
-    setCurrentProject,
-    addProject,
-    updateProject,
-    deleteProject,
-  } = useProjects(user?.id || '');
-
-  const {
-    tasks,
-    setTasks,
-    currentTask,
-    setCurrentTask,
-    addTask,
-    updateTask,
-    completeTask,
-    deleteTask,
-  } = useTasks(user?.id || '');
-
-  const {
-    timeEntries,
-    setTimeEntries,
-    activeTimeEntry,
-    setActiveTimeEntry,
-    startTimer,
-    stopTimer,
-    getActiveTaskName,
-  } = useTimerManagement(user?.id || '', tasks);
-
+  
+  // Função para obter o nome da tarefa ativa
+  const getActiveTaskName = () => {
+    if (!activeTimeEntry) return null;
+    const task = tasks.find(t => t.id === activeTimeEntry.taskId);
+    return task ? task.name : null;
+  };
+  
+  // Atualizar o estado centralizado quando os sub-estados mudarem
   useEffect(() => {
-    if (user) {
-      loadUserData();
+    setState({
+      projects,
+      tasks,
+      timeEntries,
+      activeTimeEntry,
+      currentProject: state.currentProject,
+      currentTask,
+      tags,
+    });
+  }, [projects, tasks, timeEntries, activeTimeEntry, currentTask, tags]);
+  
+  // Carregar dados quando o usuário mudar
+  useEffect(() => {
+    if (!user) {
+      // Resetar estado se não houver usuário
+      setState(initialState);
+      return;
     }
+    
+    const loadInitialData = async () => {
+      try {
+        console.log('Loading initial data...');
+        
+        // Carregar projetos
+        const { projects: projectsData } = await projectService.loadProjects();
+        setProjects(projectsData);
+        console.log('Projects loaded:', projectsData.length);
+        
+        // Carregar tarefas
+        const { tasks: tasksData } = await taskService.loadTasks();
+        setTasks(tasksData);
+        console.log('Tasks loaded:', tasksData.length);
+        
+        // Carregar registros de tempo
+        const { timeEntries: timeEntriesData, activeTimeEntry: activeEntry } = 
+          await timeEntryService.loadTimeEntries();
+        
+        setTimeEntries(timeEntriesData);
+        setActiveTimeEntry(activeEntry);
+        console.log('Time entries loaded:', timeEntriesData.length);
+        console.log('Active time entry:', activeEntry ? 'Yes' : 'No');
+
+        // Carregar tags
+        const { tags: tagsData } = await tagService.loadTags(user.id);
+        setTags(tagsData);
+        console.log('Tags loaded:', tagsData.length);
+        
+        console.log('Initial data loaded successfully');
+      } catch (error) {
+        console.error('Error loading initial data:', error);
+      }
+    };
+    
+    loadInitialData();
   }, [user]);
-
-  const loadUserData = async () => {
-    try {
-      const [projectsData, tasksData, timeEntriesData] = await Promise.all([
-        projectService.loadProjects(),
-        taskService.loadTasks(),
-        timeEntryService.loadTimeEntries()
-      ]);
-
-      // Ensure tasks is always an array
-      const tasksArray = tasksData.tasks || [];
-      const activeEntry = timeEntriesData.find(entry => entry.isRunning) || null;
-
-      setProjects(projectsData);
-      setTasks(tasksArray);
-      setTimeEntries(timeEntriesData);
-      setActiveTimeEntry(activeEntry);
-      setCurrentProject(null);
-      setCurrentTask(null);
-    } catch (error: any) {
-      console.error('Error loading data:', error);
-      toast({
-        title: 'Erro',
-        description: 'Não foi possível carregar os dados. Tente novamente.',
-        variant: 'destructive',
-      });
-    }
+  
+  // Função para definir o projeto atual
+  const setCurrentProject = (project: Project | null) => {
+    setState(prev => ({ ...prev, currentProject: project }));
   };
-
-  const state: AppState = {
-    projects,
-    tasks,
-    timeEntries,
-    activeTimeEntry,
-    currentProject,
-    currentTask,
-  };
-
+  
+  // Agrupar valores e funções que serão expostas pelo contexto
   const contextValue: AppContextType = {
     state,
     addProject,
@@ -104,10 +155,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     stopTimer,
     setCurrentProject,
     setCurrentTask,
-    generateReport: (projectId: string) => generateReport(projectId, projects, tasks),
+    generateReport,
     getActiveTaskName,
+    addTag,
+    deleteTag,
+    addTagToTask,
+    removeTagFromTask,
+    getTaskTags,
   };
-
+  
   return (
     <AppContext.Provider value={contextValue}>
       {children}
@@ -115,10 +171,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   );
 };
 
-export const useAppContext = (): AppContextType => {
+export const useAppContext = () => {
   const context = useContext(AppContext);
   if (context === undefined) {
-    throw new Error('useAppContext deve ser usado dentro de um AppProvider');
+    throw new Error('useAppContext must be used within an AppProvider');
   }
   return context;
 };

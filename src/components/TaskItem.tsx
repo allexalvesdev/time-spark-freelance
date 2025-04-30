@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Task, Project } from '@/types';
 import { useAppContext } from '@/contexts/AppContext';
@@ -16,11 +17,12 @@ interface TaskItemProps {
 }
 
 const TaskItem: React.FC<TaskItemProps> = ({ task, project }) => {
-  const { state, startTimer, stopTimer, deleteTask } = useAppContext();
-  const { activeTimeEntry } = state;
+  const { state, startTimer, stopTimer, deleteTask, getTaskTags } = useAppContext();
+  const { activeTimeEntry, tags } = state;
   const [showEditModal, setShowEditModal] = useState(false);
   const [showCompleteModal, setShowCompleteModal] = useState(false);
   const [currentTask, setCurrentTask] = useState<Task>(task);
+  const [taskTags, setTaskTags] = useState<string[]>([]);
   
   const isTimerRunning = activeTimeEntry?.taskId === task.id;
   
@@ -44,6 +46,23 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, project }) => {
   useEffect(() => {
     setCurrentTask(task);
   }, [task]);
+  
+  // Carregar tags da tarefa
+  useEffect(() => {
+    const loadTaskTags = async () => {
+      try {
+        const tagIds = await getTaskTags(task.id);
+        setTaskTags(tagIds);
+      } catch (error) {
+        console.error('Failed to load task tags:', error);
+      }
+    };
+    
+    loadTaskTags();
+  }, [task.id, getTaskTags]);
+  
+  // Filter tags for this task
+  const taskTagObjects = tags.filter(tag => taskTags.includes(tag.id));
   
   // Listen for task-completed events to update this specific task
   useEffect(() => {
@@ -94,7 +113,10 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, project }) => {
   return (
     <div className="task-item rounded-lg border p-4 bg-card">
       <TaskHeader task={currentTask} />
-      <TaskDetails task={currentTask} />
+      <TaskDetails 
+        task={currentTask} 
+        tags={taskTagObjects}
+      />
       <TaskTimer 
         elapsedTime={currentTask.elapsedTime || 0}
         isRunning={isTimerRunning}

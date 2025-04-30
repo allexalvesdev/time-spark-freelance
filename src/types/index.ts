@@ -19,6 +19,7 @@ export interface Task {
   elapsedTime?: number; // em segundos
   completed: boolean;
   userId: string;
+  priority: 'Baixa' | 'Média' | 'Alta' | 'Urgente';
 }
 
 export interface TimeEntry {
@@ -44,4 +45,10 @@ export interface ReportData {
   }[];
   totalTime: number; // em segundos
   totalEarnings: number; // em reais
+}
+
+export interface Tag {
+  id: string;
+  name: string;
+  userId: string;
 }

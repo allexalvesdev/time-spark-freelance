@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -16,6 +16,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { useAppContext } from '@/contexts/AppContext';
 import { useToast } from '@/hooks/use-toast';
+import PrioritySelect from '@/components/task/PrioritySelect';
+import TagsInput from '@/components/task/TagsInput';
 
 const formSchema = z.object({
   name: z.string().min(3, 'O nome da tarefa deve ter pelo menos 3 caracteres'),
@@ -31,6 +33,7 @@ const formSchema = z.object({
   scheduledStartTime: z.string().refine(val => !!val, {
     message: 'Selecione uma data e hora de início',
   }),
+  priority: z.enum(['Baixa', 'Média', 'Alta', 'Urgente']).default('Média'),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -41,8 +44,10 @@ interface NewTaskFormProps {
 }
 
 const NewTaskForm: React.FC<NewTaskFormProps> = ({ projectId, onSuccess }) => {
-  const { addTask } = useAppContext();
+  const { addTask, addTagToTask } = useAppContext();
   const { toast } = useToast();
+  const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   // Get current date in Brazil timezone
   const now = new Date();
@@ -56,36 +61,52 @@ const NewTaskForm: React.FC<NewTaskFormProps> = ({ projectId, onSuccess }) => {
       estimatedHours: 0,
       estimatedMinutes: 0,
       scheduledStartTime: brasilDate,
+      priority: 'Média',
     },
   });
   
-  const onSubmit = (data: FormValues) => {
-    const totalMinutes = (Number(data.estimatedHours) * 60) + Number(data.estimatedMinutes);
-    const estimatedTime = totalMinutes * 60; // Convert to seconds for backend
-    
-    addTask({
-      projectId,
-      name: data.name,
-      description: data.description || '',
-      estimatedTime,
-      scheduledStartTime: new Date(data.scheduledStartTime),
-    });
-    
-    toast({
-      title: 'Tarefa criada',
-      description: `A tarefa "${data.name}" foi criada com sucesso.`,
-    });
-    
-    form.reset({
-      name: '',
-      description: '',
-      estimatedHours: 0,
-      estimatedMinutes: 0,
-      scheduledStartTime: brasilDate,
-    });
-    
-    if (onSuccess) {
-      onSuccess();
+  const onSubmit = async (data: FormValues) => {
+    setIsSubmitting(true);
+    try {
+      const totalMinutes = (Number(data.estimatedHours) * 60) + Number(data.estimatedMinutes);
+      
+      const newTask = await addTask({
+        projectId,
+        name: data.name,
+        description: data.description || '',
+        estimatedTime: totalMinutes,
+        scheduledStartTime: new Date(data.scheduledStartTime),
+        priority: data.priority,
+      });
+      
+      // Adicionar tags à tarefa
+      if (selectedTagIds.length > 0 && newTask) {
+        await Promise.all(selectedTagIds.map(tagId => addTagToTask(newTask.id, tagId)));
+      }
+      
+      toast({
+        title: 'Tarefa criada',
+        description: `A tarefa "${data.name}" foi criada com sucesso.`,
+      });
+      
+      form.reset({
+        name: '',
+        description: '',
+        estimatedHours: 0,
+        estimatedMinutes: 0,
+        scheduledStartTime: brasilDate,
+        priority: 'Média',
+      });
+      
+      setSelectedTagIds([]);
+      
+      if (onSuccess) {
+        onSuccess();
+      }
+    } catch (error) {
+      console.error('Error creating task:', error);
+    } finally {
+      setIsSubmitting(false);
     }
   };
   
@@ -122,6 +143,32 @@ const NewTaskForm: React.FC<NewTaskFormProps> = ({ projectId, onSuccess }) => {
             </FormItem>
           )}
         />
+        
+        <FormField
+          control={form.control}
+          name="priority"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Prioridade</FormLabel>
+              <FormControl>
+                <PrioritySelect 
+                  value={field.value} 
+                  onChange={field.onChange} 
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <div className="space-y-2">
+          <FormLabel>Tags</FormLabel>
+          <TagsInput 
+            taskId=""
+            selectedTagIds={selectedTagIds}
+            onTagsChange={setSelectedTagIds}
+          />
+        </div>
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <FormField
@@ -180,7 +227,9 @@ const NewTaskForm: React.FC<NewTaskFormProps> = ({ projectId, onSuccess }) => {
         </div>
         
         <div className="flex justify-end pt-4">
-          <Button type="submit">Adicionar Tarefa</Button>
+          <Button type="submit" disabled={isSubmitting}>
+            {isSubmitting ? 'Adicionando...' : 'Adicionar Tarefa'}
+          </Button>
         </div>
       </form>
     </Form>

@@ -1,8 +1,8 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAppContext } from '@/contexts/AppContext';
 import TaskItem from '@/components/TaskItem';
-import { ClipboardList, Plus } from 'lucide-react';
+import { ClipboardList } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Select,
@@ -12,26 +12,70 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 
 const Tasks: React.FC = () => {
   const { state } = useAppContext();
-  const { tasks = [], projects = [] } = state;
+  const { tasks = [], projects = [], tags = [] } = state;
   
   const [filter, setFilter] = useState<string>('all');
+  const [tagFilter, setTagFilter] = useState<string>('all');
+  const [priorityFilter, setPriorityFilter] = useState<string>('all');
+  const [taskTagsMap, setTaskTagsMap] = useState<Record<string, string[]>>({});
   
   // Ensure tasks is always an array
   const tasksArray = Array.isArray(tasks) ? tasks : [];
   
+  // Carregar mapeamento de tarefas para tags
+  useEffect(() => {
+    const loadTaskTags = async () => {
+      try {
+        const tagsByTask: Record<string, string[]> = {};
+        const promises = tasksArray.map(async (task) => {
+          const { getTaskTags } = useAppContext();
+          const taskTagIds = await getTaskTags(task.id);
+          tagsByTask[task.id] = taskTagIds;
+        });
+        
+        await Promise.all(promises);
+        setTaskTagsMap(tagsByTask);
+      } catch (error) {
+        console.error('Failed to load task tags:', error);
+      }
+    };
+    
+    loadTaskTags();
+  }, [tasksArray]);
+  
   const filteredTasks = tasksArray.filter(task => {
-    if (filter === 'all') return true;
-    if (filter === 'completed') return task.completed;
-    if (filter === 'pending') return !task.completed;
-    return task.projectId === filter;
+    // Filtro por projeto
+    if (filter !== 'all' && filter !== 'completed' && filter !== 'pending' && task.projectId !== filter) {
+      return false;
+    }
+    
+    // Filtro por status
+    if (filter === 'completed' && !task.completed) return false;
+    if (filter === 'pending' && task.completed) return false;
+    
+    // Filtro por prioridade
+    if (priorityFilter !== 'all' && task.priority !== priorityFilter) {
+      return false;
+    }
+    
+    // Filtro por tag
+    if (tagFilter !== 'all') {
+      const taskTags = taskTagsMap[task.id] || [];
+      if (!taskTags.includes(tagFilter)) {
+        return false;
+      }
+    }
+    
+    return true;
   });
   
   // Obter projeto pelo ID
   const getProject = (projectId: string) => {
-    return projects.find(p => p.id === projectId);
+    return projects.find(p => p.id === projectId) || projects[0];
   };
   
   return (
@@ -44,25 +88,60 @@ const Tasks: React.FC = () => {
       </div>
       
       <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between mb-6">
-        <div className="w-full md:w-64">
-          <Select value={filter} onValueChange={setFilter}>
-            <SelectTrigger>
-              <SelectValue placeholder="Filtrar tarefas" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todas as tarefas</SelectItem>
-              <SelectItem value="pending">Pendentes</SelectItem>
-              <SelectItem value="completed">Concluídas</SelectItem>
-              <SelectItem value="divider" disabled>
-                — Por projeto —
-              </SelectItem>
-              {projects.map(project => (
-                <SelectItem key={project.id} value={project.id}>
-                  {project.name}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 w-full">
+          <div>
+            <Select value={filter} onValueChange={setFilter}>
+              <SelectTrigger>
+                <SelectValue placeholder="Filtrar por projeto" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os projetos</SelectItem>
+                <SelectItem value="pending">Pendentes</SelectItem>
+                <SelectItem value="completed">Concluídas</SelectItem>
+                <SelectItem value="divider" disabled>
+                  — Projetos —
                 </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+                {projects.map(project => (
+                  <SelectItem key={project.id} value={project.id}>
+                    {project.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <div>
+            <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+              <SelectTrigger>
+                <SelectValue placeholder="Filtrar por prioridade" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas as prioridades</SelectItem>
+                <SelectItem value="Baixa">Baixa</SelectItem>
+                <SelectItem value="Média">Média</SelectItem>
+                <SelectItem value="Alta">Alta</SelectItem>
+                <SelectItem value="Urgente">Urgente</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          
+          {tags.length > 0 && (
+            <div>
+              <Select value={tagFilter} onValueChange={setTagFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Filtrar por tag" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas as tags</SelectItem>
+                  {tags.map(tag => (
+                    <SelectItem key={tag.id} value={tag.id}>
+                      {tag.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
         </div>
       </div>
       
@@ -73,7 +152,7 @@ const Tasks: React.FC = () => {
           </div>
           <h2 className="text-xl font-medium">Nenhuma tarefa encontrada</h2>
           <p className="text-muted-foreground text-center max-w-md">
-            Não há tarefas para o filtro selecionado.
+            Não há tarefas para os filtros selecionados.
           </p>
         </div>
       ) : (

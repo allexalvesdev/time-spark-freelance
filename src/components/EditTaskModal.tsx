@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Task } from '@/types';
 import { Button } from '@/components/ui/button';
 import {
@@ -14,6 +14,8 @@ import { useAppContext } from '@/contexts/AppContext';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import PrioritySelect from '@/components/task/PrioritySelect';
+import TagsInput from '@/components/task/TagsInput';
 
 interface EditTaskModalProps {
   task: Task;
@@ -22,35 +24,73 @@ interface EditTaskModalProps {
 }
 
 const EditTaskModal: React.FC<EditTaskModalProps> = ({ task, isOpen, onClose }) => {
-  const { updateTask } = useAppContext();
+  const { updateTask, getTaskTags } = useAppContext();
   const { toast } = useToast();
-  const [name, setName] = React.useState(task.name);
-  const [description, setDescription] = React.useState(task.description);
-  const [estimatedTime, setEstimatedTime] = React.useState(task.estimatedTime.toString());
+  const [name, setName] = useState(task.name);
+  const [description, setDescription] = useState(task.description);
+  const [estimatedTime, setEstimatedTime] = useState(task.estimatedTime.toString());
+  const [priority, setPriority] = useState<'Baixa' | 'Média' | 'Alta' | 'Urgente'>(task.priority || 'Média');
+  const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
   
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    if (isOpen) {
+      // Reset form state when dialog opens
+      setName(task.name);
+      setDescription(task.description);
+      setEstimatedTime(task.estimatedTime.toString());
+      setPriority(task.priority || 'Média');
+      
+      // Fetch tags associated with this task
+      const loadTaskTags = async () => {
+        try {
+          const tagIds = await getTaskTags(task.id);
+          setSelectedTagIds(tagIds);
+        } catch (error) {
+          console.error('Failed to load task tags:', error);
+        }
+      };
+      
+      loadTaskTags();
+    }
+  }, [task, isOpen, getTaskTags]);
+  
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
     
-    const updatedTask: Task = {
-      ...task,
-      name,
-      description,
-      estimatedTime: parseInt(estimatedTime),
-    };
-    
-    updateTask(updatedTask);
-    
-    toast({
-      title: "Tarefa atualizada",
-      description: "A tarefa foi atualizada com sucesso.",
-    });
-    
-    onClose();
+    try {
+      const updatedTask: Task = {
+        ...task,
+        name,
+        description,
+        estimatedTime: parseInt(estimatedTime),
+        priority,
+      };
+      
+      await updateTask(updatedTask);
+      
+      toast({
+        title: "Tarefa atualizada",
+        description: "A tarefa foi atualizada com sucesso.",
+      });
+      
+      onClose();
+    } catch (error) {
+      console.error('Error updating task:', error);
+      toast({
+        title: "Erro",
+        description: "Ocorreu um erro ao atualizar a tarefa. Tente novamente.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
   
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent>
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Editar Tarefa</DialogTitle>
         </DialogHeader>
@@ -77,6 +117,23 @@ const EditTaskModal: React.FC<EditTaskModalProps> = ({ task, isOpen, onClose }) 
           </div>
           
           <div className="space-y-2">
+            <Label htmlFor="priority">Prioridade</Label>
+            <PrioritySelect
+              value={priority}
+              onChange={(value) => setPriority(value)}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Tags</Label>
+            <TagsInput 
+              taskId={task.id}
+              selectedTagIds={selectedTagIds}
+              onTagsChange={setSelectedTagIds}
+            />
+          </div>
+          
+          <div className="space-y-2">
             <Label htmlFor="estimatedTime">Tempo Estimado (minutos)</Label>
             <Input
               id="estimatedTime"
@@ -89,10 +146,12 @@ const EditTaskModal: React.FC<EditTaskModalProps> = ({ task, isOpen, onClose }) 
           </div>
           
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose}>
+            <Button type="button" variant="outline" onClick={onClose} disabled={isLoading}>
               Cancelar
             </Button>
-            <Button type="submit">Salvar</Button>
+            <Button type="submit" disabled={isLoading}>
+              {isLoading ? 'Salvando...' : 'Salvar'}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>

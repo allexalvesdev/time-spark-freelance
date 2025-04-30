@@ -1,4 +1,3 @@
-
 import { useEffect, useRef } from 'react';
 import { persistTimerState, updateGlobalTimerState } from './timerState';
 import { isLocalStorageAvailable } from './storageCore';

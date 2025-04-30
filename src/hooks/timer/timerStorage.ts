@@ -13,7 +13,7 @@ export {
   syncMemoryFromStorage
 } from './storageCore';
 
-// Export timer state functions
+// Export timer state types and functions
 export {
   persistTimerState,
   clearTimerState,
@@ -33,3 +33,4 @@ export const getStorageMode = (): 'localStorage' | 'memory' => {
   const { isLocalStorageAvailable } = require('./storageCore');
   return isLocalStorageAvailable() ? 'localStorage' : 'memory';
 };
+

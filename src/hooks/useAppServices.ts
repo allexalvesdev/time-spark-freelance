@@ -1,4 +1,3 @@
-
 import { useCallback } from 'react';
 import { Project, Task, TimeEntry, Tag } from '@/types';
 import { AppState } from '@/types/app';
@@ -29,7 +28,11 @@ type AppServicesProps = {
   removeStoredTaskTag: (taskId: string, tagId: string) => Promise<void>;
 };
 
-export const useAppServices = ({
+/**
+ * Primary hook for app services
+ * Composes all domain-specific service hooks
+ */
+export const useAppServices = ({ 
   state,
   user,
   addStoredProject,
@@ -85,6 +88,26 @@ export const useAppServices = ({
     setStoredCurrentTask,
   });
   
+  // Fix the types for these functions
+  const startTimer = useCallback(async (taskId: string, projectId: string): Promise<void> => {
+    try {
+      await startStoredTimeEntry(taskId, projectId);
+    } catch (error) {
+      console.error('Error starting timer:', error);
+      throw error;
+    }
+  }, [startStoredTimeEntry]);
+
+  const stopTimer = useCallback(async (completeTaskFlag: boolean = false): Promise<void> => {
+    try {
+      const stoppedEntry = await stopStoredTimeEntry(completeTaskFlag);
+      return;
+    } catch (error) {
+      console.error('Error stopping timer:', error);
+      throw error;
+    }
+  }, [stopStoredTimeEntry]);
+
   // Wrapper method for active task name
   const getActiveTaskName = useCallback((): string | null => {
     return timeServices.getActiveTaskName(state.activeTimeEntry);
@@ -103,8 +126,8 @@ export const useAppServices = ({
     deleteTask: taskServices.deleteTask,
     
     // Time services
-    startTimer: timeServices.startTimer,
-    stopTimer: timeServices.stopTimer,
+    startTimer,
+    stopTimer,
     getActiveTaskName,
     
     // Project/Task selection

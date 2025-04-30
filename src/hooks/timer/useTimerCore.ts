@@ -1,9 +1,16 @@
-
 import { useState, useCallback } from 'react';
 import { TimeEntry } from '@/types';
 import { timeEntryService } from '@/services';
 import { useToast } from '@/hooks/use-toast';
-import { safeSetItem, safeRemoveItem, isLocalStorageAvailable } from './storageCore';
+import { 
+  safeSetItem, 
+  safeRemoveItem, 
+  isLocalStorageAvailable 
+} from './storageCore';
+import { 
+  persistTimerState,
+  updateGlobalTimerState
+} from './timerState';
 
 /**
  * Core timer management functionality

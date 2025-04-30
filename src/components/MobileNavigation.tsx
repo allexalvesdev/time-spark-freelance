@@ -12,10 +12,10 @@ import { usePlatform } from '@/hooks/use-platform';
 
 const MobileNavigation: React.FC = () => {
   const location = useLocation();
-  const { isNative } = usePlatform();
+  const { isNative, isAndroid } = usePlatform();
   
-  // Only show the mobile navigation when in a native app
-  if (!isNative) return null;
+  // Only show the mobile navigation when in a native app or on a mobile device
+  if (!isNative && window.innerWidth > 768) return null;
   
   const isActive = (path: string) => {
     return location.pathname === path;

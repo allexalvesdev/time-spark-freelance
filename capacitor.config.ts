@@ -2,7 +2,7 @@
 import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'app.lovable.b036e618b7bf4b72a4dc86c099eefaa4',
+  appId: 'app.workly.timespark',
   appName: 'Workly',
   webDir: 'dist',
   bundledWebRuntime: false,

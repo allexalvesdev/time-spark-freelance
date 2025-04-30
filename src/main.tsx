@@ -14,9 +14,24 @@ if (isDarkMode) {
 // Wait for the device to be ready when running in native app mode
 const initializeApp = async () => {
   if (Capacitor.isNativePlatform()) {
-    document.addEventListener('deviceready', () => {
-      console.log('Device is ready in Capacitor native app');
-    }, false);
+    try {
+      // Set up native platform listeners and initializations
+      console.log('Initializing Capacitor app');
+      
+      document.addEventListener('deviceready', () => {
+        console.log('Device is ready in Capacitor native app');
+      }, false);
+      
+      // Handle back button for Android
+      document.addEventListener('backbutton', () => {
+        console.log('Back button pressed in Android');
+      }, false);
+      
+    } catch (error) {
+      console.error('Error initializing Capacitor:', error);
+    }
+  } else {
+    console.log('Running as web app');
   }
   
   createRoot(document.getElementById("root")!).render(<App />);

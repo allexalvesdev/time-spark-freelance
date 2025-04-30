@@ -7,6 +7,7 @@ type Platform = 'web' | 'ios' | 'android';
 export function usePlatform() {
   const [platform, setPlatform] = useState<Platform>('web');
   const [isNative, setIsNative] = useState(false);
+  const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
     const detectPlatform = () => {
@@ -24,10 +25,28 @@ export function usePlatform() {
       } else {
         setPlatform('web');
       }
+      
+      setIsReady(true);
     };
 
     detectPlatform();
+    
+    // Listen for platform ready event
+    document.addEventListener('deviceready', () => {
+      detectPlatform();
+    });
+    
+    return () => {
+      document.removeEventListener('deviceready', detectPlatform);
+    };
   }, []);
 
-  return { platform, isNative, isWeb: platform === 'web', isIOS: platform === 'ios', isAndroid: platform === 'android' };
+  return { 
+    platform, 
+    isNative, 
+    isWeb: platform === 'web', 
+    isIOS: platform === 'ios', 
+    isAndroid: platform === 'android',
+    isReady
+  };
 }

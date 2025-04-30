@@ -50,7 +50,7 @@ serve(async (req) => {
     // Obter perfil do usuário
     const { data: profile, error: profileError } = await supabaseAdmin
       .from("profiles")
-      .select("user_plan, pending_plan")
+      .select("user_plan, pending_plan, stripe_customer_id")
       .eq("id", user.id)
       .maybeSingle();
       
@@ -66,7 +66,10 @@ serve(async (req) => {
           status: "no_subscription",
           pending_plan: null
         }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { 
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200
+        }
       );
     }
     
@@ -75,24 +78,41 @@ serve(async (req) => {
       apiVersion: "2023-10-16",
     });
     
-    const customers = await stripe.customers.list({
-      email: user.email,
-      limit: 1,
-    });
+    // Se não tiver customer_id no perfil, verificar pelo email
+    let customerId = profile.stripe_customer_id;
     
-    if (customers.data.length === 0) {
-      // Não tem cliente Stripe
+    if (!customerId) {
+      // Verificar se existe um cliente com o email no Stripe
+      const customers = await stripe.customers.list({
+        email: user.email,
+        limit: 1,
+      });
+      
+      if (customers.data.length > 0) {
+        customerId = customers.data[0].id;
+        
+        // Atualizar o perfil com o ID do cliente
+        await supabaseAdmin
+          .from("profiles")
+          .update({ stripe_customer_id: customerId })
+          .eq("id", user.id);
+      }
+    }
+    
+    // Se não tem cliente Stripe
+    if (!customerId) {
       return new Response(
         JSON.stringify({ 
           user_plan: profile.user_plan || "free",
           status: "no_subscription",
-          pending_plan: profile.pending_plan || null 
+          pending_plan: profile.pending_plan
         }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { 
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200
+        }
       );
     }
-    
-    const customerId = customers.data[0].id;
     
     // Verificar assinaturas ativas no Stripe
     const subscriptions = await stripe.subscriptions.list({
@@ -117,7 +137,10 @@ serve(async (req) => {
           status: "no_subscription",
           pending_plan: null 
         }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { 
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200
+        }
       );
     }
     
@@ -153,7 +176,10 @@ serve(async (req) => {
             cancel_at_period_end: subscription.cancel_at_period_end
           }
         }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        { 
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200
+        }
       );
     }
     
@@ -168,7 +194,10 @@ serve(async (req) => {
           cancel_at_period_end: subscription.cancel_at_period_end
         }
       }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      { 
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200
+      }
     );
     
   } catch (error) {

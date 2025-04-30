@@ -43,18 +43,46 @@ serve(async (req) => {
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
       apiVersion: "2023-10-16",
     });
-
-    // Verificar se já existe um cliente no Stripe
-    const customers = await stripe.customers.list({
-      email: user.email,
-      limit: 1,
-    });
     
-    if (customers.data.length === 0) {
-      throw new Error("Cliente Stripe não encontrado");
+    // Criar cliente Supabase admin para ler o perfil
+    const supabaseAdmin = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+      { auth: { persistSession: false } }
+    );
+    
+    // Verificar se há um ID do cliente no perfil
+    const { data: profile, error: profileError } = await supabaseAdmin
+      .from("profiles")
+      .select("stripe_customer_id")
+      .eq("id", user.id)
+      .maybeSingle();
+      
+    if (profileError) {
+      throw new Error(`Erro ao buscar perfil: ${profileError.message}`);
     }
     
-    const customerId = customers.data[0].id;
+    let customerId = profile?.stripe_customer_id;
+    
+    // Se não tiver ID no perfil, buscar pelo email
+    if (!customerId) {
+      const customers = await stripe.customers.list({
+        email: user.email,
+        limit: 1,
+      });
+      
+      if (customers.data.length === 0) {
+        throw new Error("Cliente Stripe não encontrado");
+      }
+      
+      customerId = customers.data[0].id;
+      
+      // Atualizar o perfil com o ID do cliente
+      await supabaseAdmin
+        .from("profiles")
+        .update({ stripe_customer_id: customerId })
+        .eq("id", user.id);
+    }
     
     // Criar sessão do portal do cliente
     const session = await stripe.billingPortal.sessions.create({

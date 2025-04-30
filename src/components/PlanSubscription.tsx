@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
@@ -32,7 +31,9 @@ const PlanSubscription = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    checkSubscriptionStatus();
+    if (user) {
+      checkSubscriptionStatus();
+    }
     
     // Verificar parâmetros de URL para sucesso/falha no pagamento
     const url = new URL(window.location.href);
@@ -58,7 +59,7 @@ const PlanSubscription = () => {
       url.searchParams.delete('plan');
       window.history.replaceState({}, '', url.toString());
     }
-  }, []);
+  }, [user]);
   
   const checkSubscriptionStatus = async () => {
     if (!user) return;
@@ -72,7 +73,7 @@ const PlanSubscription = () => {
       if (error) {
         console.error('Erro ao verificar status da assinatura:', error);
         setErrorMessage(`Erro ao verificar status da assinatura: ${error.message || 'Erro desconhecido'}`);
-        throw error;
+        return;
       }
       
       setSubscriptionStatus(data);

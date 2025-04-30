@@ -11,7 +11,7 @@ export const timeEntryService = {
     
     if (error) throw error;
     
-    return timeEntries?.map(entry => ({
+    const formattedEntries = timeEntries?.map(entry => ({
       id: entry.id,
       taskId: entry.task_id,
       projectId: entry.project_id,
@@ -21,6 +21,8 @@ export const timeEntryService = {
       isRunning: entry.is_running,
       userId: entry.user_id,
     })) || [];
+    
+    return formattedEntries;
   },
 
   async createTimeEntry(entry: Omit<TimeEntry, 'id' | 'endTime' | 'duration'>) {

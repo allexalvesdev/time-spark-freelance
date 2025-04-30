@@ -24,7 +24,7 @@ export const useTimerManagement = (userId: string, tasks: Task[] = []) => {
         isRunning: true,
       });
 
-      setTimeEntries(prev => [newTimeEntry, ...prev]);
+      setTimeEntries(prev => Array.isArray(prev) ? [newTimeEntry, ...prev] : [newTimeEntry]);
       setActiveTimeEntry(newTimeEntry);
       
       // Store the active time entry ID globally for persistence
@@ -59,9 +59,10 @@ export const useTimerManagement = (userId: string, tasks: Task[] = []) => {
 
       await timeEntryService.updateTimeEntry(updatedTimeEntry);
 
-      setTimeEntries(prev => prev.map(entry => 
-        entry.id === activeTimeEntry.id ? updatedTimeEntry : entry
-      ));
+      setTimeEntries(prev => Array.isArray(prev) 
+        ? prev.map(entry => entry.id === activeTimeEntry.id ? updatedTimeEntry : entry)
+        : [updatedTimeEntry]
+      );
       
       // If completeTask is true, mark the task as completed
       if (completeTask) {

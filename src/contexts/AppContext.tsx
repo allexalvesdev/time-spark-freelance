@@ -57,7 +57,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setActiveTimeEntry, 
     startTimer, 
     stopTimer 
-  } = useTimerManagement(userId);
+  } = useTimerManagement(userId, tasks);
 
   const {
     tags,
@@ -114,13 +114,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         console.log('Tasks loaded:', tasksData.length);
         
         // Carregar registros de tempo
-        const { timeEntries: timeEntriesData, activeTimeEntry: activeEntry } = 
-          await timeEntryService.loadTimeEntries();
+        const timeEntriesData = await timeEntryService.loadTimeEntries();
         
-        setTimeEntries(timeEntriesData);
-        setActiveTimeEntry(activeEntry);
-        console.log('Time entries loaded:', timeEntriesData.length);
-        console.log('Active time entry:', activeEntry ? 'Yes' : 'No');
+        setTimeEntries(timeEntriesData || []);
+        setActiveTimeEntry(timeEntriesData.find((entry: TimeEntry) => entry.isRunning) || null);
+        console.log('Time entries loaded:', timeEntriesData ? timeEntriesData.length : 0);
+        console.log('Active time entry:', activeTimeEntry ? 'Yes' : 'No');
 
         // Carregar tags
         const { tags: tagsData } = await tagService.loadTags(user.id);
@@ -140,6 +139,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const setCurrentProject = (project: Project | null) => {
     setState(prev => ({ ...prev, currentProject: project }));
   };
+
+  // Função de geração de relatório adaptada para usar o contexto
+  const appGenerateReport = (projectId: string): ReportData | null => {
+    return generateReport(projectId, projects, tasks);
+  };
   
   // Agrupar valores e funções que serão expostas pelo contexto
   const contextValue: AppContextType = {
@@ -155,7 +159,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     stopTimer,
     setCurrentProject,
     setCurrentTask,
-    generateReport,
+    generateReport: appGenerateReport,
     getActiveTaskName,
     addTag,
     deleteTag,

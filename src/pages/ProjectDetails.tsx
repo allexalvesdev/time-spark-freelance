@@ -33,21 +33,33 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Separator } from '@/components/ui/separator';
+import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { ReportData, Task } from '@/types';
 import { useIsMobile } from '@/hooks/use-mobile';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 const ProjectDetails: React.FC = () => {
   const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { state, deleteProject, generateReport, updateTask } = useAppContext();
-  const { projects, tasks } = state || { projects: [], tasks: [] }; // Garantir que projects e tasks são arrays
+  const { projects, tasks } = state || { projects: [], tasks: [] };
   const isMobile = useIsMobile();
   
   const [showNewTaskForm, setShowNewTaskForm] = useState(false);
   const [reportData, setReportData] = useState<ReportData | null>(null);
   const [projectTasks, setProjectTasks] = useState<Task[]>([]);
+  const [deleteConfirmation, setDeleteConfirmation] = useState("");
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   
   // Verificar se projects existe antes de usar find
   const project = projects && Array.isArray(projects) ? projects.find(p => p.id === projectId) : undefined;
@@ -94,14 +106,34 @@ const ProjectDetails: React.FC = () => {
   const earnings = (totalTime / 3600) * project.hourlyRate;
   
   const handleDeleteProject = () => {
-    deleteProject(project.id);
+    if (deleteConfirmation.toLowerCase() !== 'deletar') {
+      toast({
+        title: 'Erro na confirmação',
+        description: 'Digite "deletar" para confirmar a exclusão do projeto.',
+        variant: 'destructive'
+      });
+      return;
+    }
     
-    toast({
-      title: 'Projeto excluído',
-      description: `O projeto "${project.name}" foi excluído com sucesso.`,
-    });
+    try {
+      deleteProject(project.id);
+      
+      toast({
+        title: 'Projeto excluído',
+        description: `O projeto "${project.name}" foi excluído com sucesso.`,
+      });
+      
+      navigate('/');
+    } catch (error) {
+      console.error('Erro ao excluir projeto:', error);
+      toast({
+        title: 'Erro ao excluir',
+        description: 'Ocorreu um erro ao tentar excluir o projeto. Tente novamente.',
+        variant: 'destructive'
+      });
+    }
     
-    navigate('/');
+    setShowDeleteDialog(false);
   };
   
   const handleGenerateReport = () => {
@@ -367,31 +399,47 @@ const ProjectDetails: React.FC = () => {
         </Tabs>
         
         <div className="mt-8">
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
+          <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+            <DialogTrigger asChild>
               <Button variant="destructive" className="flex items-center gap-2">
                 <Trash size={16} />
                 <span>Excluir Projeto</span>
               </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>
-                  Tem certeza que deseja excluir?
-                </AlertDialogTitle>
-                <AlertDialogDescription>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Tem certeza que deseja excluir?</DialogTitle>
+                <DialogDescription>
                   Esta ação não pode ser desfeita. Todos os dados do projeto, incluindo
                   tarefas e registros de tempo, serão permanentemente excluídos.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                <AlertDialogAction onClick={handleDeleteProject}>
-                  Excluir
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+                </DialogDescription>
+              </DialogHeader>
+              <div className="py-4">
+                <p className="mb-2 text-sm text-muted-foreground">
+                  Digite <span className="font-bold">deletar</span> para confirmar a exclusão:
+                </p>
+                <Input
+                  value={deleteConfirmation}
+                  onChange={(e) => setDeleteConfirmation(e.target.value)}
+                  placeholder="deletar"
+                  className="mb-2"
+                  autoComplete="off"
+                />
+              </div>
+              <DialogFooter className="sm:justify-between">
+                <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
+                  Cancelar
+                </Button>
+                <Button 
+                  variant="destructive" 
+                  onClick={handleDeleteProject}
+                  disabled={deleteConfirmation.toLowerCase() !== 'deletar'}
+                >
+                  Excluir Permanentemente
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
     </div>

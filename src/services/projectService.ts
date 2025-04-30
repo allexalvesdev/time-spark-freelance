@@ -55,6 +55,51 @@ export const projectService = {
   },
 
   async deleteProject(projectId: string) {
+    // First, delete all task tags associated with tasks in this project
+    const { data: projectTasks, error: tasksError } = await supabase
+      .from('tasks')
+      .select('id')
+      .eq('project_id', projectId);
+    
+    if (tasksError) throw tasksError;
+    
+    if (projectTasks && projectTasks.length > 0) {
+      const taskIds = projectTasks.map(task => task.id);
+      
+      // Delete all task tags
+      const { error: taskTagsError } = await supabase
+        .from('task_tags')
+        .delete()
+        .in('task_id', taskIds);
+      
+      if (taskTagsError) throw taskTagsError;
+      
+      // Delete all time entries related to the tasks
+      const { error: timeEntriesError } = await supabase
+        .from('time_entries')
+        .delete()
+        .in('task_id', taskIds);
+      
+      if (timeEntriesError) throw timeEntriesError;
+    }
+    
+    // Delete all tasks associated with this project
+    const { error: deleteTasksError } = await supabase
+      .from('tasks')
+      .delete()
+      .eq('project_id', projectId);
+
+    if (deleteTasksError) throw deleteTasksError;
+    
+    // Delete all time entries directly associated with the project
+    const { error: deleteProjectTimeEntriesError } = await supabase
+      .from('time_entries')
+      .delete()
+      .eq('project_id', projectId);
+
+    if (deleteProjectTimeEntriesError) throw deleteProjectTimeEntriesError;
+    
+    // Finally delete the project itself
     const { error } = await supabase
       .from('projects')
       .delete()

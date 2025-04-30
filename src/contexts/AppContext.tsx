@@ -91,6 +91,25 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     });
   }, [projects, tasks, timeEntries, activeTimeEntry, currentTask, tags]);
   
+  // Listen for task-completed events to update global task list
+  useEffect(() => {
+    const handleTaskCompleted = (event: CustomEvent) => {
+      const { taskId, updatedTask } = event.detail;
+      console.log('AppContext received task-completed event for task:', taskId);
+      
+      // Update tasks state with the completed task
+      setTasks(currentTasks => 
+        currentTasks.map(t => t.id === taskId ? updatedTask : t)
+      );
+    };
+    
+    window.addEventListener('task-completed', handleTaskCompleted as EventListener);
+    
+    return () => {
+      window.removeEventListener('task-completed', handleTaskCompleted as EventListener);
+    };
+  }, [setTasks]);
+  
   // Carregar dados quando o usuário mudar
   useEffect(() => {
     if (!user) {

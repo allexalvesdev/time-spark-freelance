@@ -72,7 +72,7 @@ export const useTimerManagement = (userId: string, tasks: Task[] = []) => {
           const task = currentTasks.find(t => t.id === taskId);
           
           if (task) {
-            // Get the current task's project to calculate earnings
+            // Update the task with completed status
             const updatedTask: Task = {
               ...task,
               completed: true,
@@ -81,13 +81,13 @@ export const useTimerManagement = (userId: string, tasks: Task[] = []) => {
               elapsedTime: (task.elapsedTime || 0) + duration,
             };
             
-            // Update local state immediately to reflect changes in UI
-            // This is important so the user doesn't need to reload the page
+            // Update the server first
+            await taskService.updateTask(updatedTask);
+            
+            // After server update, dispatch event to update UI across the app
             window.dispatchEvent(new CustomEvent('task-completed', { 
               detail: { taskId, updatedTask } 
             }));
-            
-            await taskService.updateTask(updatedTask);
             
             const timeFormatted = formatDuration(updatedTask.elapsedTime);
             toast({

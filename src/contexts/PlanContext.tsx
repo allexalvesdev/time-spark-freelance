@@ -15,6 +15,7 @@ interface PlanContextType {
   planLimits: PlanLimits;
   canCreateProject: (currentProjectCount: number) => boolean;
   upgradePlan: (newPlan: PlanType) => Promise<void>;
+  loadUserPlan: () => Promise<void>;
 }
 
 const planLimitsMap: Record<PlanType, PlanLimits> = {
@@ -89,7 +90,7 @@ export const PlanProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <PlanContext.Provider value={{ currentPlan, planLimits, canCreateProject, upgradePlan }}>
+    <PlanContext.Provider value={{ currentPlan, planLimits, canCreateProject, upgradePlan, loadUserPlan }}>
       {children}
     </PlanContext.Provider>
   );
@@ -102,4 +103,3 @@ export const usePlan = (): PlanContextType => {
   }
   return context;
 };
-

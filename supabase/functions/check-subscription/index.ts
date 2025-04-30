@@ -8,10 +8,6 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
-  apiVersion: "2023-10-16",
-});
-
 serve(async (req) => {
   // Tratar preflight requests do CORS
   if (req.method === "OPTIONS") {
@@ -54,7 +50,7 @@ serve(async (req) => {
     // Obter perfil do usuário
     const { data: profile, error: profileError } = await supabaseAdmin
       .from("profiles")
-      .select("stripe_customer_id, user_plan, pending_plan")
+      .select("user_plan, pending_plan")
       .eq("id", user.id)
       .maybeSingle();
       
@@ -74,8 +70,18 @@ serve(async (req) => {
       );
     }
     
-    // Se não tiver stripe_customer_id, não há assinatura
-    if (!profile.stripe_customer_id) {
+    // Verificar se há um usuário do Stripe associado
+    const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
+      apiVersion: "2023-10-16",
+    });
+    
+    const customers = await stripe.customers.list({
+      email: user.email,
+      limit: 1,
+    });
+    
+    if (customers.data.length === 0) {
+      // Não tem cliente Stripe
       return new Response(
         JSON.stringify({ 
           user_plan: profile.user_plan || "free",
@@ -86,9 +92,11 @@ serve(async (req) => {
       );
     }
     
+    const customerId = customers.data[0].id;
+    
     // Verificar assinaturas ativas no Stripe
     const subscriptions = await stripe.subscriptions.list({
-      customer: profile.stripe_customer_id,
+      customer: customerId,
       status: "active",
       limit: 1,
     });

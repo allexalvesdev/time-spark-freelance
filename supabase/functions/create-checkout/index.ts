@@ -47,7 +47,6 @@ serve(async (req) => {
     }
 
     // Preços baseados no plano selecionado
-    const priceId = plan === 'pro' ? 'price_pro' : 'price_enterprise';
     const amount = plan === 'pro' ? 2990 : 5990;
     
     // Criar cliente Stripe
@@ -83,11 +82,10 @@ serve(async (req) => {
       { auth: { persistSession: false } }
     );
     
-    // Atualizar o perfil do usuário com o stripe_customer_id e pending_plan
+    // Atualizar o perfil do usuário com pending_plan
     await supabaseAdmin
       .from("profiles")
       .update({
-        stripe_customer_id: stripeCustomerId,
         pending_plan: plan
       })
       .eq("id", user.id);

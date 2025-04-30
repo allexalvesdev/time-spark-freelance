@@ -32,6 +32,7 @@ export const useTasks = (userId: string) => {
 
   const updateTask = async (task: Task) => {
     try {
+      console.log('Updating task:', task);
       await taskService.updateTask(task);
       setTasks(prev => prev.map(t => t.id === task.id ? task : t));
       setCurrentTask(prev => prev?.id === task.id ? task : prev);
@@ -48,19 +49,37 @@ export const useTasks = (userId: string) => {
 
   const completeTask = async (taskId: string) => {
     try {
+      console.log('Completing task:', taskId);
       const task = tasks.find(t => t.id === taskId);
-      if (!task) return;
+      if (!task) {
+        console.error('Task not found for completion:', taskId);
+        return;
+      }
 
+      const now = new Date();
       const updatedTask: Task = {
         ...task,
         completed: true,
-        actualEndTime: new Date(),
+        actualEndTime: now,
+        actualStartTime: task.actualStartTime || task.scheduledStartTime,
         elapsedTime: task.actualStartTime 
-          ? calculateElapsedTime(task.actualStartTime, new Date())
-          : 0
+          ? calculateElapsedTime(task.actualStartTime, now)
+          : (task.elapsedTime || 0)
       };
 
+      console.log('Updated task for completion:', updatedTask);
       await updateTask(updatedTask);
+      
+      // Dispatch event for task completion
+      const event = new CustomEvent('task-completed', {
+        detail: { taskId, updatedTask }
+      });
+      window.dispatchEvent(event);
+      
+      toast({
+        title: 'Tarefa concluída',
+        description: 'A tarefa foi finalizada com sucesso.',
+      });
     } catch (error: any) {
       console.error('Error completing task:', error);
       toast({

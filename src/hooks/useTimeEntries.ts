@@ -27,6 +27,11 @@ export const useTimeEntries = (userId: string) => {
       setTimeEntries(prev => [newTimeEntry, ...prev]);
       setActiveTimeEntry(newTimeEntry);
 
+      // Store active timer data in localStorage for global synchronization
+      localStorage.setItem('activeTimeEntryId', newTimeEntry.id);
+      localStorage.setItem('activeTaskId', taskId);
+      localStorage.setItem('timerStartTime', new Date().getTime().toString());
+
       return newTimeEntry;
     } catch (error) {
       console.error('Error starting time entry:', error);
@@ -62,6 +67,19 @@ export const useTimeEntries = (userId: string) => {
       );
       
       const stoppedEntry = { ...updatedTimeEntry };
+      
+      // Clear the global timer state from localStorage
+      localStorage.removeItem('activeTimeEntryId');
+      localStorage.removeItem('activeTaskId');
+      localStorage.removeItem('timerStartTime');
+      
+      // Also clear the specific task timer state
+      const taskId = activeTimeEntry.taskId;
+      localStorage.removeItem(`timerState-global-timer-${taskId}`);
+      localStorage.removeItem(`timerIsRunning-global-timer-${taskId}`);
+      localStorage.removeItem(`timerStartTime-global-timer-${taskId}`);
+      localStorage.removeItem(`timerElapsedTime-global-timer-${taskId}`);
+
       setActiveTimeEntry(null);
 
       return stoppedEntry;

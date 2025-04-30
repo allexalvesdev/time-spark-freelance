@@ -54,7 +54,7 @@ const Timer: React.FC<TimerProps> = ({ taskId, projectId, hourlyRate }) => {
     try {
       console.log(`[Timer:${taskId}] Starting timer for task`);
       await startTimer(taskId, projectId);
-      start();
+      // Local timer will auto-start due to the useEffect above when isActive becomes true
     } catch (error) {
       console.error(`[Timer:${taskId}] Error starting timer:`, error);
     }
@@ -66,7 +66,7 @@ const Timer: React.FC<TimerProps> = ({ taskId, projectId, hourlyRate }) => {
       console.log(`[Timer:${taskId}] Stopping timer for task`);
       // Pass true to complete the task automatically
       await stopTimer(true);
-      stop();
+      // Local timer will auto-stop due to the useEffect above when isActive becomes false
     } catch (error) {
       console.error(`[Timer:${taskId}] Error stopping timer:`, error);
     }

@@ -1,3 +1,4 @@
+
 import { useCallback } from 'react';
 import { Project, Task, TimeEntry, Tag } from '@/types';
 import { AppState } from '@/types/app';
@@ -130,10 +131,14 @@ export const useAppServices = ({
   
   const stopTimer = useCallback(async (completeTaskFlag: boolean = false) => {
     try {
+      console.log('Stopping timer, completeTask flag:', completeTaskFlag);
       const stoppedEntry = await stopStoredTimeEntry(completeTaskFlag);
       
+      // Make sure we complete the task if requested
       if (completeTaskFlag && stoppedEntry) {
-        await completeStoredTask(stoppedEntry.taskId);
+        const taskId = stoppedEntry.taskId;
+        console.log('Completing task after timer stop:', taskId);
+        await completeStoredTask(taskId);
       }
     } catch (error) {
       console.error('Error stopping timer:', error);
@@ -143,7 +148,9 @@ export const useAppServices = ({
   
   const getActiveTaskName = useCallback((): string | null => {
     if (!state.activeTimeEntry) return null;
-    const task = state.tasks.find(task => task.id === state.activeTimeEntry?.taskId);
+    
+    const taskId = state.activeTimeEntry.taskId;
+    const task = state.tasks.find(task => task.id === taskId);
     return task ? task.name : null;
   }, [state.activeTimeEntry, state.tasks]);
   

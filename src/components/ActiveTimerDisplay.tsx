@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useAppContext } from '@/contexts/AppContext';
 import useTimerState from '@/hooks/useTimerState';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -11,16 +11,32 @@ const ActiveTimerDisplay: React.FC = () => {
   const { activeTimeEntry } = state;
   const isMobile = useIsMobile();
   
-  const { getFormattedTime } = useTimerState({
-    persistKey: activeTimeEntry ? `global-timer-${activeTimeEntry.taskId}` : undefined,
-    autoStart: true
+  // Only create a timer if there's an active time entry
+  const timerKey = activeTimeEntry ? `global-timer-${activeTimeEntry.taskId}` : undefined;
+  
+  const { 
+    getFormattedTime,
+    isRunning,
+    start 
+  } = useTimerState({
+    persistKey: timerKey,
+    autoStart: !!activeTimeEntry // Start automatically if there's an active entry
   });
+
+  // Ensure timer is running if there's an active entry
+  useEffect(() => {
+    if (activeTimeEntry && !isRunning) {
+      console.log('[ActiveTimerDisplay] Ensuring timer is running');
+      start();
+    }
+  }, [activeTimeEntry, isRunning, start]);
 
   if (!activeTimeEntry) return null;
   
   const taskName = getActiveTaskName();
 
   const handleStopTimer = () => {
+    console.log('[ActiveTimerDisplay] Stopping timer');
     stopTimer(true); // Auto-complete task on stop
   };
   

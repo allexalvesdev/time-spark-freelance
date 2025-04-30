@@ -8,113 +8,127 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
-  apiVersion: "2023-10-16",
-});
-
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { plan } = await req.json();
-    
-    // Verificar qual plano foi selecionado
-    let priceAmount;
-    let planName;
-    
-    if (plan === 'pro') {
-      priceAmount = 2990; // R$ 29,90 em centavos
-      planName = "Profissional";
-    } else if (plan === 'enterprise') {
-      priceAmount = 5990; // R$ 59,90 em centavos
-      planName = "Enterprise";
-    } else {
-      throw new Error("Plano não reconhecido");
-    }
-    
     // Criar cliente Supabase para autenticação
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_ANON_KEY") ?? ""
     );
 
-    // Autenticar o usuário
-    const authHeader = req.headers.get("Authorization")!;
-    const token = authHeader.replace("Bearer ", "");
-    const { data } = await supabaseClient.auth.getUser(token);
-    const user = data.user;
+    // Verificar o corpo da requisição
+    const { plan } = await req.json();
     
-    if (!user?.email) {
-      throw new Error("Usuário não autenticado ou email não disponível");
+    if (!plan || (plan !== 'pro' && plan !== 'enterprise')) {
+      throw new Error("Plano inválido ou não especificado");
     }
 
-    // Verificar se o cliente já existe no Stripe
-    const customers = await stripe.customers.list({ email: user.email, limit: 1 });
-    let customerId;
+    // Autenticar o usuário
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      throw new Error("Cabeçalho de autorização ausente");
+    }
+    
+    const token = authHeader.replace("Bearer ", "");
+    const { data, error: authError } = await supabaseClient.auth.getUser(token);
+    
+    if (authError || !data.user) {
+      throw new Error("Usuário não autenticado");
+    }
+    
+    const user = data.user;
+    
+    if (!user.email) {
+      throw new Error("Email do usuário não disponível");
+    }
+
+    // Preços baseados no plano selecionado
+    const priceId = plan === 'pro' ? 'price_pro' : 'price_enterprise';
+    const amount = plan === 'pro' ? 2990 : 5990;
+    
+    // Criar cliente Stripe
+    const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
+      apiVersion: "2023-10-16",
+    });
+
+    // Verificar se já existe um cliente no Stripe
+    const customers = await stripe.customers.list({
+      email: user.email,
+      limit: 1,
+    });
+    
+    let stripeCustomerId;
     
     if (customers.data.length > 0) {
-      customerId = customers.data[0].id;
+      stripeCustomerId = customers.data[0].id;
     } else {
       // Criar novo cliente no Stripe
       const newCustomer = await stripe.customers.create({
         email: user.email,
         metadata: {
-          user_id: user.id,
-        },
+          userId: user.id
+        }
       });
-      customerId = newCustomer.id;
+      stripeCustomerId = newCustomer.id;
     }
-
-    // Criar uma sessão de checkout
-    const session = await stripe.checkout.sessions.create({
-      customer: customerId,
-      payment_method_types: ["card"],
-      line_items: [
-        {
-          price_data: {
-            currency: "brl",
-            product_data: {
-              name: `Plano ${planName}`,
-              description: `Assinatura mensal do plano ${planName}`,
-            },
-            unit_amount: priceAmount,
-            recurring: {
-              interval: "month",
-            },
-          },
-          quantity: 1,
-        },
-      ],
-      mode: "subscription",
-      success_url: `${req.headers.get("origin")}/configuracoes?payment=success&plan=${plan}`,
-      cancel_url: `${req.headers.get("origin")}/configuracoes?payment=canceled`,
-    });
-
-    // Atualizar no Supabase que o usuário está tentando fazer upgrade
+    
+    // Criar cliente Supabase admin
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
       { auth: { persistSession: false } }
     );
     
-    await supabaseAdmin.from("profiles").update({
-      pending_plan: plan,
-      stripe_customer_id: customerId,
-    }).eq("id", user.id);
-
+    // Atualizar o perfil do usuário com o stripe_customer_id e pending_plan
+    await supabaseAdmin
+      .from("profiles")
+      .update({
+        stripe_customer_id: stripeCustomerId,
+        pending_plan: plan
+      })
+      .eq("id", user.id);
+    
+    // Criar a sessão do checkout
+    const session = await stripe.checkout.sessions.create({
+      customer: stripeCustomerId,
+      line_items: [
+        {
+          price_data: {
+            currency: "brl",
+            product_data: {
+              name: plan === 'pro' ? "Plano Profissional" : "Plano Enterprise",
+              description: plan === 'pro' ? "Assinatura mensal do plano Profissional" : "Assinatura mensal do plano Enterprise"
+            },
+            unit_amount: amount,
+            recurring: {
+              interval: "month"
+            }
+          },
+          quantity: 1,
+        },
+      ],
+      mode: "subscription",
+      success_url: `${req.headers.get("origin") || "http://localhost:3000"}/configuracoes?payment=success`,
+      cancel_url: `${req.headers.get("origin") || "http://localhost:3000"}/configuracoes?payment=canceled&plan=${plan}`,
+    });
+    
+    if (!session || !session.url) {
+      throw new Error("Não foi possível criar a sessão de checkout");
+    }
+    
     return new Response(
-      JSON.stringify({ 
-        sessionUrl: session.url,
-        sessionId: session.id,
-      }),
+      JSON.stringify({ sessionUrl: session.url }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
       }
     );
   } catch (error) {
+    console.error("Erro na edge function create-checkout:", error);
     const errorMessage = error instanceof Error ? error.message : String(error);
     
     return new Response(

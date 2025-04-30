@@ -3,11 +3,12 @@ import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Check, Loader2, ExternalLink } from 'lucide-react';
+import { Check, Loader2, ExternalLink, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePlan } from '@/contexts/PlanContext';
 import { supabase } from '@/integrations/supabase/client';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface SubscriptionStatus {
   user_plan: string;
@@ -28,6 +29,7 @@ const PlanSubscription = () => {
   const [loading, setLoading] = useState(false);
   const [checkingStatus, setCheckingStatus] = useState(false);
   const [subscriptionStatus, setSubscriptionStatus] = useState<SubscriptionStatus | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
     checkSubscriptionStatus();
@@ -62,10 +64,16 @@ const PlanSubscription = () => {
     if (!user) return;
     
     try {
+      setErrorMessage(null);
       setCheckingStatus(true);
+      
       const { data, error } = await supabase.functions.invoke('check-subscription');
       
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao verificar status da assinatura:', error);
+        setErrorMessage(`Erro ao verificar status da assinatura: ${error.message || 'Erro desconhecido'}`);
+        throw error;
+      }
       
       setSubscriptionStatus(data);
       
@@ -75,6 +83,7 @@ const PlanSubscription = () => {
       }
     } catch (error) {
       console.error('Erro ao verificar status da assinatura:', error);
+      setErrorMessage('Não foi possível verificar o status da sua assinatura. Tente novamente.');
       toast({
         title: 'Erro',
         description: 'Não foi possível verificar o status da sua assinatura.',
@@ -88,16 +97,27 @@ const PlanSubscription = () => {
   const handleSubscribe = async (plan: string) => {
     try {
       setLoading(true);
+      setErrorMessage(null);
+      
       const { data, error } = await supabase.functions.invoke('create-checkout', {
         body: { plan },
       });
       
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao criar sessão de checkout:', error);
+        setErrorMessage(`Erro ao criar sessão de checkout: ${error.message || 'Erro desconhecido'}`);
+        throw error;
+      }
+      
+      if (!data?.sessionUrl) {
+        throw new Error('URL de checkout não retornada');
+      }
       
       // Redirecionar para o Stripe Checkout
       window.location.href = data.sessionUrl;
     } catch (error) {
       console.error('Erro ao criar sessão de checkout:', error);
+      setErrorMessage('Não foi possível iniciar o processo de assinatura. Tente novamente.');
       toast({
         title: 'Erro',
         description: 'Não foi possível iniciar o processo de assinatura. Tente novamente.',
@@ -110,9 +130,19 @@ const PlanSubscription = () => {
   const openCustomerPortal = async () => {
     try {
       setLoading(true);
+      setErrorMessage(null);
+      
       const { data, error } = await supabase.functions.invoke('customer-portal');
       
-      if (error) throw error;
+      if (error) {
+        console.error('Erro ao abrir portal do cliente:', error);
+        setErrorMessage(`Erro ao abrir portal do cliente: ${error.message || 'Erro desconhecido'}`);
+        throw error;
+      }
+      
+      if (!data?.url) {
+        throw new Error('URL do portal não retornada');
+      }
       
       // Redirecionar para o portal do cliente Stripe
       window.location.href = data.url;
@@ -243,6 +273,13 @@ const PlanSubscription = () => {
         </div>
       </div>
 
+      {errorMessage && (
+        <Alert variant="destructive" className="mb-4">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{errorMessage}</AlertDescription>
+        </Alert>
+      )}
+
       {subscriptionStatus?.status === 'active' && subscriptionStatus.subscription && (
         <div className="bg-muted p-4 rounded-lg mb-6">
           <p className="font-medium">
@@ -307,7 +344,7 @@ const PlanSubscription = () => {
           <CardFooter>
             <Button
               className="w-full"
-              disabled={isPlanActive('pro') || loading}
+              disabled={isPlanActive('pro') || loading || isPlanPending('pro')}
               onClick={() => handleSubscribe('pro')}
             >
               {loading ? 
@@ -345,7 +382,7 @@ const PlanSubscription = () => {
           <CardFooter>
             <Button
               className="w-full"
-              disabled={isPlanActive('enterprise') || loading}
+              disabled={isPlanActive('enterprise') || loading || isPlanPending('enterprise')}
               onClick={() => handleSubscribe('enterprise')}
             >
               {loading ? 

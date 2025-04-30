@@ -13,6 +13,7 @@ const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
 });
 
 serve(async (req) => {
+  // Tratar preflight requests do CORS
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -25,13 +26,22 @@ serve(async (req) => {
     );
 
     // Autenticar o usuário
-    const authHeader = req.headers.get("Authorization")!;
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      throw new Error("Cabeçalho de autorização ausente");
+    }
+    
     const token = authHeader.replace("Bearer ", "");
-    const { data } = await supabaseClient.auth.getUser(token);
+    const { data, error: authError } = await supabaseClient.auth.getUser(token);
+    
+    if (authError || !data.user) {
+      throw new Error("Usuário não autenticado");
+    }
+    
     const user = data.user;
     
-    if (!user?.email) {
-      throw new Error("Usuário não autenticado ou email não disponível");
+    if (!user.email) {
+      throw new Error("Email do usuário não disponível");
     }
 
     // Criar cliente Supabase admin
@@ -46,10 +56,22 @@ serve(async (req) => {
       .from("profiles")
       .select("stripe_customer_id, user_plan, pending_plan")
       .eq("id", user.id)
-      .single();
+      .maybeSingle();
       
     if (profileError) {
       throw new Error(`Erro ao buscar perfil: ${profileError.message}`);
+    }
+
+    // Se o perfil não existir, retornar plano gratuito
+    if (!profile) {
+      return new Response(
+        JSON.stringify({ 
+          user_plan: "free",
+          status: "no_subscription",
+          pending_plan: null
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
     
     // Se não tiver stripe_customer_id, não há assinatura
@@ -142,6 +164,7 @@ serve(async (req) => {
     );
     
   } catch (error) {
+    console.error("Erro na edge function check-subscription:", error);
     const errorMessage = error instanceof Error ? error.message : String(error);
     
     return new Response(

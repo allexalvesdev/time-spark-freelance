@@ -39,8 +39,13 @@ export const useTimerManagement = (userId: string, tasks: Task[] = []) => {
     try {
       console.log('[useTimerManagement] Stopping timer with completeTaskFlag:', completeTaskFlag);
       
+      if (!activeTimeEntry) {
+        console.log('[useTimerManagement] No active time entry to stop');
+        return null;
+      }
+      
       // Important: save relevant information before stopping
-      const entryBeforeStop = activeTimeEntry ? {...activeTimeEntry} : null;
+      const entryBeforeStop = { ...activeTimeEntry };
       
       // Stop the timer and get the completed entry
       const stoppedEntry = await stopTimeEntry();

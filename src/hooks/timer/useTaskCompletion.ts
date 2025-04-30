@@ -27,8 +27,10 @@ export const useTaskCompletion = (tasks: Task[]) => {
       const endTime = timeEntry.endTime || new Date();
       
       // Use the duration from the time entry when available or calculate it
-      const duration = timeEntry.duration || 
-                       Math.floor((endTime.getTime() - startTime.getTime()) / 1000);
+      let duration = timeEntry.duration;
+      if (!duration && startTime) {
+        duration = Math.floor((endTime.getTime() - startTime.getTime()) / 1000);
+      }
       
       console.log('[useTaskCompletion] Time accumulated in entry:', {
         duration,
@@ -38,10 +40,16 @@ export const useTaskCompletion = (tasks: Task[]) => {
         endTime: endTime.toISOString()
       });
       
-      // Calculate the accumulated time correctly
-      const newElapsedTime = (task.elapsedTime || 0) + duration;
+      // Calculate the accumulated time correctly - ensure we have valid numbers
+      const previousElapsed = task.elapsedTime || 0;
+      const entryDuration = duration || 0;
+      const newElapsedTime = previousElapsed + entryDuration;
       
-      console.log('[useTaskCompletion] Completing task with new elapsed time:', newElapsedTime);
+      console.log('[useTaskCompletion] Completing task with new elapsed time:', {
+        previousElapsed,
+        entryDuration,
+        newTotal: newElapsedTime
+      });
       
       // Update the task as complete with the accumulated time
       const updatedTask: Task = {
@@ -56,8 +64,8 @@ export const useTaskCompletion = (tasks: Task[]) => {
       
       console.log('[useTaskCompletion] Completing task:', {
         taskId,
-        duration,
-        previousTime: task.elapsedTime || 0,
+        duration: entryDuration,
+        previousTime: previousElapsed,
         totalTime: updatedTask.elapsedTime,
         start: updatedTask.actualStartTime,
         end: updatedTask.actualEndTime

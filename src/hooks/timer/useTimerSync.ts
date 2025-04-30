@@ -97,5 +97,5 @@ export const useTimerSync = ({
     return () => {
       window.removeEventListener('storage', handleStorageChange);
     };
-  }, [persistKey]);  // Remove isRunning and elapsedTime from dependency array to avoid infinite resets
+  }, [persistKey, setIsRunning, setElapsedTime, startTimeRef]);  // Remove isRunning and elapsedTime from deps
 };

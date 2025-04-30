@@ -64,8 +64,8 @@ export const timeEntryService = {
       isRunning: entry.isRunning
     });
     
-    // Always calculate duration if endTime is provided
-    let calculatedDuration = entry.duration;
+    // Calculate duration if endTime is provided and we have a startTime
+    let calculatedDuration = entry.duration || 0;
     if (entry.endTime && entry.startTime) {
       const startTime = new Date(entry.startTime).getTime();
       const endTime = new Date(entry.endTime).getTime();

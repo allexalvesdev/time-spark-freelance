@@ -4,7 +4,7 @@ import { useAppContext } from '@/contexts/AppContext';
 import useTimerState from '@/hooks/useTimerState';
 import { Button } from '@/components/ui/button';
 import { Play, Square } from 'lucide-react';
-import { formatDuration, calculateEarnings } from '@/utils/dateUtils';
+import { calculateEarnings } from '@/utils/dateUtils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import StorageModeIndicator from './StorageModeIndicator';
 
@@ -47,7 +47,7 @@ const Timer: React.FC<TimerProps> = ({ taskId, projectId, hourlyRate }) => {
     else if (!isActive && isRunning) {
       console.log(`[Timer:${taskId}] Global inactive but local running - stopping local timer`);
       stop();
-      reset();
+      reset(); // Reset timer when it becomes inactive
     }
   }, [isActive, isRunning, taskId, start, stop, reset]);
   
@@ -56,12 +56,13 @@ const Timer: React.FC<TimerProps> = ({ taskId, projectId, hourlyRate }) => {
     try {
       console.log(`[Timer:${taskId}] Starting timer for task`);
       
-      // First reset the local timer to ensure we start fresh
+      // Reset the timer before starting a fresh timer
       reset();
       
-      // Then start the global timer
+      // Start the global timer in the database first
       await startTimer(taskId, projectId);
-      // Local timer will auto-start due to the useEffect above when isActive becomes true
+      
+      // The local timer will auto-start via useEffect when isActive becomes true
     } catch (error) {
       console.error(`[Timer:${taskId}] Error starting timer:`, error);
     }
@@ -72,13 +73,13 @@ const Timer: React.FC<TimerProps> = ({ taskId, projectId, hourlyRate }) => {
     try {
       console.log(`[Timer:${taskId}] Stopping timer for task with elapsed time:`, elapsedTime);
       
-      // Stop the local timer first to prevent state issues
+      // Stop the local timer first
       stop();
       
-      // Always pass true to complete the task automatically when stopping from the Timer component
+      // Pass true to complete the task automatically when stopping
       await stopTimer(true);
       
-      // Force reset of local timer to ensure a new cycle will start from zero
+      // Reset the timer after stopping completely
       reset();
     } catch (error) {
       console.error(`[Timer:${taskId}] Error stopping timer:`, error);

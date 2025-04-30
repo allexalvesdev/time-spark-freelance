@@ -1,3 +1,4 @@
+
 import { useCallback } from 'react';
 import { Project, Task, TimeEntry, Tag } from '@/types';
 import { AppState } from '@/types/app';
@@ -88,20 +89,19 @@ export const useAppServices = ({
     setStoredCurrentTask,
   });
   
-  // Fix the types for these functions
-  const startTimer = useCallback(async (taskId: string, projectId: string): Promise<void> => {
+  // Updated return types to match the actual implementation
+  const startTimer = useCallback(async (taskId: string, projectId: string): Promise<TimeEntry> => {
     try {
-      await startStoredTimeEntry(taskId, projectId);
+      return await startStoredTimeEntry(taskId, projectId);
     } catch (error) {
       console.error('Error starting timer:', error);
       throw error;
     }
   }, [startStoredTimeEntry]);
 
-  const stopTimer = useCallback(async (completeTaskFlag: boolean = false): Promise<void> => {
+  const stopTimer = useCallback(async (completeTaskFlag: boolean = false): Promise<TimeEntry | null> => {
     try {
-      const stoppedEntry = await stopStoredTimeEntry(completeTaskFlag);
-      return;
+      return await stopStoredTimeEntry(completeTaskFlag);
     } catch (error) {
       console.error('Error stopping timer:', error);
       throw error;

@@ -20,8 +20,8 @@ export interface AppContextType {
   updateTask: (task: Task) => Promise<void>;
   completeTask: (taskId: string) => Promise<void>;
   deleteTask: (taskId: string) => Promise<void>;
-  startTimer: (taskId: string, projectId: string) => Promise<void>;
-  stopTimer: (completeTaskFlag?: boolean) => Promise<void>;
+  startTimer: (taskId: string, projectId: string) => Promise<TimeEntry>; // Updated return type
+  stopTimer: (completeTaskFlag?: boolean) => Promise<TimeEntry | null>; // Updated return type
   setCurrentProject: (project: Project | null) => void;
   setCurrentTask: (task: Task | null) => void;
   generateReport: (projectId: string) => ReportData | null;

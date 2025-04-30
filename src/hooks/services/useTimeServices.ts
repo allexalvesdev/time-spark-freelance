@@ -17,7 +17,7 @@ export const useTimeServices = ({
   tasks,
 }: TimeServicesProps) => {
   
-  const startTimer = useCallback(async (taskId: string, projectId: string) => {
+  const startTimer = useCallback(async (taskId: string, projectId: string): Promise<TimeEntry> => {
     try {
       // Start the time entry in the database
       const timeEntry = await startStoredTimeEntry(taskId, projectId);
@@ -30,7 +30,7 @@ export const useTimeServices = ({
     }
   }, [startStoredTimeEntry]);
   
-  const stopTimer = useCallback(async (completeTaskFlag: boolean = false) => {
+  const stopTimer = useCallback(async (completeTaskFlag: boolean = false): Promise<TimeEntry | null> => {
     try {
       console.log('Stopping timer, completeTask flag:', completeTaskFlag);
       

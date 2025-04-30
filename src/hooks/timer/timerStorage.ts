@@ -30,5 +30,6 @@ export {
  * Get storage mode (localStorage or memory) currently in use
  */
 export const getStorageMode = (): 'localStorage' | 'memory' => {
+  const { isLocalStorageAvailable } = require('./storageCore');
   return isLocalStorageAvailable() ? 'localStorage' : 'memory';
 };

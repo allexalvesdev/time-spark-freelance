@@ -17,7 +17,8 @@ const ActiveTimerDisplay: React.FC = () => {
   const { 
     getFormattedTime,
     isRunning,
-    start 
+    start,
+    elapsedTime
   } = useTimerState({
     persistKey: timerKey,
     autoStart: !!activeTimeEntry // Start automatically if there's an active entry
@@ -27,6 +28,19 @@ const ActiveTimerDisplay: React.FC = () => {
   useEffect(() => {
     if (activeTimeEntry && !isRunning) {
       console.log('[ActiveTimerDisplay] Ensuring timer is running');
+      
+      // Check for global timer state first
+      const globalStartTimeStr = localStorage.getItem('timerStartTime');
+      if (globalStartTimeStr && activeTimeEntry.taskId === localStorage.getItem('activeTaskId')) {
+        const globalStartTime = parseInt(globalStartTimeStr, 10);
+        const currentTime = Date.now();
+        const elapsed = Math.floor((currentTime - globalStartTime) / 1000);
+        console.log('[ActiveTimerDisplay] Found global timer state:', { 
+          globalStartTime, 
+          elapsed 
+        });
+      }
+      
       start();
     }
   }, [activeTimeEntry, isRunning, start]);
@@ -36,7 +50,7 @@ const ActiveTimerDisplay: React.FC = () => {
   const taskName = getActiveTaskName();
 
   const handleStopTimer = () => {
-    console.log('[ActiveTimerDisplay] Stopping timer');
+    console.log('[ActiveTimerDisplay] Stopping timer', { elapsedTime });
     stopTimer(true); // Auto-complete task on stop
   };
   

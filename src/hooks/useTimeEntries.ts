@@ -16,10 +16,11 @@ export const useTimeEntries = (userId: string) => {
         await stopTimeEntry();
       }
 
+      const startTime = new Date();
       const newTimeEntry = await timeEntryService.createTimeEntry({
         taskId,
         projectId,
-        startTime: new Date(),
+        startTime,
         isRunning: true,
         userId
       });
@@ -28,9 +29,31 @@ export const useTimeEntries = (userId: string) => {
       setActiveTimeEntry(newTimeEntry);
 
       // Store active timer data in localStorage for global synchronization
+      const startTimeMs = startTime.getTime();
       localStorage.setItem('activeTimeEntryId', newTimeEntry.id);
       localStorage.setItem('activeTaskId', taskId);
-      localStorage.setItem('timerStartTime', new Date().getTime().toString());
+      localStorage.setItem('timerStartTime', startTimeMs.toString());
+      
+      // Also store in the task-specific timer store
+      const timerKey = `global-timer-${taskId}`;
+      localStorage.setItem(`timerStartTime-${timerKey}`, startTimeMs.toString());
+      localStorage.setItem(`timerIsRunning-${timerKey}`, 'true');
+      localStorage.setItem(`timerElapsedTime-${timerKey}`, '0');
+      
+      // Store the full timer state
+      const timerState = JSON.stringify({
+        running: true,
+        elapsed: 0,
+        startTime: startTimeMs,
+        lastUpdate: Date.now()
+      });
+      localStorage.setItem(`timerState-${timerKey}`, timerState);
+      
+      console.log('[useTimeEntries] Timer started:', {
+        taskId,
+        startTime: startTimeMs,
+        newTimeEntry
+      });
 
       return newTimeEntry;
     } catch (error) {
@@ -50,6 +73,13 @@ export const useTimeEntries = (userId: string) => {
     try {
       const now = new Date();
       const duration = Math.floor((now.getTime() - activeTimeEntry.startTime.getTime()) / 1000);
+      
+      console.log('[useTimeEntries] Stopping time entry:', {
+        timeEntryId: activeTimeEntry.id,
+        taskId: activeTimeEntry.taskId,
+        duration,
+        completeTask: completeTaskFlag
+      });
       
       const updatedTimeEntry: TimeEntry = {
         ...activeTimeEntry,

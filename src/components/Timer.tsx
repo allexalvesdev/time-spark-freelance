@@ -40,6 +40,16 @@ const Timer: React.FC<TimerProps> = ({ taskId, projectId, hourlyRate }) => {
     // If time entry is active in global context but not in local state
     if (isActive && !isRunning) {
       console.log(`[Timer:${taskId}] Global active but local stopped - starting local timer`);
+      
+      // Check for global timer state first
+      const globalStartTimeStr = localStorage.getItem('timerStartTime');
+      if (globalStartTimeStr) {
+        console.log(`[Timer:${taskId}] Found global timer state:`, { 
+          globalStartTime: globalStartTimeStr,
+          activeTaskId: localStorage.getItem('activeTaskId')
+        });
+      }
+      
       start();
     } 
     // If time entry is no longer active in global context but still running locally
@@ -63,7 +73,7 @@ const Timer: React.FC<TimerProps> = ({ taskId, projectId, hourlyRate }) => {
   // Handler to stop the global and local timer
   const handleStopTimer = async () => {
     try {
-      console.log(`[Timer:${taskId}] Stopping timer for task`);
+      console.log(`[Timer:${taskId}] Stopping timer for task with elapsed time:`, elapsedTime);
       // Pass true to complete the task automatically
       await stopTimer(true);
       // Local timer will auto-stop due to the useEffect above when isActive becomes false

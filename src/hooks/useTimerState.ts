@@ -15,7 +15,7 @@ const useTimerState = (options: UseTimerOptions = {}) => {
   const lastSyncTimeRef = useRef<number>(Date.now());
   const initialSetupDoneRef = useRef<boolean>(false);
 
-  // Function to save timer state in localStorage with a more robust approach
+  // Improved function to save timer state in localStorage
   const persistTimerState = (running: boolean, elapsed: number, startTime: number | null) => {
     if (!persistKey) return;
     
@@ -46,21 +46,27 @@ const useTimerState = (options: UseTimerOptions = {}) => {
     }
   };
 
-  // Load persisted data from localStorage when the component mounts or when persistKey changes
-  useEffect(() => {
-    if (!persistKey || initialSetupDoneRef.current) return;
+  // Enhanced function to load persisted state with improved global sync
+  const loadPersistedState = () => {
+    if (!persistKey) return false;
     
     try {
       console.log(`[Timer:${persistKey}] Initializing timer with persistKey`);
       
       // Check if this is the active task's timer
       const activeTaskId = localStorage.getItem('activeTaskId');
-      const isActiveTask = persistKey.includes(activeTaskId || '');
-      const globalStartTimeStr = localStorage.getItem('timerStartTime');
+      const timerStartTimeStr = localStorage.getItem('timerStartTime');
+      const isActiveTask = activeTaskId && persistKey.includes(activeTaskId);
+      
+      console.log(`[Timer:${persistKey}] Check if active task:`, { 
+        isActiveTask, 
+        activeTaskId, 
+        timerStartTimeStr 
+      });
       
       // First try to load from the active task global state
-      if (isActiveTask && activeTaskId && globalStartTimeStr) {
-        const globalStartTime = parseInt(globalStartTimeStr, 10);
+      if (isActiveTask && timerStartTimeStr) {
+        const globalStartTime = parseInt(timerStartTimeStr, 10);
         const currentElapsed = Math.floor((Date.now() - globalStartTime) / 1000);
         
         console.log(`[Timer:${persistKey}] Loading from global active timer state:`, { 
@@ -71,6 +77,7 @@ const useTimerState = (options: UseTimerOptions = {}) => {
         startTimeRef.current = globalStartTime;
         setElapsedTime(currentElapsed);
         setIsRunning(true);
+        return true;
       }
       // Otherwise try to load from the specific timer state
       else {
@@ -95,12 +102,14 @@ const useTimerState = (options: UseTimerOptions = {}) => {
             setElapsedTime(currentElapsed);
             setIsRunning(true);
             startTimeRef.current = startTimeMs;
+            return true;
           } 
           // If timer was paused, just load the elapsed time
-          else if (!timerState.running) {
+          else if (!timerState.running && timerState.elapsed) {
             setElapsedTime(timerState.elapsed);
             setIsRunning(false);
             startTimeRef.current = null;
+            return true;
           }
         }
         // Fall back to loading individual values
@@ -128,6 +137,7 @@ const useTimerState = (options: UseTimerOptions = {}) => {
             setElapsedTime(currentElapsed);
             setIsRunning(true);
             startTimeRef.current = startTimeMs;
+            return true;
           } 
           // If timer was paused, just restore the elapsed time
           else if (savedElapsedTime && savedIsRunning === 'false') {
@@ -138,21 +148,48 @@ const useTimerState = (options: UseTimerOptions = {}) => {
             setElapsedTime(elapsed);
             setIsRunning(false);
             startTimeRef.current = null;
+            return true;
           }
         }
       }
-      
-      initialSetupDoneRef.current = true;
     } catch (e) {
       console.error('Error loading timer state:', e);
     }
+    return false;
+  };
+
+  // Load persisted data when the component mounts or when persistKey changes
+  useEffect(() => {
+    if (!persistKey || initialSetupDoneRef.current) return;
+    
+    const loaded = loadPersistedState();
+    initialSetupDoneRef.current = true;
+    
+    // If we couldn't load a state but autoStart is true, start fresh
+    if (!loaded && autoStart) {
+      console.log(`[Timer:${persistKey}] No saved state but autoStart is true - starting fresh`);
+      setIsRunning(true);
+    }
   }, [persistKey, autoStart]);
 
-  // Check for global timer updates (sync between components)
+  // Enhanced effect to check for global timer updates (sync between tabs and components)
   useEffect(() => {
     if (!persistKey) return;
     
-    // Only proceed if this is a valid task timer
+    const handleStorageChange = (e: StorageEvent) => {
+      if (!e.key || !e.key.includes('timer') || !e.key.includes(persistKey)) return;
+      
+      console.log(`[Timer:${persistKey}] Storage change detected:`, { 
+        key: e.key, 
+        newValue: e.newValue 
+      });
+      
+      loadPersistedState();
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    
+    // Check if this is a task timer and sync with global state
     if (persistKey.includes('global-timer-')) {
       const taskId = persistKey.replace('global-timer-', '');
       const activeTaskId = localStorage.getItem('activeTaskId');
@@ -179,6 +216,10 @@ const useTimerState = (options: UseTimerOptions = {}) => {
         persistTimerState(false, elapsedTime, null);
       }
     }
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
   }, [persistKey, isRunning, elapsedTime]);
 
   // This effect handles starting/stopping the interval
@@ -213,6 +254,8 @@ const useTimerState = (options: UseTimerOptions = {}) => {
         
         // If this is a task timer, also update global timer state
         if (persistKey.includes('global-timer-')) {
+          const taskId = persistKey.replace('global-timer-', '');
+          localStorage.setItem('activeTaskId', taskId);
           localStorage.setItem('timerStartTime', startTimeRef.current.toString());
         }
       }

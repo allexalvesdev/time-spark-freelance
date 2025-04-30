@@ -40,10 +40,10 @@ export const useTimerManagement = (userId: string, tasks: Task[] = []) => {
       console.log('[useTimerManagement] Stopping timer with completeTaskFlag:', completeTaskFlag);
       
       // Important: save relevant information before stopping
-      const entryBeforeStop = activeTimeEntry;
+      const entryBeforeStop = activeTimeEntry ? {...activeTimeEntry} : null;
       
       // Stop the timer and get the completed entry
-      const stoppedEntry = await stopTimeEntry(completeTaskFlag);
+      const stoppedEntry = await stopTimeEntry(false); // Important: don't complete inside stopTimeEntry
       
       // If we want to complete the task and have a valid entry
       if (stoppedEntry && completeTaskFlag) {
@@ -61,12 +61,15 @@ export const useTimerManagement = (userId: string, tasks: Task[] = []) => {
           taskId: entryBeforeStop.taskId
         });
         
+        const now = new Date();
+        const duration = Math.floor((now.getTime() - new Date(entryBeforeStop.startTime).getTime()) / 1000);
+        
         // Try to complete the task with the entry we had before
         await completeTask({
           ...entryBeforeStop,
-          endTime: new Date(),
+          endTime: now,
           isRunning: false,
-          duration: Math.floor((new Date().getTime() - new Date(entryBeforeStop.startTime).getTime()) / 1000)
+          duration: duration
         });
       }
       

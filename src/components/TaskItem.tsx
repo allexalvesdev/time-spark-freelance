@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Task, Project } from '@/types';
 import { useAppContext } from '@/contexts/AppContext';
@@ -36,7 +35,7 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, project }) => {
     reset,
     getFormattedTime 
   } = useTimerState({
-    autoStart: false,
+    autoStart: isTimerRunning,
     initialTime: task.elapsedTime || 0,
     persistKey: timerKey
   });
@@ -66,13 +65,13 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, project }) => {
     };
   }, [task.id]);
   
-  // Sincronizar estado do timer com o status ativo
+  // Sync timer state with active status
   useEffect(() => {
     if (isTimerRunning && !isRunning) {
       start();
     } else if (!isTimerRunning && isRunning) {
       stop();
-      // Importante: resetar o timer quando interrompido para garantir um novo começo
+      // Important: reset the timer when stopped to ensure a fresh start
       reset();
     }
   }, [isTimerRunning, isRunning, start, stop, reset]);
@@ -80,10 +79,9 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, project }) => {
   const handleStartTimer = async () => {
     try {
       console.log(`[TaskItem] Starting timer for task ${task.id}`);
-      // Garantir que qualquer timer local seja reiniciado antes de começar um novo
+      // Reset any timer before starting a new one
       reset();
       await startTimer(task.id, project.id);
-      start();
     } catch (error) {
       console.error(`[TaskItem] Failed to start timer for task ${task.id}:`, error);
     }
@@ -92,11 +90,10 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, project }) => {
   const handleStopTimer = async () => {
     try {
       console.log(`[TaskItem] Stopping timer for task ${task.id} with elapsed time ${elapsedTime}`);
-      // Sempre passar true para completar a tarefa automaticamente
-      const stoppedEntry = await stopTimer(true);
-      console.log(`[TaskItem] Timer stopped, entry:`, stoppedEntry);
+      // Always pass true to complete the task automatically
+      await stopTimer(true);
       
-      // Garantir que o timer local também seja parado e resetado
+      // Ensure local timer stops and resets
       stop();
       reset();
     } catch (error) {
@@ -105,15 +102,14 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, project }) => {
   };
   
   const handleDeleteTask = () => {
-    // Se o timer estiver rodando para esta tarefa, pare-o antes de excluir
+    // Stop timer before deleting if running
     if (isTimerRunning) {
-      stopTimer(false); // Não completar tarefa ao excluir
+      stopTimer(false); // Don't complete task when deleting
     }
     deleteTask(task.id);
   };
   
-  // Usar o tempo total (do timer ativo ou da tarefa salva)
-  // Importante: Usar o elapsedTime do currentTask, não do task original
+  // Use total time (from active timer or saved task)
   const totalTime = isTimerRunning ? elapsedTime : (currentTask.elapsedTime || 0);
   const currentEarnings = calculateEarnings(totalTime, project.hourlyRate);
   

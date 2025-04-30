@@ -59,6 +59,14 @@ export const timeEntryService = {
       isRunning: entry.isRunning
     });
     
+    // Important: Make sure we have a defined duration to persist
+    if (entry.endTime && !entry.duration) {
+      const startTime = new Date(entry.startTime).getTime();
+      const endTime = new Date(entry.endTime).getTime();
+      entry.duration = Math.floor((endTime - startTime) / 1000);
+      console.log('Calculated missing duration:', entry.duration);
+    }
+    
     const updateData = {
       end_time: entry.endTime ? entry.endTime.toISOString() : null,
       duration: entry.duration || 0,

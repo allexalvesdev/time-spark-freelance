@@ -20,14 +20,18 @@ export const useTaskCompletion = (tasks: Task[]) => {
       if (task) {
         // Get the timing information from the time entry
         const startTime = new Date(timeEntry.startTime);
-        const endTime = new Date(timeEntry.endTime || new Date());
+        const endTime = timeEntry.endTime || new Date();
         
         // Use the duration from the time entry when available or calculate it
-        const duration = timeEntry.duration || Math.floor((endTime.getTime() - startTime.getTime()) / 1000);
+        const duration = timeEntry.duration || 
+                         Math.floor((endTime.getTime() - startTime.getTime()) / 1000);
         
         console.log('[useTaskCompletion] Time accumulated in entry:', {
           duration,
-          previousTime: task.elapsedTime || 0
+          previousTime: task.elapsedTime || 0,
+          timeEntryId: timeEntry.id,
+          startTime: startTime.toISOString(),
+          endTime: endTime.toISOString()
         });
         
         // Calculate the accumulated time correctly

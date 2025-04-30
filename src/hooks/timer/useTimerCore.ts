@@ -25,7 +25,7 @@ export const useTimerCore = (userId: string) => {
     try {
       console.log('[useTimerCore] Starting new time entry, first stopping any existing one');
       
-      // First stop any existing running timer
+      // First stop any existing running timer without completing the task
       if (activeTimeEntry) {
         await stopTimeEntry(false); // Don't complete task when switching timers
       }
@@ -54,8 +54,13 @@ export const useTimerCore = (userId: string) => {
         safeSetItem('activeTaskId', taskId);
         safeSetItem('timerStartTime', startTimeMs.toString());
         
-        // Also store in the task-specific timer store
+        // Clear any old timer state for this task first
         const timerKey = `global-timer-${taskId}`;
+        safeRemoveItem(`timerState-${timerKey}`);
+        safeRemoveItem(`timerIsRunning-${timerKey}`);
+        safeRemoveItem(`timerElapsedTime-${timerKey}`);
+        
+        // Store fresh timer data
         safeSetItem(`timerStartTime-${timerKey}`, startTimeMs.toString());
         safeSetItem(`timerIsRunning-${timerKey}`, 'true');
         safeSetItem(`timerElapsedTime-${timerKey}`, '0');
@@ -108,10 +113,11 @@ export const useTimerCore = (userId: string) => {
         completeTaskFlag
       });
       
+      // Make a copy of the time entry before updates to ensure correct data
       const updatedTimeEntry: TimeEntry = {
         ...activeTimeEntry,
         endTime: now,
-        duration,
+        duration: duration,
         isRunning: false
       };
 

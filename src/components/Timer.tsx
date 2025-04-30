@@ -55,6 +55,11 @@ const Timer: React.FC<TimerProps> = ({ taskId, projectId, hourlyRate }) => {
   const handleStartTimer = async () => {
     try {
       console.log(`[Timer:${taskId}] Starting timer for task`);
+      
+      // First reset the local timer to ensure we start fresh
+      reset();
+      
+      // Then start the global timer
       await startTimer(taskId, projectId);
       // Local timer will auto-start due to the useEffect above when isActive becomes true
     } catch (error) {
@@ -66,9 +71,8 @@ const Timer: React.FC<TimerProps> = ({ taskId, projectId, hourlyRate }) => {
   const handleStopTimer = async () => {
     try {
       console.log(`[Timer:${taskId}] Stopping timer for task with elapsed time:`, elapsedTime);
-      // Important: Always pass true to complete the task automatically when stopping from the Timer component
-      const stoppedEntry = await stopTimer(true);
-      console.log(`[Timer:${taskId}] Timer stopped, entry:`, stoppedEntry);
+      // CRITICAL: Always pass true to complete the task automatically when stopping from the Timer component
+      await stopTimer(true);
       
       // Force reset of local timer to ensure a new cycle will start from zero
       stop();

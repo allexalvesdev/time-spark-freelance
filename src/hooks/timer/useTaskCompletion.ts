@@ -18,45 +18,47 @@ export const useTaskCompletion = (tasks: Task[]) => {
       const task = currentTasks.find(t => t.id === taskId);
       
       if (task) {
-        // Usar startTime e endTime diretamente do timeEntry
+        // Get the timing information from the time entry
         const startTime = new Date(timeEntry.startTime);
         const endTime = new Date(timeEntry.endTime || new Date());
         
-        // Garantir que estamos usando a duração do timeEntry quando disponível ou calculamos
+        // Use the duration from the time entry when available or calculate it
         const duration = timeEntry.duration || Math.floor((endTime.getTime() - startTime.getTime()) / 1000);
         
-        console.log('Tempo acumulado na entrada:', {
+        console.log('[useTaskCompletion] Time accumulated in entry:', {
           duration,
-          tempoAnterior: task.elapsedTime || 0
+          previousTime: task.elapsedTime || 0
         });
         
-        // Calcular o tempo acumulado corretamente
+        // Calculate the accumulated time correctly
         const newElapsedTime = (task.elapsedTime || 0) + duration;
         
-        // Atualizar a tarefa como completa com o tempo acumulado
+        console.log('[useTaskCompletion] Completing task with new elapsed time:', newElapsedTime);
+        
+        // Update the task as complete with the accumulated time
         const updatedTask: Task = {
           ...task,
           completed: true,
           actualEndTime: endTime,
-          // Garantir que temos um tempo de início
+          // Ensure we have a start time
           actualStartTime: task.actualStartTime || startTime,
-          // Importante: Somamos o tempo atual com o que já existia anteriormente
+          // Important: Add the current time to what already existed previously
           elapsedTime: newElapsedTime,
         };
         
-        console.log('Completando tarefa:', {
+        console.log('[useTaskCompletion] Completing task:', {
           taskId,
-          duração: duration,
-          tempoAnterior: task.elapsedTime || 0,
-          tempoTotal: updatedTask.elapsedTime,
-          início: updatedTask.actualStartTime,
-          fim: updatedTask.actualEndTime
+          duration,
+          previousTime: task.elapsedTime || 0,
+          totalTime: updatedTask.elapsedTime,
+          start: updatedTask.actualStartTime,
+          end: updatedTask.actualEndTime
         });
         
-        // Persistir no banco de dados antes de disparar evento
+        // Persist to database before dispatching event
         await taskService.updateTask(updatedTask);
         
-        // Disparar evento para outros componentes saberem que a tarefa foi concluída
+        // Dispatch event for other components to know the task was completed
         window.dispatchEvent(new CustomEvent('task-completed', { 
           detail: { taskId, updatedTask } 
         }));
@@ -71,7 +73,7 @@ export const useTaskCompletion = (tasks: Task[]) => {
       }
       return null;
     } catch (taskError) {
-      console.error('Failed to complete task:', taskError);
+      console.error('[useTaskCompletion] Failed to complete task:', taskError);
       toast({
         title: 'Aviso',
         description: 'O timer foi parado mas não foi possível finalizar a tarefa automaticamente.',

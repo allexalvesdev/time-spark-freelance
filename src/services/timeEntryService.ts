@@ -24,6 +24,7 @@ export const timeEntryService = {
   },
 
   async createTimeEntry(entry: Omit<TimeEntry, 'id' | 'endTime' | 'duration'>) {
+    console.log('Creating new time entry:', entry);
     const { data, error } = await supabase
       .from('time_entries')
       .insert([{
@@ -53,21 +54,22 @@ export const timeEntryService = {
   async updateTimeEntry(entry: TimeEntry) {
     console.log('Updating time entry in database:', {
       id: entry.id,
-      endTime: entry.endTime,
+      endTime: entry.endTime?.toISOString() || null,
       duration: entry.duration,
       isRunning: entry.isRunning
     });
     
-    // Garantir que endTime seja um string ISO se existir
-    const endTimeISO = entry.endTime ? entry.endTime.toISOString() : null;
+    const updateData = {
+      end_time: entry.endTime ? entry.endTime.toISOString() : null,
+      duration: entry.duration || 0,
+      is_running: entry.isRunning,
+    };
+    
+    console.log('Update payload:', updateData);
     
     const { error, data } = await supabase
       .from('time_entries')
-      .update({
-        end_time: endTimeISO,
-        duration: entry.duration,
-        is_running: entry.isRunning,
-      })
+      .update(updateData)
       .eq('id', entry.id)
       .select();
 
@@ -77,6 +79,20 @@ export const timeEntryService = {
     }
     
     console.log('Time entry updated successfully:', data);
-    return data;
+    
+    if (data && data.length > 0) {
+      return {
+        id: data[0].id,
+        taskId: data[0].task_id,
+        projectId: data[0].project_id,
+        startTime: new Date(data[0].start_time),
+        endTime: data[0].end_time ? new Date(data[0].end_time) : undefined,
+        duration: data[0].duration,
+        isRunning: data[0].is_running,
+        userId: data[0].user_id,
+      };
+    }
+    
+    return null;
   },
 };

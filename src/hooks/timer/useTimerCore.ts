@@ -23,12 +23,18 @@ export const useTimerCore = (userId: string) => {
 
   const startTimeEntry = useCallback(async (taskId: string, projectId: string) => {
     try {
+      console.log('[useTimerCore] Starting new time entry, first stopping any existing one');
+      
       // First stop any existing running timer
       if (activeTimeEntry) {
-        await stopTimeEntry();
+        await stopTimeEntry(false); // Don't complete task when switching timers
       }
 
+      // Create a fresh start time
       const startTime = new Date();
+      
+      console.log('[useTimerCore] Creating new time entry with start time:', startTime);
+      
       const newTimeEntry = await timeEntryService.createTimeEntry({
         taskId,
         projectId,
@@ -72,7 +78,7 @@ export const useTimerCore = (userId: string) => {
 
       return newTimeEntry;
     } catch (error) {
-      console.error('Error starting time entry:', error);
+      console.error('[useTimerCore] Error starting time entry:', error);
       toast({
         title: 'Erro',
         description: 'Não foi possível iniciar o tempo. Tente novamente.',
@@ -82,18 +88,24 @@ export const useTimerCore = (userId: string) => {
     }
   }, [activeTimeEntry, userId, toast]);
 
-  const stopTimeEntry = useCallback(async () => {
-    if (!activeTimeEntry) return null;
+  const stopTimeEntry = useCallback(async (completeTaskFlag = false) => {
+    if (!activeTimeEntry) {
+      console.log('[useTimerCore] No active time entry to stop');
+      return null;
+    }
 
     try {
       const now = new Date();
-      // Certifique-se de que duration é calculada corretamente
-      const duration = Math.floor((now.getTime() - new Date(activeTimeEntry.startTime).getTime()) / 1000);
+      const startTimeMs = new Date(activeTimeEntry.startTime).getTime();
+      const duration = Math.floor((now.getTime() - startTimeMs) / 1000);
       
       console.log('[useTimerCore] Stopping time entry:', {
         timeEntryId: activeTimeEntry.id,
         taskId: activeTimeEntry.taskId,
-        duration
+        startTime: new Date(activeTimeEntry.startTime).toISOString(),
+        endTime: now.toISOString(),
+        duration,
+        completeTaskFlag
       });
       
       const updatedTimeEntry: TimeEntry = {
@@ -103,10 +115,11 @@ export const useTimerCore = (userId: string) => {
         isRunning: false
       };
 
-      // Persistir a entrada de tempo atualizada
-      await timeEntryService.updateTimeEntry(updatedTimeEntry);
+      // Persist the updated time entry
+      const result = await timeEntryService.updateTimeEntry(updatedTimeEntry);
+      console.log('[useTimerCore] Time entry update result:', result);
 
-      // Atualizar o estado local
+      // Update the local state
       setTimeEntries(prev => 
         prev.map(entry => 
           entry.id === activeTimeEntry.id ? updatedTimeEntry : entry
@@ -129,12 +142,13 @@ export const useTimerCore = (userId: string) => {
         safeRemoveItem(`timerElapsedTime-global-timer-${taskId}`);
       }
 
-      // Importante: sempre limpar o activeTimeEntry após a parada
+      // Important: always clear the activeTimeEntry after stopping
       setActiveTimeEntry(null);
-
+      
+      console.log('[useTimerCore] Time entry stopped successfully, returning:', stoppedEntry);
       return stoppedEntry;
     } catch (error) {
-      console.error('Error stopping time entry:', error);
+      console.error('[useTimerCore] Error stopping time entry:', error);
       toast({
         title: 'Erro',
         description: 'Não foi possível parar o tempo. Tente novamente.',

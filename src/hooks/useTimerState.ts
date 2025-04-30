@@ -44,10 +44,8 @@ const useTimerState = (options: UseTimerOptions = {}) => {
       } else if (!running) {
         localStorage.removeItem(`timerStartTime-${persistKey}`);
       }
-      
-      console.log(`[Timer:${persistKey}] Estado salvo:`, { running, elapsed, startTime });
     } catch (e) {
-      console.error('Error persisting timer state:', e);
+      // Silently handle errors
     }
   };
 
@@ -61,18 +59,12 @@ const useTimerState = (options: UseTimerOptions = {}) => {
       
       if (timerStateJSON) {
         const timerState = JSON.parse(timerStateJSON);
-        console.log(`[Timer:${persistKey}] Carregando estado completo:`, timerState);
         
         // If timer was running, calculate elapsed time since last update
         if (timerState.running && timerState.startTime) {
           const startTimeMs = timerState.startTime;
           // Calculate time elapsed since timer started
           const currentElapsed = Math.floor((Date.now() - startTimeMs) / 1000);
-          
-          console.log(`[Timer:${persistKey}] Restaurando timer em execução:`, { 
-            startTimeMs,
-            currentElapsed
-          });
           
           setElapsedTime(currentElapsed);
           setIsRunning(true);
@@ -91,21 +83,10 @@ const useTimerState = (options: UseTimerOptions = {}) => {
         const savedStartTime = localStorage.getItem(`timerStartTime-${persistKey}`);
         const savedElapsedTime = localStorage.getItem(`timerElapsedTime-${persistKey}`);
         
-        console.log(`[Timer:${persistKey}] Carregando estado:`, { 
-          savedIsRunning, 
-          savedStartTime, 
-          savedElapsedTime 
-        });
-        
         // If timer was running when user left/reloaded the page
         if (savedIsRunning === 'true' && savedStartTime) {
           const startTimeMs = parseInt(savedStartTime, 10);
           const currentElapsed = Math.floor((Date.now() - startTimeMs) / 1000);
-          
-          console.log(`[Timer:${persistKey}] Restaurando timer em execução:`, { 
-            startTimeMs,
-            currentElapsed
-          });
           
           setElapsedTime(currentElapsed);
           setIsRunning(true);
@@ -115,8 +96,6 @@ const useTimerState = (options: UseTimerOptions = {}) => {
         else if (savedElapsedTime && savedIsRunning === 'false') {
           const elapsed = parseInt(savedElapsedTime, 10);
           
-          console.log(`[Timer:${persistKey}] Restaurando timer pausado:`, { elapsed });
-          
           setElapsedTime(elapsed);
           setIsRunning(false);
           startTimeRef.current = null;
@@ -125,7 +104,7 @@ const useTimerState = (options: UseTimerOptions = {}) => {
       
       initialSetupDoneRef.current = true;
     } catch (e) {
-      console.error('Error loading timer state:', e);
+      // Silently handle errors
     }
   }, [persistKey]);
 
@@ -141,11 +120,6 @@ const useTimerState = (options: UseTimerOptions = {}) => {
         // Global timer is running but local timer is not
         const globalStartTime = parseInt(globalStartTimeStr, 10);
         const currentElapsed = Math.floor((Date.now() - globalStartTime) / 1000);
-        
-        console.log(`[Timer:${persistKey}] Synchronizing with global timer:`, {
-          globalStartTime,
-          currentElapsed
-        });
         
         startTimeRef.current = globalStartTime;
         setElapsedTime(currentElapsed);
@@ -176,10 +150,6 @@ const useTimerState = (options: UseTimerOptions = {}) => {
       // If just starting now, initialize start time
       if (startTimeRef.current === null) {
         startTimeRef.current = Date.now() - elapsedTime * 1000;
-        console.log(`[Timer:${persistKey}] Iniciando timer:`, { 
-          startTime: startTimeRef.current, 
-          elapsedTime 
-        });
         persistTimerState(true, elapsedTime, startTimeRef.current);
       }
       
@@ -190,13 +160,11 @@ const useTimerState = (options: UseTimerOptions = {}) => {
       
       // Update elapsed time every second
       intervalRef.current = setInterval(updateElapsedTime, 1000);
-      console.log(`[Timer:${persistKey}] Timer iniciado/continuado`);
     } else {
       // Clear interval when stopped
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
         intervalRef.current = null;
-        console.log(`[Timer:${persistKey}] Timer parado`);
       }
       
       // Save stopped state and elapsed time
@@ -210,7 +178,6 @@ const useTimerState = (options: UseTimerOptions = {}) => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
         intervalRef.current = null;
-        console.log(`[Timer:${persistKey}] Timer limpo (cleanup)`);
       }
     };
   }, [isRunning, persistKey, elapsedTime]);
@@ -221,19 +188,12 @@ const useTimerState = (options: UseTimerOptions = {}) => {
       // Save current time before unmounting if running
       if (isRunning && persistKey) {
         persistTimerState(isRunning, elapsedTime, startTimeRef.current);
-        console.log(`[Timer:${persistKey}] Salvando estado antes de desmontar:`, {
-          isRunning,
-          elapsedTime,
-          startTimeRef: startTimeRef.current
-        });
       }
     };
   }, [isRunning, elapsedTime, persistKey]);
 
   const start = () => {
     if (!isRunning) {
-      console.log(`[Timer:${persistKey}] Iniciando timer manualmente`);
-      
       // Set startTimeRef to consider already elapsed time
       startTimeRef.current = Date.now() - elapsedTime * 1000;
       setIsRunning(true);
@@ -252,7 +212,6 @@ const useTimerState = (options: UseTimerOptions = {}) => {
 
   const stop = () => {
     if (isRunning) {
-      console.log(`[Timer:${persistKey}] Parando timer manualmente`);
       setIsRunning(false);
       
       // Save last elapsed time when stopping
@@ -266,7 +225,6 @@ const useTimerState = (options: UseTimerOptions = {}) => {
   };
 
   const reset = () => {
-    console.log(`[Timer:${persistKey}] Resetando timer`);
     setElapsedTime(0);
     startTimeRef.current = null;
     

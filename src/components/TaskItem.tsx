@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Task, Project } from '@/types';
 import { useAppContext } from '@/contexts/AppContext';
@@ -54,7 +53,7 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, project }) => {
         const tagIds = await getTaskTags(task.id);
         setTaskTags(tagIds);
       } catch (error) {
-        console.error('Failed to load task tags:', error);
+        // Silently handle errors
       }
     };
     
@@ -69,7 +68,6 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, project }) => {
     const handleTaskCompleted = (event: CustomEvent) => {
       const { taskId, updatedTask } = event.detail;
       if (taskId === task.id) {
-        console.log(`Task ${taskId} completed event received:`, updatedTask);
         setCurrentTask(updatedTask);
       }
     };
@@ -91,13 +89,11 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, project }) => {
   }, [isTimerRunning, isRunning, start, stop, reset]);
   
   const handleStartTimer = () => {
-    console.log(`Starting timer for task ${task.id}`);
     startTimer(task.id, project.id);
     start();
   };
   
   const handleStopTimer = () => {
-    console.log(`Stopping timer for task ${task.id}`);
     stopTimer(true); // Auto-complete task
     stop();
     reset();

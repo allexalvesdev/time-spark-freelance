@@ -20,6 +20,7 @@ import NotFound from "@/pages/NotFound";
 import Settings from "@/pages/Settings";
 import { useAuth } from "@/contexts/AuthContext";
 import Landing from "@/pages/Landing";
+import MobileNavigation from "@/components/MobileNavigation";
 
 // PrivateRoute component needs to be defined outside of the App component
 const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
@@ -128,6 +129,7 @@ const App = () => (
                   />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
+                <MobileNavigation />
               </TooltipProvider>
             </AppProvider>
           </PlanProvider>

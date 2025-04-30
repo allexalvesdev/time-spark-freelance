@@ -1,5 +1,6 @@
 
 import { createRoot } from 'react-dom/client'
+import { Capacitor } from '@capacitor/core';
 import App from './App.tsx'
 import './index.css'
 
@@ -10,4 +11,15 @@ if (isDarkMode) {
   htmlElement.classList.add('dark');
 }
 
-createRoot(document.getElementById("root")!).render(<App />);
+// Wait for the device to be ready when running in native app mode
+const initializeApp = async () => {
+  if (Capacitor.isNativePlatform()) {
+    document.addEventListener('deviceready', () => {
+      console.log('Device is ready in Capacitor native app');
+    }, false);
+  }
+  
+  createRoot(document.getElementById("root")!).render(<App />);
+};
+
+initializeApp();

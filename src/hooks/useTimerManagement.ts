@@ -25,6 +25,7 @@ export const useTimerManagement = (userId: string, tasks: Task[] = []) => {
   // Enhanced start timer that integrates with the timer state system
   const startTimer = useCallback(async (taskId: string, projectId: string) => {
     try {
+      console.log('Starting timer for task:', taskId);
       const newTimeEntry = await startTimeEntry(taskId, projectId);
       return newTimeEntry;
     } catch (error) {
@@ -36,18 +37,36 @@ export const useTimerManagement = (userId: string, tasks: Task[] = []) => {
   // Enhanced stop timer that handles task completion
   const stopTimer = useCallback(async (completeTaskFlag: boolean = false) => {
     try {
-      // Primeiro paramos o timer
+      console.log('Stopping timer with completeTaskFlag:', completeTaskFlag);
+      
+      // Importante: guardar informações relevantes antes de parar
+      const entryBeforeStop = activeTimeEntry;
+      
+      // Parar o timer e obter a entrada finalizada
       const stoppedEntry = await stopTimeEntry();
       
-      // Importante: Se temos uma entrada válida e a flag de completar está ativa
+      // Se quisermos completar a tarefa e temos uma entrada válida
       if (stoppedEntry && completeTaskFlag) {
         console.log('Completando tarefa após parar timer:', { 
           taskId: stoppedEntry.taskId, 
           duration: stoppedEntry.duration 
         });
         
-        // Então completamos a tarefa passando a entrada de tempo
+        // Completar a tarefa passando a entrada de tempo
         await completeTask(stoppedEntry);
+      } 
+      // Se o timer foi parado sem uma entrada retornada, mas temos a entrada ativa anterior
+      else if (!stoppedEntry && entryBeforeStop && completeTaskFlag) {
+        console.log('Usando entrada anterior para completar tarefa:', {
+          taskId: entryBeforeStop.taskId
+        });
+        
+        // Tentar completar a tarefa com a entrada que tínhamos antes
+        await completeTask({
+          ...entryBeforeStop,
+          endTime: new Date(),
+          isRunning: false
+        });
       }
       
       return stoppedEntry;
@@ -55,7 +74,7 @@ export const useTimerManagement = (userId: string, tasks: Task[] = []) => {
       console.error('Error stopping timer:', error);
       throw error;
     }
-  }, [stopTimeEntry, completeTask]);
+  }, [stopTimeEntry, completeTask, activeTimeEntry]);
   
   // Get active task name wrapper
   const getActiveTaskName = useCallback(() => {

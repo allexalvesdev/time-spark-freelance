@@ -51,15 +51,32 @@ export const timeEntryService = {
   },
 
   async updateTimeEntry(entry: TimeEntry) {
-    const { error } = await supabase
+    console.log('Updating time entry in database:', {
+      id: entry.id,
+      endTime: entry.endTime,
+      duration: entry.duration,
+      isRunning: entry.isRunning
+    });
+    
+    // Garantir que endTime seja um string ISO se existir
+    const endTimeISO = entry.endTime ? entry.endTime.toISOString() : null;
+    
+    const { error, data } = await supabase
       .from('time_entries')
       .update({
-        end_time: entry.endTime ? entry.endTime.toISOString() : null,
+        end_time: endTimeISO,
         duration: entry.duration,
         is_running: entry.isRunning,
       })
-      .eq('id', entry.id);
+      .eq('id', entry.id)
+      .select();
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error updating time entry:', error);
+      throw error;
+    }
+    
+    console.log('Time entry updated successfully:', data);
+    return data;
   },
 };

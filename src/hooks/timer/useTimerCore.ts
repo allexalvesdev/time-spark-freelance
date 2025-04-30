@@ -87,7 +87,8 @@ export const useTimerCore = (userId: string) => {
 
     try {
       const now = new Date();
-      const duration = Math.floor((now.getTime() - activeTimeEntry.startTime.getTime()) / 1000);
+      // Certifique-se de que duration é calculada corretamente
+      const duration = Math.floor((now.getTime() - new Date(activeTimeEntry.startTime).getTime()) / 1000);
       
       console.log('[useTimerCore] Stopping time entry:', {
         timeEntryId: activeTimeEntry.id,
@@ -102,8 +103,10 @@ export const useTimerCore = (userId: string) => {
         isRunning: false
       };
 
+      // Persistir a entrada de tempo atualizada
       await timeEntryService.updateTimeEntry(updatedTimeEntry);
 
+      // Atualizar o estado local
       setTimeEntries(prev => 
         prev.map(entry => 
           entry.id === activeTimeEntry.id ? updatedTimeEntry : entry
@@ -126,6 +129,7 @@ export const useTimerCore = (userId: string) => {
         safeRemoveItem(`timerElapsedTime-global-timer-${taskId}`);
       }
 
+      // Importante: sempre limpar o activeTimeEntry após a parada
       setActiveTimeEntry(null);
 
       return stoppedEntry;

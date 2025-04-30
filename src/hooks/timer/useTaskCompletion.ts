@@ -18,21 +18,30 @@ export const useTaskCompletion = (tasks: Task[]) => {
       const task = currentTasks.find(t => t.id === taskId);
       
       if (task) {
+        // Usar startTime e endTime diretamente do timeEntry
         const startTime = new Date(timeEntry.startTime);
         const endTime = new Date(timeEntry.endTime || new Date());
         
-        // Garante que estamos usando a duração do timeEntry quando disponível ou calculamos
+        // Garantir que estamos usando a duração do timeEntry quando disponível ou calculamos
         const duration = timeEntry.duration || Math.floor((endTime.getTime() - startTime.getTime()) / 1000);
         
-        // Acumula o tempo total da tarefa corretamente
+        console.log('Tempo acumulado na entrada:', {
+          duration,
+          tempoAnterior: task.elapsedTime || 0
+        });
+        
+        // Calcular o tempo acumulado corretamente
+        const newElapsedTime = (task.elapsedTime || 0) + duration;
+        
+        // Atualizar a tarefa como completa com o tempo acumulado
         const updatedTask: Task = {
           ...task,
           completed: true,
           actualEndTime: endTime,
-          // Garante que temos um tempo de início
+          // Garantir que temos um tempo de início
           actualStartTime: task.actualStartTime || startTime,
           // Importante: Somamos o tempo atual com o que já existia anteriormente
-          elapsedTime: (task.elapsedTime || 0) + duration,
+          elapsedTime: newElapsedTime,
         };
         
         console.log('Completando tarefa:', {
@@ -44,13 +53,13 @@ export const useTaskCompletion = (tasks: Task[]) => {
           fim: updatedTask.actualEndTime
         });
         
-        // Dispara evento para outros componentes saberem que a tarefa foi concluída
+        // Persistir no banco de dados antes de disparar evento
+        await taskService.updateTask(updatedTask);
+        
+        // Disparar evento para outros componentes saberem que a tarefa foi concluída
         window.dispatchEvent(new CustomEvent('task-completed', { 
           detail: { taskId, updatedTask } 
         }));
-        
-        // Persiste no banco de dados
-        await taskService.updateTask(updatedTask);
         
         const timeFormatted = formatDuration(updatedTask.elapsedTime);
         toast({

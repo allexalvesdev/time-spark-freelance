@@ -66,39 +66,53 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, project }) => {
     };
   }, [task.id]);
   
+  // Sincronizar estado do timer com o status ativo
   useEffect(() => {
     if (isTimerRunning && !isRunning) {
       start();
     } else if (!isTimerRunning && isRunning) {
       stop();
+      // Importante: resetar o timer quando interrompido para garantir um novo começo
       reset();
     }
   }, [isTimerRunning, isRunning, start, stop, reset]);
   
-  const handleStartTimer = () => {
-    startTimer(task.id, project.id);
-    start();
+  const handleStartTimer = async () => {
+    try {
+      console.log(`[TaskItem] Starting timer for task ${task.id}`);
+      // Garantir que qualquer timer local seja reiniciado antes de começar um novo
+      reset();
+      await startTimer(task.id, project.id);
+      start();
+    } catch (error) {
+      console.error(`[TaskItem] Failed to start timer for task ${task.id}:`, error);
+    }
   };
   
   const handleStopTimer = async () => {
     try {
-      console.log('Stopping timer and completing task');
-      const stoppedEntry = await stopTimer(true); // Auto-complete task
-      console.log('Timer stopped, entry:', stoppedEntry);
+      console.log(`[TaskItem] Stopping timer for task ${task.id} with elapsed time ${elapsedTime}`);
+      // Sempre passar true para completar a tarefa automaticamente
+      const stoppedEntry = await stopTimer(true);
+      console.log(`[TaskItem] Timer stopped, entry:`, stoppedEntry);
+      
+      // Garantir que o timer local também seja parado e resetado
       stop();
+      reset();
     } catch (error) {
-      console.error('Failed to stop timer:', error);
+      console.error(`[TaskItem] Failed to stop timer for task ${task.id}:`, error);
     }
   };
   
   const handleDeleteTask = () => {
+    // Se o timer estiver rodando para esta tarefa, pare-o antes de excluir
     if (isTimerRunning) {
-      stopTimer(false); // Don't complete task on delete
+      stopTimer(false); // Não completar tarefa ao excluir
     }
     deleteTask(task.id);
   };
   
-  // Pass the total time (either from active timer or from saved task)
+  // Usar o tempo total (do timer ativo ou da tarefa salva)
   // Importante: Usar o elapsedTime do currentTask, não do task original
   const totalTime = isTimerRunning ? elapsedTime : (currentTask.elapsedTime || 0);
   const currentEarnings = calculateEarnings(totalTime, project.hourlyRate);

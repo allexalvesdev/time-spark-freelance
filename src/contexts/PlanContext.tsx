@@ -42,7 +42,7 @@ export const PlanProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const { data: profile, error } = await supabase
         .from('profiles')
-        .select('user_plan')
+        .select('user_plan, pending_plan')
         .eq('id', user?.id)
         .single();
 
@@ -51,6 +51,14 @@ export const PlanProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const plan = (profile?.user_plan || 'free') as PlanType;
       setCurrentPlan(plan);
       setPlanLimits(planLimitsMap[plan]);
+      
+      // Limpar o pending_plan caso exista
+      if (profile?.pending_plan) {
+        await supabase
+          .from('profiles')
+          .update({ pending_plan: null })
+          .eq('id', user?.id);
+      }
     } catch (error) {
       console.error('Error loading user plan:', error);
       // Fallback to free plan if there's an error
@@ -65,25 +73,24 @@ export const PlanProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const upgradePlan = async (newPlan: PlanType) => {
     try {
+      // Apenas registramos o pending_plan, mas não alteramos o plano atual
+      // O plano será alterado somente após confirmação do pagamento
       const { error } = await supabase
         .from('profiles')
-        .update({ user_plan: newPlan })
+        .update({ pending_plan: newPlan })
         .eq('id', user?.id);
 
       if (error) throw error;
-
-      setCurrentPlan(newPlan);
-      setPlanLimits(planLimitsMap[newPlan]);
       
       toast({
-        title: 'Plano atualizado',
-        description: `Seu plano foi atualizado para ${newPlan.toUpperCase()}.`,
+        title: 'Solicitação de atualização registrada',
+        description: `Aguardando confirmação do pagamento para o plano ${newPlan.toUpperCase()}.`,
       });
     } catch (error) {
-      console.error('Error upgrading plan:', error);
+      console.error('Error updating pending plan:', error);
       toast({
-        title: 'Erro ao atualizar plano',
-        description: 'Não foi possível atualizar seu plano. Tente novamente.',
+        title: 'Erro ao registrar solicitação',
+        description: 'Não foi possível registrar sua solicitação de atualização. Tente novamente.',
         variant: 'destructive',
       });
     }

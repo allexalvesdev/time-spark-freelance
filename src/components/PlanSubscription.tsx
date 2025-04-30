@@ -29,28 +29,36 @@ const PlanSubscription = () => {
   const [checkingStatus, setCheckingStatus] = useState(false);
   const [subscriptionStatus, setSubscriptionStatus] = useState<SubscriptionStatus | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [pendingPlan, setPendingPlan] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) {
       checkSubscriptionStatus();
+      checkPendingPlan();
     }
     
     // Verificar parâmetros de URL para sucesso/falha no pagamento
     const url = new URL(window.location.href);
     const paymentStatus = url.searchParams.get('payment');
+    const planFromUrl = url.searchParams.get('plan');
     
     if (paymentStatus === 'success') {
       toast({
-        title: 'Pagamento iniciado com sucesso',
-        description: 'Estamos verificando seu pagamento...',
+        title: 'Pagamento confirmado',
+        description: 'Sua assinatura foi atualizada com sucesso.',
       });
-      checkSubscriptionStatus();
-    } else if (paymentStatus === 'canceled') {
+      setTimeout(() => {
+        loadUserPlan();
+        checkSubscriptionStatus();
+      }, 2000);
+    } else if (paymentStatus === 'canceled' && planFromUrl) {
       toast({
         title: 'Pagamento cancelado',
         description: 'Você pode tentar novamente a qualquer momento.',
         variant: 'destructive',
       });
+      // Limpar o pending_plan quando o pagamento for cancelado
+      clearPendingPlan();
     }
     
     // Limpar URL
@@ -60,6 +68,45 @@ const PlanSubscription = () => {
       window.history.replaceState({}, '', url.toString());
     }
   }, [user]);
+
+  const checkPendingPlan = async () => {
+    if (!user) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('pending_plan')
+        .eq('id', user.id)
+        .maybeSingle();
+      
+      if (error) throw error;
+      
+      if (data && data.pending_plan) {
+        setPendingPlan(data.pending_plan);
+      } else {
+        setPendingPlan(null);
+      }
+    } catch (error) {
+      console.error('Erro ao verificar plano pendente:', error);
+    }
+  };
+
+  const clearPendingPlan = async () => {
+    if (!user) return;
+    
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ pending_plan: null })
+        .eq('id', user.id);
+      
+      if (error) throw error;
+      
+      setPendingPlan(null);
+    } catch (error) {
+      console.error('Erro ao limpar plano pendente:', error);
+    }
+  };
   
   const checkSubscriptionStatus = async () => {
     if (!user) return;
@@ -82,6 +129,8 @@ const PlanSubscription = () => {
       if (data.user_plan !== currentPlan) {
         loadUserPlan();
       }
+
+      await checkPendingPlan();
     } catch (error) {
       console.error('Erro ao verificar status da assinatura:', error);
       setErrorMessage('Não foi possível verificar o status da sua assinatura. Tente novamente.');
@@ -125,6 +174,7 @@ const PlanSubscription = () => {
         variant: 'destructive',
       });
       setLoading(false);
+      await clearPendingPlan();
     }
   };
   
@@ -172,7 +222,7 @@ const PlanSubscription = () => {
   };
   
   const isPlanPending = (planName: string) => {
-    return subscriptionStatus?.pending_plan === planName;
+    return pendingPlan === planName;
   };
 
   // Renderizar características do plano Free

@@ -25,33 +25,42 @@ const Landing = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  const scrollToSection = (elementRef: React.RefObject<HTMLDivElement>) => {
+    if (elementRef.current) {
+      window.scrollTo({
+        top: elementRef.current.offsetTop - 100,
+        behavior: 'smooth',
+      });
+    }
+  };
+
   const parallaxStyle = {
     backgroundPosition: `50% ${scrollY * 0.5}px`
   };
 
   const features = [
     {
-      icon: <Clock className="h-10 w-10 text-timespark-accent" />,
+      icon: <Clock className="h-10 w-10 text-primary" />,
       title: "Controle de Tempo Preciso",
       description: "Cronometragem precisa para cada tarefa, com relatórios detalhados e análises."
     },
     {
-      icon: <BarChart className="h-10 w-10 text-timespark-accent" />,
+      icon: <BarChart className="h-10 w-10 text-primary" />,
       title: "Relatórios Detalhados",
       description: "Visualize seu tempo e produtividade com gráficos e relatórios personalizados."
     },
     {
-      icon: <Calendar className="h-10 w-10 text-timespark-accent" />,
+      icon: <Calendar className="h-10 w-10 text-primary" />,
       title: "Agendamento Inteligente",
       description: "Planeje suas tarefas com um calendário intuitivo e lembretes automatizados."
     },
     {
-      icon: <Users className="h-10 w-10 text-timespark-accent" />,
+      icon: <Users className="h-10 w-10 text-primary" />,
       title: "Colaboração em Equipe",
       description: "Gerencie projetos em equipe com funcionalidades de compartilhamento e colaboração."
     },
     {
-      icon: <Layers className="h-10 w-10 text-timespark-accent" />,
+      icon: <Layers className="h-10 w-10 text-primary" />,
       title: "Múltiplos Projetos",
       description: "Organize seu trabalho em diferentes projetos com categorias e etiquetas."
     }
@@ -85,36 +94,33 @@ const Landing = () => {
       period: "sempre",
       features: [
         "1 projeto ativo",
-        "Controle de tempo básico",
-        "Relatórios simples",
-        "Acesso por 30 dias"
+        "Controle de tempo",
+        "Relatórios simples"
       ],
       cta: "Começar Grátis",
       popular: false
     },
     {
       name: "Profissional",
-      price: "R$29",
+      price: "R$29,90",
       period: "por mês",
       features: [
         "10 projetos ativos",
-        "Controle de tempo avançado",
-        "Relatórios detalhados",
-        "Exportação de dados",
-        "Acesso a API"
+        "Controle de tempo",
+        "Relatórios detalhados"
       ],
       cta: "Assinar Agora",
       popular: true
     },
     {
       name: "Enterprise",
-      price: "R$79",
+      price: "R$59,90",
       period: "por mês",
       features: [
         "Projetos ilimitados",
-        "Ferramentas de colaboração",
-        "Relatórios personalizados",
-        "Integrações avançadas",
+        "Controle de tempo",
+        "Equipes",
+        "Relatórios detalhados",
         "Suporte prioritário"
       ],
       cta: "Contato Comercial",
@@ -126,7 +132,11 @@ const Landing = () => {
 
   return (
     <div className="landing-page overflow-x-hidden">
-      <LandingHeader />
+      <LandingHeader 
+        scrollToFeatures={() => scrollToSection(featuresRef)}
+        scrollToTestimonials={() => scrollToSection(testimonialsRef)}
+        scrollToPricing={() => scrollToSection(pricingRef)}
+      />
       
       <section 
         ref={heroRef}
@@ -147,14 +157,14 @@ const Landing = () => {
                 Comece Agora <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </Link>
-            <Button size="lg" variant="outline">
-              Ver Demonstração
+            <Button size="lg" variant="outline" onClick={() => scrollToSection(featuresRef)}>
+              Ver Recursos
             </Button>
           </div>
         </div>
       </section>
 
-      <section ref={featuresRef} className="py-20 bg-background pattern-dots relative">
+      <section id="features" ref={featuresRef} className="py-20 bg-background pattern-dots relative">
         <div className="absolute inset-0 bg-gradient-to-b from-background via-background/50 to-background"></div>
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
@@ -193,12 +203,12 @@ const Landing = () => {
         </div>
       </div>
 
-      <section ref={testimonialsRef} className="py-20 bg-muted/50">
+      <section id="testimonials" ref={testimonialsRef} className="py-20 bg-muted/50">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">O que Nossos Clientes Dizem</h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
-              Veja como o TimeSpark está ajudando profissionais como você a gerenciar seu tempo.
+              Veja como o Workly está ajudando profissionais como você a gerenciar seu tempo.
             </p>
           </div>
           
@@ -217,7 +227,7 @@ const Landing = () => {
         </div>
       </section>
 
-      <section ref={pricingRef} className="py-20 bg-background">
+      <section id="pricing" ref={pricingRef} className="py-20 bg-background">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">Planos para Todas as Necessidades</h2>
@@ -262,7 +272,7 @@ const Landing = () => {
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div>
-              <h3 className="font-bold text-lg mb-4">Workly<span className="text-timespark-accent">.</span></h3>
+              <h3 className="font-bold text-lg mb-4">Workly<span className="text-primary">.</span></h3>
               <p className="text-muted-foreground">
                 Sua ferramenta completa para gerenciamento de tempo e produtividade.
               </p>
@@ -270,27 +280,27 @@ const Landing = () => {
             <div>
               <h3 className="font-bold text-lg mb-4">Recursos</h3>
               <ul className="space-y-2">
-                <li><a href="#" className="text-muted-foreground hover:text-primary">Controle de Tempo</a></li>
-                <li><a href="#" className="text-muted-foreground hover:text-primary">Relatórios</a></li>
-                <li><a href="#" className="text-muted-foreground hover:text-primary">Projetos</a></li>
-                <li><a href="#" className="text-muted-foreground hover:text-primary">Integrações</a></li>
+                <li><button onClick={() => scrollToSection(featuresRef)} className="text-muted-foreground hover:text-primary">Controle de Tempo</button></li>
+                <li><button onClick={() => scrollToSection(featuresRef)} className="text-muted-foreground hover:text-primary">Relatórios</button></li>
+                <li><button onClick={() => scrollToSection(featuresRef)} className="text-muted-foreground hover:text-primary">Projetos</button></li>
+                <li><button onClick={() => scrollToSection(featuresRef)} className="text-muted-foreground hover:text-primary">Integrações</button></li>
               </ul>
             </div>
             <div>
               <h3 className="font-bold text-lg mb-4">Empresa</h3>
               <ul className="space-y-2">
-                <li><a href="#" className="text-muted-foreground hover:text-primary">Sobre Nós</a></li>
-                <li><a href="#" className="text-muted-foreground hover:text-primary">Carreiras</a></li>
-                <li><a href="#" className="text-muted-foreground hover:text-primary">Blog</a></li>
-                <li><a href="#" className="text-muted-foreground hover:text-primary">Contato</a></li>
+                <li><button className="text-muted-foreground hover:text-primary">Sobre Nós</button></li>
+                <li><button className="text-muted-foreground hover:text-primary">Carreiras</button></li>
+                <li><button className="text-muted-foreground hover:text-primary">Blog</button></li>
+                <li><button className="text-muted-foreground hover:text-primary">Contato</button></li>
               </ul>
             </div>
             <div>
               <h3 className="font-bold text-lg mb-4">Legal</h3>
               <ul className="space-y-2">
-                <li><a href="#" className="text-muted-foreground hover:text-primary">Termos de Uso</a></li>
-                <li><a href="#" className="text-muted-foreground hover:text-primary">Política de Privacidade</a></li>
-                <li><a href="#" className="text-muted-foreground hover:text-primary">Cookies</a></li>
+                <li><button className="text-muted-foreground hover:text-primary">Termos de Uso</button></li>
+                <li><button className="text-muted-foreground hover:text-primary">Política de Privacidade</button></li>
+                <li><button className="text-muted-foreground hover:text-primary">Cookies</button></li>
               </ul>
             </div>
           </div>

@@ -1,3 +1,4 @@
+
 import { useState, useCallback } from 'react';
 import { TimeEntry } from '@/types';
 import { timeEntryService } from '@/services';
@@ -81,7 +82,7 @@ export const useTimerCore = (userId: string) => {
     }
   }, [activeTimeEntry, userId, toast]);
 
-  const stopTimeEntry = useCallback(async (completeTaskFlag: boolean = false) => {
+  const stopTimeEntry = useCallback(async () => {
     if (!activeTimeEntry) return null;
 
     try {
@@ -91,8 +92,7 @@ export const useTimerCore = (userId: string) => {
       console.log('[useTimerCore] Stopping time entry:', {
         timeEntryId: activeTimeEntry.id,
         taskId: activeTimeEntry.taskId,
-        duration,
-        completeTask: completeTaskFlag
+        duration
       });
       
       const updatedTimeEntry: TimeEntry = {

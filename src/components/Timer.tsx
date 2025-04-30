@@ -57,8 +57,9 @@ const Timer: React.FC<TimerProps> = ({ taskId, projectId, hourlyRate }) => {
     else if (!isActive && isRunning) {
       console.log(`[Timer:${taskId}] Global inactive but local running - stopping local timer`);
       stop();
+      reset();
     }
-  }, [isActive, isRunning, taskId, start, stop]);
+  }, [isActive, isRunning, taskId, start, stop, reset]);
   
   // Handler to start the global and local timer
   const handleStartTimer = async () => {

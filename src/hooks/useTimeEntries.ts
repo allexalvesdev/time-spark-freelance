@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { TimeEntry } from '@/types';
 import { timeEntryService } from '@/services';
 import { useToast } from '@/hooks/use-toast';
+import { safeSetItem, safeRemoveItem, isLocalStorageAvailable } from './timer/timerStorage';
 
 export const useTimeEntries = (userId: string) => {
   const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([]);
@@ -30,24 +31,27 @@ export const useTimeEntries = (userId: string) => {
 
       // Store active timer data in localStorage for global synchronization
       const startTimeMs = startTime.getTime();
-      localStorage.setItem('activeTimeEntryId', newTimeEntry.id);
-      localStorage.setItem('activeTaskId', taskId);
-      localStorage.setItem('timerStartTime', startTimeMs.toString());
       
-      // Also store in the task-specific timer store
-      const timerKey = `global-timer-${taskId}`;
-      localStorage.setItem(`timerStartTime-${timerKey}`, startTimeMs.toString());
-      localStorage.setItem(`timerIsRunning-${timerKey}`, 'true');
-      localStorage.setItem(`timerElapsedTime-${timerKey}`, '0');
-      
-      // Store the full timer state
-      const timerState = JSON.stringify({
-        running: true,
-        elapsed: 0,
-        startTime: startTimeMs,
-        lastUpdate: Date.now()
-      });
-      localStorage.setItem(`timerState-${timerKey}`, timerState);
+      if (isLocalStorageAvailable()) {
+        safeSetItem('activeTimeEntryId', newTimeEntry.id);
+        safeSetItem('activeTaskId', taskId);
+        safeSetItem('timerStartTime', startTimeMs.toString());
+        
+        // Also store in the task-specific timer store
+        const timerKey = `global-timer-${taskId}`;
+        safeSetItem(`timerStartTime-${timerKey}`, startTimeMs.toString());
+        safeSetItem(`timerIsRunning-${timerKey}`, 'true');
+        safeSetItem(`timerElapsedTime-${timerKey}`, '0');
+        
+        // Store the full timer state
+        const timerState = JSON.stringify({
+          running: true,
+          elapsed: 0,
+          startTime: startTimeMs,
+          lastUpdate: Date.now()
+        });
+        safeSetItem(`timerState-${timerKey}`, timerState);
+      }
       
       console.log('[useTimeEntries] Timer started:', {
         taskId,
@@ -98,17 +102,19 @@ export const useTimeEntries = (userId: string) => {
       
       const stoppedEntry = { ...updatedTimeEntry };
       
-      // Clear the global timer state from localStorage
-      localStorage.removeItem('activeTimeEntryId');
-      localStorage.removeItem('activeTaskId');
-      localStorage.removeItem('timerStartTime');
-      
-      // Also clear the specific task timer state
-      const taskId = activeTimeEntry.taskId;
-      localStorage.removeItem(`timerState-global-timer-${taskId}`);
-      localStorage.removeItem(`timerIsRunning-global-timer-${taskId}`);
-      localStorage.removeItem(`timerStartTime-global-timer-${taskId}`);
-      localStorage.removeItem(`timerElapsedTime-global-timer-${taskId}`);
+      if (isLocalStorageAvailable()) {
+        // Clear the global timer state from localStorage
+        safeRemoveItem('activeTimeEntryId');
+        safeRemoveItem('activeTaskId');
+        safeRemoveItem('timerStartTime');
+        
+        // Also clear the specific task timer state
+        const taskId = activeTimeEntry.taskId;
+        safeRemoveItem(`timerState-global-timer-${taskId}`);
+        safeRemoveItem(`timerIsRunning-global-timer-${taskId}`);
+        safeRemoveItem(`timerStartTime-global-timer-${taskId}`);
+        safeRemoveItem(`timerElapsedTime-global-timer-${taskId}`);
+      }
 
       setActiveTimeEntry(null);
 

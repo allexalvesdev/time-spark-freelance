@@ -1,6 +1,6 @@
 
 import { useEffect, useRef } from 'react';
-import { persistTimerState } from './timerStorage';
+import { persistTimerState, isLocalStorageAvailable, updateGlobalTimerState } from './timerStorage';
 
 interface UseTimerIntervalProps {
   persistKey?: string;
@@ -35,7 +35,7 @@ export const useTimerInterval = ({
         setElapsedTime(currentElapsed);
         
         // Sync state every 2 seconds to ensure persistence
-        if (now - lastSyncTimeRef.current > 2000) {
+        if (now - lastSyncTimeRef.current > 2000 && isLocalStorageAvailable()) {
           persistTimerState(persistKey, true, currentElapsed, startTimeRef.current);
           lastSyncTimeRef.current = now;
         }
@@ -50,13 +50,15 @@ export const useTimerInterval = ({
           startTime: startTimeRef.current, 
           elapsedTime 
         });
-        persistTimerState(persistKey, true, elapsedTime, startTimeRef.current);
         
-        // If this is a task timer, also update global timer state
-        if (persistKey && persistKey.includes('global-timer-')) {
-          const taskId = persistKey.replace('global-timer-', '');
-          localStorage.setItem('activeTaskId', taskId);
-          localStorage.setItem('timerStartTime', startTimeRef.current.toString());
+        if (isLocalStorageAvailable()) {
+          persistTimerState(persistKey, true, elapsedTime, startTimeRef.current);
+          
+          // If this is a task timer, also update global timer state
+          if (persistKey && persistKey.includes('global-timer-')) {
+            const taskId = persistKey.replace('global-timer-', '');
+            updateGlobalTimerState(persistKey, taskId, startTimeRef.current);
+          }
         }
       }
       
@@ -77,7 +79,9 @@ export const useTimerInterval = ({
       }
       
       // Save stopped state and elapsed time
-      persistTimerState(persistKey, false, elapsedTime, null);
+      if (isLocalStorageAvailable()) {
+        persistTimerState(persistKey, false, elapsedTime, null);
+      }
     }
 
     return () => {
@@ -94,7 +98,7 @@ export const useTimerInterval = ({
   useEffect(() => {
     return () => {
       // Save current time before unmounting if running
-      if (isRunning && persistKey) {
+      if (isRunning && persistKey && isLocalStorageAvailable()) {
         persistTimerState(persistKey, isRunning, elapsedTime, startTimeRef.current);
         console.log(`[Timer:${persistKey}] Saving state before unmounting:`, {
           isRunning,

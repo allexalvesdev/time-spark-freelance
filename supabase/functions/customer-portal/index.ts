@@ -84,11 +84,10 @@ serve(async (req) => {
         .eq("id", user.id);
     }
     
-    // Criar sessão do portal do cliente com configuração específica
+    // Criar sessão do portal do cliente (sem especificar uma configuração)
     const session = await stripe.billingPortal.sessions.create({
       customer: customerId,
       return_url: `${req.headers.get("origin") || "http://localhost:3000"}/configuracoes`,
-      configuration: 'bpc_1PtMeNJVGcqCNDT4ZUq2mpuc' // ID de configuração padrão do portal de clientes
     });
     
     return new Response(

@@ -84,19 +84,52 @@ serve(async (req) => {
         .eq("id", user.id);
     }
     
-    // Criar sessão do portal do cliente (sem especificar uma configuração)
-    const session = await stripe.billingPortal.sessions.create({
-      customer: customerId,
-      return_url: `${req.headers.get("origin") || "http://localhost:3000"}/configuracoes`,
-    });
-    
-    return new Response(
-      JSON.stringify({ url: session.url }),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
+    try {
+      // Tentar criar a sessão do portal do cliente
+      const session = await stripe.billingPortal.sessions.create({
+        customer: customerId,
+        return_url: `${req.headers.get("origin") || "http://localhost:3000"}/configuracoes`,
+      });
+      
+      return new Response(
+        JSON.stringify({ url: session.url }),
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200,
+        }
+      );
+    } catch (portalError) {
+      // Se falhar devido a configuração ausente, redirecionar para a página de gerenciamento do Stripe
+      console.error("Erro ao criar sessão do portal:", portalError);
+      
+      // Verificar assinaturas do cliente
+      const subscriptions = await stripe.subscriptions.list({
+        customer: customerId,
+        status: 'active',
+        limit: 1,
+      });
+      
+      let redirectUrl;
+      if (subscriptions.data.length > 0) {
+        // Se tiver assinatura, redirecionar para a página de gerenciamento da assinatura
+        const subscriptionId = subscriptions.data[0].id;
+        redirectUrl = `https://dashboard.stripe.com/subscriptions/${subscriptionId}`;
+      } else {
+        // Se não tiver assinatura, redirecionar para a página do cliente no Stripe
+        redirectUrl = `https://dashboard.stripe.com/customers/${customerId}`;
       }
-    );
+      
+      return new Response(
+        JSON.stringify({ 
+          url: redirectUrl,
+          message: "Portal de cliente não configurado. Redirecionando para o Dashboard do Stripe."
+        }),
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200,
+        }
+      );
+    }
   } catch (error) {
     console.error("Erro na edge function customer-portal:", error);
     const errorMessage = error instanceof Error ? error.message : String(error);

@@ -195,8 +195,20 @@ const PlanSubscription = () => {
         throw new Error('URL do portal não retornada');
       }
       
-      // Redirecionar para o portal do cliente Stripe
-      window.location.href = data.url;
+      // Se houver uma mensagem de aviso, mostrar antes de redirecionar
+      if (data.message) {
+        toast({
+          title: 'Aviso',
+          description: data.message,
+        });
+        // Dar tempo para o usuário ler a mensagem
+        setTimeout(() => {
+          window.location.href = data.url;
+        }, 2000);
+      } else {
+        // Redirecionar para o portal do cliente Stripe
+        window.location.href = data.url;
+      }
     } catch (error) {
       console.error('Erro ao abrir portal do cliente:', error);
       toast({

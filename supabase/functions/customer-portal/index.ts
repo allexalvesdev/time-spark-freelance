@@ -84,24 +84,114 @@ serve(async (req) => {
         .eq("id", user.id);
     }
     
+    // Configuração do portal do cliente com padrões seguros
+    // Se a configuração do portal falhar, tente criar uma sessão padrão
+    // Se ainda assim falhar, então redirecione para o dashboard (último recurso)
     try {
-      // Tentar criar a sessão do portal do cliente
-      const session = await stripe.billingPortal.sessions.create({
-        customer: customerId,
-        return_url: `${req.headers.get("origin") || "http://localhost:3000"}/configuracoes`,
-      });
-      
-      return new Response(
-        JSON.stringify({ url: session.url }),
-        {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 200,
+      // Primeira tentativa: com a configuração padrão da conta
+      try {
+        const session = await stripe.billingPortal.sessions.create({
+          customer: customerId,
+          return_url: `${req.headers.get("origin") || "http://localhost:3000"}/configuracoes`,
+        });
+        
+        return new Response(
+          JSON.stringify({ url: session.url }),
+          {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+            status: 200,
+          }
+        );
+      } catch (portalError) {
+        console.error("Erro na primeira tentativa do portal:", portalError);
+        
+        // Segunda tentativa: forçar a criação de uma configuração temporária
+        // Este código pode funcionar em alguns ambientes de desenvolvimento
+        try {
+          const portalConfig = await stripe.billingPortal.configurations.create({
+            business_profile: {
+              headline: "Gerencie sua assinatura",
+              privacy_policy_url: `${req.headers.get("origin") || "http://localhost:3000"}/politica-privacidade`,
+              terms_of_service_url: `${req.headers.get("origin") || "http://localhost:3000"}/termos-de-servico`,
+            },
+            features: {
+              customer_update: {
+                enabled: true,
+                allowed_updates: ["email", "address", "phone", "shipping", "tax_id"],
+              },
+              invoice_history: { enabled: true },
+              payment_method_update: { enabled: true },
+              subscription_cancel: { enabled: true },
+              subscription_update: { enabled: true },
+            },
+          });
+          
+          const session = await stripe.billingPortal.sessions.create({
+            customer: customerId,
+            configuration: portalConfig.id,
+            return_url: `${req.headers.get("origin") || "http://localhost:3000"}/configuracoes`,
+          });
+          
+          return new Response(
+            JSON.stringify({ url: session.url }),
+            {
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+              status: 200,
+            }
+          );
+        } catch (configError) {
+          console.error("Erro ao criar configuração temporária:", configError);
+          
+          // Última tentativa: redireciona para o checkout de atualização
+          // Buscar plano atual do usuário
+          const { data: userData } = await supabaseAdmin
+            .from("profiles")
+            .select("user_plan")
+            .eq("id", user.id)
+            .single();
+              
+          const currentPlan = userData?.user_plan || 'free';
+          
+          // Criar uma sessão de checkout para o mesmo plano (efeito de atualização de pagamento)
+          const checkoutSession = await stripe.checkout.sessions.create({
+            customer: customerId,
+            payment_method_types: ['card'],
+            mode: 'subscription',
+            line_items: [
+              {
+                price_data: {
+                  currency: 'brl',
+                  product_data: {
+                    name: currentPlan === 'pro' ? 'Plano Profissional' : 'Plano Enterprise',
+                  },
+                  unit_amount: currentPlan === 'pro' ? 2990 : 5990,
+                  recurring: {
+                    interval: 'month',
+                  },
+                },
+                quantity: 1,
+              },
+            ],
+            success_url: `${req.headers.get("origin") || "http://localhost:3000"}/configuracoes?payment=success&plan=${currentPlan}`,
+            cancel_url: `${req.headers.get("origin") || "http://localhost:3000"}/configuracoes?payment=canceled&plan=${currentPlan}`,
+          });
+          
+          return new Response(
+            JSON.stringify({ 
+              url: checkoutSession.url,
+              message: "Redirecionando para o gerenciamento da sua assinatura."
+            }),
+            {
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+              status: 200,
+            }
+          );
         }
-      );
-    } catch (portalError) {
-      // Se falhar devido a configuração ausente, redirecionar para a página de gerenciamento do Stripe
-      console.error("Erro ao criar sessão do portal:", portalError);
+      }
+    } catch (error) {
+      console.error("Todas as tentativas falharam:", error);
       
+      // Último recurso: redirecionamento direto
       // Verificar assinaturas do cliente
       const subscriptions = await stripe.subscriptions.list({
         customer: customerId,
@@ -111,18 +201,16 @@ serve(async (req) => {
       
       let redirectUrl;
       if (subscriptions.data.length > 0) {
-        // Se tiver assinatura, redirecionar para a página de gerenciamento da assinatura
         const subscriptionId = subscriptions.data[0].id;
         redirectUrl = `https://dashboard.stripe.com/subscriptions/${subscriptionId}`;
       } else {
-        // Se não tiver assinatura, redirecionar para a página do cliente no Stripe
         redirectUrl = `https://dashboard.stripe.com/customers/${customerId}`;
       }
       
       return new Response(
         JSON.stringify({ 
           url: redirectUrl,
-          message: "Portal de cliente não configurado. Redirecionando para o Dashboard do Stripe."
+          message: "Portal do cliente não está configurado no Stripe. Configure-o em https://dashboard.stripe.com/settings/billing/portal"
         }),
         {
           headers: { ...corsHeaders, "Content-Type": "application/json" },

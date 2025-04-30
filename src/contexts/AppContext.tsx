@@ -95,7 +95,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   useEffect(() => {
     const handleTaskCompleted = (event: CustomEvent) => {
       const { taskId, updatedTask } = event.detail;
-      console.log('AppContext received task-completed event for task:', taskId);
       
       // Update tasks state with the completed task
       setTasks(currentTasks => 
@@ -120,34 +119,25 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     
     const loadInitialData = async () => {
       try {
-        console.log('Loading initial data...');
-        
         // Carregar projetos
         const projectsData = await projectService.loadProjects();
         setProjects(projectsData || []);
-        console.log('Projects loaded:', projectsData ? projectsData.length : 0);
         
         // Carregar tarefas
         const { tasks: tasksData } = await taskService.loadTasks();
         setTasks(tasksData);
-        console.log('Tasks loaded:', tasksData.length);
         
         // Carregar registros de tempo
         const timeEntriesData = await timeEntryService.loadTimeEntries();
         
         setTimeEntries(timeEntriesData || []);
         setActiveTimeEntry(timeEntriesData.find((entry: TimeEntry) => entry.isRunning) || null);
-        console.log('Time entries loaded:', timeEntriesData ? timeEntriesData.length : 0);
-        console.log('Active time entry:', activeTimeEntry ? 'Yes' : 'No');
 
         // Carregar tags
         const { tags: tagsData } = await tagService.loadTags(user.id);
         setTags(tagsData);
-        console.log('Tags loaded:', tagsData.length);
-        
-        console.log('Initial data loaded successfully');
       } catch (error) {
-        console.error('Error loading initial data:', error);
+        // Tratar erro de carregamento de dados
       }
     };
     

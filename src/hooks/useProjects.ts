@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Project } from '@/types';
 import { projectService } from '@/services';
@@ -17,7 +18,6 @@ export const useProjects = (userId: string) => {
       setProjects(prev => [newProject, ...prev]);
       setCurrentProject(newProject);
     } catch (error: any) {
-      console.error('Error adding project:', error);
       toast({
         title: 'Erro',
         description: 'Não foi possível criar o projeto. Tente novamente.',
@@ -33,7 +33,6 @@ export const useProjects = (userId: string) => {
       setProjects(prev => prev.map(p => p.id === project.id ? project : p));
       setCurrentProject(prev => prev?.id === project.id ? project : prev);
     } catch (error: any) {
-      console.error('Error updating project:', error);
       toast({
         title: 'Erro',
         description: 'Não foi possível atualizar o projeto. Tente novamente.',
@@ -49,7 +48,6 @@ export const useProjects = (userId: string) => {
       setProjects(prev => prev.filter(p => p.id !== projectId));
       setCurrentProject(prev => prev?.id === projectId ? null : prev);
     } catch (error: any) {
-      console.error('Error deleting project:', error);
       toast({
         title: 'Erro',
         description: 'Não foi possível excluir o projeto. Tente novamente.',

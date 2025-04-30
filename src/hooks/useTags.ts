@@ -14,7 +14,6 @@ export const useTags = (userId: string) => {
       setTags(prev => [...prev, newTag]);
       return newTag;
     } catch (error: any) {
-      console.error('Error adding tag:', error);
       toast({
         title: 'Erro',
         description: 'Não foi possível criar a tag. Tente novamente.',
@@ -29,7 +28,6 @@ export const useTags = (userId: string) => {
       await tagService.deleteTag(tagId);
       setTags(prev => prev.filter(t => t.id !== tagId));
     } catch (error: any) {
-      console.error('Error deleting tag:', error);
       toast({
         title: 'Erro',
         description: 'Não foi possível excluir a tag. Tente novamente.',
@@ -43,7 +41,6 @@ export const useTags = (userId: string) => {
     try {
       await tagService.addTagToTask(taskId, tagId);
     } catch (error: any) {
-      console.error('Error adding tag to task:', error);
       toast({
         title: 'Erro',
         description: 'Não foi possível adicionar a tag à tarefa. Tente novamente.',
@@ -57,7 +54,6 @@ export const useTags = (userId: string) => {
     try {
       await tagService.removeTagFromTask(taskId, tagId);
     } catch (error: any) {
-      console.error('Error removing tag from task:', error);
       toast({
         title: 'Erro',
         description: 'Não foi possível remover a tag da tarefa. Tente novamente.',
@@ -71,7 +67,6 @@ export const useTags = (userId: string) => {
     try {
       return await tagService.getTaskTags(taskId);
     } catch (error: any) {
-      console.error('Error getting task tags:', error);
       toast({
         title: 'Erro',
         description: 'Não foi possível obter as tags da tarefa. Tente novamente.',

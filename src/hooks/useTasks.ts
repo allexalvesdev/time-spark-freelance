@@ -27,7 +27,6 @@ export const useTasks = (userId: string) => {
       setCurrentTask(typedTask);
       return typedTask;
     } catch (error: any) {
-      console.error('Error adding task:', error);
       toast({
         title: 'Erro',
         description: 'Não foi possível criar a tarefa. Tente novamente.',
@@ -43,7 +42,6 @@ export const useTasks = (userId: string) => {
       setTasks(prev => prev.map(t => t.id === task.id ? task : t));
       setCurrentTask(prev => prev?.id === task.id ? task : prev);
     } catch (error: any) {
-      console.error('Error updating task:', error);
       toast({
         title: 'Erro',
         description: 'Não foi possível atualizar a tarefa. Tente novamente.',
@@ -69,7 +67,6 @@ export const useTasks = (userId: string) => {
 
       await updateTask(updatedTask);
     } catch (error: any) {
-      console.error('Error completing task:', error);
       toast({
         title: 'Erro',
         description: 'Não foi possível concluir a tarefa. Tente novamente.',
@@ -85,7 +82,6 @@ export const useTasks = (userId: string) => {
       setTasks(prev => prev.filter(t => t.id !== taskId));
       setCurrentTask(prev => prev?.id === taskId ? null : prev);
     } catch (error: any) {
-      console.error('Error deleting task:', error);
       toast({
         title: 'Erro',
         description: 'Não foi possível excluir a tarefa. Tente novamente.',

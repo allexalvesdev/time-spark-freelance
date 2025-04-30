@@ -32,7 +32,6 @@ export const useTimerManagement = (userId: string, tasks: Task[] = []) => {
       localStorage.setItem('activeTaskId', taskId);
       localStorage.setItem('timerStartTime', new Date().getTime().toString());
     } catch (error: any) {
-      console.error('Error starting timer:', error);
       toast({
         title: 'Erro',
         description: 'Não foi possível iniciar o cronômetro. Tente novamente.',
@@ -96,7 +95,6 @@ export const useTimerManagement = (userId: string, tasks: Task[] = []) => {
             });
           }
         } catch (taskError) {
-          console.error('Failed to complete task:', taskError);
           toast({
             title: 'Aviso',
             description: 'O timer foi parado mas não foi possível finalizar a tarefa automaticamente.',
@@ -117,7 +115,6 @@ export const useTimerManagement = (userId: string, tasks: Task[] = []) => {
       localStorage.removeItem(`timerStartTime-global-timer-${taskId}`);
       localStorage.removeItem(`timerElapsedTime-global-timer-${taskId}`);
     } catch (error: any) {
-      console.error('Error stopping timer:', error);
       toast({
         title: 'Erro',
         description: 'Não foi possível parar o cronômetro. Tente novamente.',

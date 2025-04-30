@@ -7,6 +7,9 @@ type ProjectTaskServicesProps = {
   setStoredCurrentTask: (task: Task | null) => void;
 };
 
+/**
+ * Hook for project and task selection services
+ */
 export const useProjectTaskServices = ({
   setStoredCurrentProject,
   setStoredCurrentTask,

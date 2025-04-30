@@ -8,6 +8,9 @@ type TimeServicesProps = {
   tasks: any[];
 };
 
+/**
+ * Hook for time-related services that integrates with the global timer system
+ */
 export const useTimeServices = ({
   startStoredTimeEntry,
   stopStoredTimeEntry,
@@ -16,7 +19,11 @@ export const useTimeServices = ({
   
   const startTimer = useCallback(async (taskId: string, projectId: string) => {
     try {
-      await startStoredTimeEntry(taskId, projectId);
+      // Start the time entry in the database
+      const timeEntry = await startStoredTimeEntry(taskId, projectId);
+      
+      console.log('Timer started for task:', taskId);
+      return timeEntry;
     } catch (error) {
       console.error('Error starting timer:', error);
       throw error;
@@ -26,13 +33,17 @@ export const useTimeServices = ({
   const stopTimer = useCallback(async (completeTaskFlag: boolean = false) => {
     try {
       console.log('Stopping timer, completeTask flag:', completeTaskFlag);
+      
+      // Stop the time entry and optionally complete the task
       const stoppedEntry = await stopStoredTimeEntry(completeTaskFlag);
       
-      // Make sure we complete the task if requested
-      if (completeTaskFlag && stoppedEntry) {
-        const taskId = stoppedEntry.taskId;
-        console.log('Completing task after timer stop:', taskId);
+      if (stoppedEntry) {
+        console.log('Timer stopped for task:', stoppedEntry.taskId, 
+          'Duration:', stoppedEntry.duration, 
+          'Complete task:', completeTaskFlag);
       }
+      
+      return stoppedEntry;
     } catch (error) {
       console.error('Error stopping timer:', error);
       throw error;

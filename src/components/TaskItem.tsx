@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Task, Project } from '@/types';
 import { useAppContext } from '@/contexts/AppContext';
@@ -50,6 +51,10 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, project }) => {
     const handleTaskCompleted = (event: CustomEvent) => {
       const { taskId, updatedTask } = event.detail;
       if (taskId === task.id) {
+        console.log('[TaskItem] Received task-completed event:', { 
+          taskId, 
+          elapsedTime: updatedTask.elapsedTime 
+        });
         setCurrentTask(updatedTask);
       }
     };
@@ -75,9 +80,15 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, project }) => {
     start();
   };
   
-  const handleStopTimer = () => {
-    stopTimer(true); // Auto-complete task
-    stop();
+  const handleStopTimer = async () => {
+    try {
+      console.log('Stopping timer and completing task');
+      const stoppedEntry = await stopTimer(true); // Auto-complete task
+      console.log('Timer stopped, entry:', stoppedEntry);
+      stop();
+    } catch (error) {
+      console.error('Failed to stop timer:', error);
+    }
   };
   
   const handleDeleteTask = () => {
@@ -88,6 +99,7 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, project }) => {
   };
   
   // Pass the total time (either from active timer or from saved task)
+  // Importante: Usar o elapsedTime do currentTask, não do task original
   const totalTime = isTimerRunning ? elapsedTime : (currentTask.elapsedTime || 0);
   const currentEarnings = calculateEarnings(totalTime, project.hourlyRate);
   

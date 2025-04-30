@@ -20,20 +20,36 @@ export const useTaskCompletion = (tasks: Task[]) => {
       if (task) {
         const startTime = new Date(timeEntry.startTime);
         const endTime = new Date(timeEntry.endTime || new Date());
+        
+        // Garante que estamos usando a duração do timeEntry quando disponível ou calculamos
         const duration = timeEntry.duration || Math.floor((endTime.getTime() - startTime.getTime()) / 1000);
         
+        // Acumula o tempo total da tarefa corretamente
         const updatedTask: Task = {
           ...task,
           completed: true,
           actualEndTime: endTime,
+          // Garante que temos um tempo de início
           actualStartTime: task.actualStartTime || startTime,
+          // Importante: Somamos o tempo atual com o que já existia anteriormente
           elapsedTime: (task.elapsedTime || 0) + duration,
         };
         
+        console.log('Completando tarefa:', {
+          taskId,
+          duração: duration,
+          tempoAnterior: task.elapsedTime || 0,
+          tempoTotal: updatedTask.elapsedTime,
+          início: updatedTask.actualStartTime,
+          fim: updatedTask.actualEndTime
+        });
+        
+        // Dispara evento para outros componentes saberem que a tarefa foi concluída
         window.dispatchEvent(new CustomEvent('task-completed', { 
           detail: { taskId, updatedTask } 
         }));
         
+        // Persiste no banco de dados
         await taskService.updateTask(updatedTask);
         
         const timeFormatted = formatDuration(updatedTask.elapsedTime);

@@ -36,9 +36,17 @@ export const useTimerManagement = (userId: string, tasks: Task[] = []) => {
   // Enhanced stop timer that handles task completion
   const stopTimer = useCallback(async (completeTaskFlag: boolean = false) => {
     try {
-      const stoppedEntry = await stopTimeEntry(false);
+      // Primeiro paramos o timer
+      const stoppedEntry = await stopTimeEntry();
       
+      // Importante: Se temos uma entrada válida e a flag de completar está ativa
       if (stoppedEntry && completeTaskFlag) {
+        console.log('Completando tarefa após parar timer:', { 
+          taskId: stoppedEntry.taskId, 
+          duration: stoppedEntry.duration 
+        });
+        
+        // Então completamos a tarefa passando a entrada de tempo
         await completeTask(stoppedEntry);
       }
       

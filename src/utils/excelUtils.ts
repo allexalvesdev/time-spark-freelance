@@ -1,7 +1,7 @@
 
 import * as XLSX from 'xlsx';
 import { Project, Task } from '@/types';
-import { formatDate, parseDate } from './dateUtils';
+import { formatDate, parseDate, calculateElapsedTime } from './dateUtils';
 
 // Define the template structure for Excel export
 export interface TaskImportTemplate {
@@ -18,10 +18,20 @@ export interface TaskImportTemplate {
 
 // Create a template for users to download
 export const generateTaskTemplate = (): Blob => {
-  // Criar a estrutura de cabeçalho apenas
-  const worksheet = XLSX.utils.aoa_to_sheet([
-    ['Nome do Projeto* - precisa ser um projeto existente no sistema - Obrigatório', 'Nome da Tarefa* - Obrigatório', 'Descrição', 'Horas Estimadas', 'Minutos Estimados', 'Data e Hora de Início* - deve estar no formato dd-MM-yyyy HH:MM - Obrigatório', 'Data e Hora de Fim - deve estar no formato dd-MM-yyyy HH:MM', 'Prioridade* - deve ser uma das seguintes: Baixa, Média, Alta ou Urgente - Obrigatório', 'Tags - devem ser separadas por vírgula']
-  ]);
+  // Criar os cabeçalhos conforme solicitado
+  const headers = [
+    'Nome do Projeto* - precisa ser um projeto existente no sistema',
+    'Nome da Tarefa*',
+    'Descrição',
+    'Horas Estimadas',
+    'Minutos Estimados',
+    'Data e Hora de Início* - deve estar no formato dd-MM-yyyy HH:MM',
+    'Data e Hora de Fim - deve estar no formato dd-MM-yyyy HH:MM',
+    'Prioridade* - deve ser uma das seguintes: Baixa, Média, Alta ou Urgente',
+    'Tags - devem ser separadas por vírgula'
+  ];
+  
+  const worksheet = XLSX.utils.aoa_to_sheet([headers]);
   
   // Set column widths
   const columnWidths = [
@@ -41,23 +51,10 @@ export const generateTaskTemplate = (): Blob => {
   // Create a workbook
   const workbook = XLSX.utils.book_new();
   
-  // Create an instructions sheet
-  const instructionsWs = XLSX.utils.aoa_to_sheet([
-    ['Instruções para importação de tarefas'],
-    [''],
-    ['1. Os campos com * são obrigatórios'],
-    ['2. O "Projeto*" precisa ser um projeto existente no sistema'],
-    ['3. A "Data e Hora de Início*" deve estar no formato DD/MM/YYYY HH:MM'],
-    ['4. A "Data e Hora de Fim" deve estar no formato DD/MM/YYYY HH:MM (opcional)'],
-    ['5. A "Prioridade*" deve ser uma das seguintes: Baixa, Média, Alta ou Urgente'],
-    ['6. As "Tags" devem ser separadas por vírgula']
-  ]);
-  
-  // Add sheets to workbook
-  XLSX.utils.book_append_sheet(workbook, instructionsWs, 'Instruções');
+  // Add only the model sheet, no instructions sheet
   XLSX.utils.book_append_sheet(workbook, worksheet, 'Modelo');
   
-  // Fix: Change 'blob' to 'binary' and then convert to Blob object manually
+  // Write as binary string
   const binaryData = XLSX.write(workbook, { bookType: 'xlsx', type: 'binary' });
   
   // Convert binary string to ArrayBuffer
@@ -107,13 +104,13 @@ export const parseTasksFromExcel = (file: File): Promise<{
           if (!row['Data e Hora de Início*']) {
             errors.push({ row: index + 2, message: 'Data e hora de início são obrigatórias' });
           } else {
-            // Validate date format (DD/MM/YYYY HH:MM)
+            // Validate date format (DD-MM-YYYY HH:MM)
             const dateStr = row['Data e Hora de Início*'].toString();
-            const dateRegex = /^\d{2}\/\d{2}\/\d{4} \d{2}:\d{2}$/;
+            const dateRegex = /^\d{2}-\d{2}-\d{4} \d{2}:\d{2}$/;
             if (!dateRegex.test(dateStr)) {
               errors.push({ 
                 row: index + 2, 
-                message: 'Formato de data e hora inválido. Use DD/MM/YYYY HH:MM' 
+                message: 'Formato de data e hora inválido. Use DD-MM-YYYY HH:MM' 
               });
             }
           }
@@ -121,11 +118,11 @@ export const parseTasksFromExcel = (file: File): Promise<{
           // Validate end date format if provided
           if (row['Data e Hora de Fim']) {
             const dateStr = row['Data e Hora de Fim'].toString();
-            const dateRegex = /^\d{2}\/\d{2}\/\d{4} \d{2}:\d{2}$/;
+            const dateRegex = /^\d{2}-\d{2}-\d{4} \d{2}:\d{2}$/;
             if (!dateRegex.test(dateStr)) {
               errors.push({ 
                 row: index + 2, 
-                message: 'Formato de data e hora de fim inválido. Use DD/MM/YYYY HH:MM' 
+                message: 'Formato de data e hora de fim inválido. Use DD-MM-YYYY HH:MM' 
               });
             }
           }
@@ -175,11 +172,11 @@ export const mapExcelDataToTasks = (
       
       // Parse start date
       const startDateTime = row['Data e Hora de Início*'].toString();
-      const scheduledStartTime = parseDate(startDateTime, 'dd/MM/yyyy HH:mm');
+      const scheduledStartTime = parseDate(startDateTime, 'dd-MM-yyyy HH:mm');
       
       // Calculate estimated time in minutes
       const hours = row['Horas Estimadas'] || 0;
-      const minutes = row['Minutos Estimados'] || 0;
+      const minutes = row['Minutos Estimadas'] || 0;
       const estimatedTime = (hours * 60) + minutes;
       
       // Check if end date is provided to mark task as completed
@@ -191,7 +188,7 @@ export const mapExcelDataToTasks = (
       if (completed && row['Data e Hora de Fim']) {
         // Parse end date
         const endDateTime = row['Data e Hora de Fim'].toString();
-        actualEndTime = parseDate(endDateTime, 'dd/MM/yyyy HH:mm');
+        actualEndTime = parseDate(endDateTime, 'dd-MM-yyyy HH:mm');
         actualStartTime = scheduledStartTime; // Use scheduled start time as actual start time
         
         // Calculate elapsed time in seconds
@@ -243,9 +240,4 @@ export const getTagMappingsFromExcel = (data: TaskImportTemplate[]): { rowIndex:
       : [];
     return { rowIndex: index, tags };
   });
-};
-
-// Calculate elapsed time between two dates in seconds
-const calculateElapsedTime = (startTime: Date, endTime: Date): number => {
-  return Math.floor((endTime.getTime() - startTime.getTime()) / 1000);
 };

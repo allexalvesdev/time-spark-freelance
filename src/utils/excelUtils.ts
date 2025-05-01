@@ -1,3 +1,4 @@
+
 import * as XLSX from 'xlsx';
 import { Project, Task } from '@/types';
 import { formatDate } from './dateUtils';
@@ -43,19 +44,22 @@ export const generateTaskTemplate = (): Blob => {
   
   worksheet['!cols'] = columnWidths;
   
-  // Add a header with instructions
-  XLSX.utils.sheet_add_aoa(worksheet, [
-    ['Modelo para Importação de Tarefas'],
-    ['Os campos com * são obrigatórios']
-  ], { origin: 'A1' });
-  
-  // Shift the data down to make room for instructions
-  worksheet['!ref'] = XLSX.utils.encode_range(
-    { r: 3, c: 0 },
-    { r: 4, c: 7 }
-  );
-  
+  // Create a workbook
   const workbook = XLSX.utils.book_new();
+  
+  // Create an instructions sheet
+  const instructionsWs = XLSX.utils.aoa_to_sheet([
+    ['Instruções para importação de tarefas'],
+    [''],
+    ['1. Os campos com * são obrigatórios'],
+    ['2. O "Projeto*" precisa ser um projeto existente no sistema'],
+    ['3. A "Data e Hora de Início*" deve estar no formato YYYY-MM-DD HH:MM'],
+    ['4. A "Prioridade*" deve ser uma das seguintes: Baixa, Média, Alta ou Urgente'],
+    ['5. As "Tags" devem ser separadas por vírgula']
+  ]);
+  
+  // Add sheets to workbook
+  XLSX.utils.book_append_sheet(workbook, instructionsWs, 'Instruções');
   XLSX.utils.book_append_sheet(workbook, worksheet, 'Modelo');
   
   // Fix: Change 'blob' to 'binary' and then convert to Blob object manually

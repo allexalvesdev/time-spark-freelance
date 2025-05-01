@@ -1,4 +1,3 @@
-
 import * as XLSX from 'xlsx';
 import { Project, Task } from '@/types';
 import { formatDate } from './dateUtils';
@@ -59,7 +58,18 @@ export const generateTaskTemplate = (): Blob => {
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, 'Modelo');
   
-  return XLSX.write(workbook, { bookType: 'xlsx', type: 'blob' });
+  // Fix: Change 'blob' to 'binary' and then convert to Blob object manually
+  const binaryData = XLSX.write(workbook, { bookType: 'xlsx', type: 'binary' });
+  
+  // Convert binary string to ArrayBuffer
+  const buf = new ArrayBuffer(binaryData.length);
+  const view = new Uint8Array(buf);
+  for (let i = 0; i < binaryData.length; i++) {
+    view[i] = binaryData.charCodeAt(i) & 0xFF;
+  }
+  
+  // Create and return Blob
+  return new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
 };
 
 // Parse the uploaded Excel file

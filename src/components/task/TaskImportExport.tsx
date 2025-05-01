@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import { Download, Upload, AlertTriangle, Check, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -27,6 +26,7 @@ import {
   TaskImportTemplate,
 } from '@/utils/excelUtils';
 import { Badge } from "@/components/ui/badge";
+import { Task } from '@/types';
 
 const TaskImportExport: React.FC = () => {
   const { state, addTask, addTag, addTagToTask } = useAppContext();

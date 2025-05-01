@@ -22,8 +22,11 @@ export const useReportGenerator = () => {
       return {
         id: task.id,
         name: task.name,
+        description: task.description,
         timeSpent,
-        earnings
+        earnings,
+        startTime: task.actualStartTime,
+        endTime: task.actualEndTime
       };
     });
     

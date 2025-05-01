@@ -1,6 +1,8 @@
 
 import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
 import { ReportData } from "@/types";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 const styles = StyleSheet.create({
   page: {
@@ -40,13 +42,46 @@ const styles = StyleSheet.create({
     backgroundColor: '#f0f0f0'
   },
   tableCell: {
-    flex: 1,
-    padding: 8
+    padding: 8,
+    fontSize: 10
+  },
+  nameCell: {
+    width: '25%',
+    padding: 8,
+    fontSize: 10
+  },
+  timeCell: {
+    width: '15%',
+    padding: 8,
+    fontSize: 10
+  },
+  dateCell: {
+    width: '20%',
+    padding: 8,
+    fontSize: 10
+  },
+  valueCell: {
+    width: '15%',
+    padding: 8,
+    fontSize: 10
+  },
+  descriptionCell: {
+    width: '25%',
+    padding: 8,
+    fontSize: 10
   },
   summary: {
     marginTop: 20,
     padding: 10,
     backgroundColor: '#f9f9f9'
+  },
+  description: {
+    fontSize: 10,
+    color: '#555',
+    marginTop: 2
+  },
+  taskSection: {
+    marginVertical: 5
   }
 });
 
@@ -62,6 +97,11 @@ const formatTimeForPDF = (seconds: number): string => {
   return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
 };
 
+const formatDateForPDF = (date: Date | undefined): string => {
+  if (!date) return "Não definido";
+  return format(date, "dd/MM/yyyy HH:mm", { locale: ptBR });
+};
+
 export const ReportPDF = ({ data }: ReportPDFProps) => (
   <Document>
     <Page size="A4" style={styles.page}>
@@ -70,15 +110,22 @@ export const ReportPDF = ({ data }: ReportPDFProps) => (
 
       <View style={styles.table}>
         <View style={[styles.tableRow, styles.tableHeader]}>
-          <Text style={styles.tableCell}>Tarefa</Text>
-          <Text style={styles.tableCell}>Tempo</Text>
-          <Text style={styles.tableCell}>Valor</Text>
+          <Text style={styles.nameCell}>Tarefa</Text>
+          <Text style={styles.dateCell}>Início</Text>
+          <Text style={styles.dateCell}>Fim</Text>
+          <Text style={styles.timeCell}>Tempo Total</Text>
+          <Text style={styles.valueCell}>Valor</Text>
         </View>
         {data.tasks.map((task) => (
           <View key={task.id} style={styles.tableRow}>
-            <Text style={styles.tableCell}>{task.name}</Text>
-            <Text style={styles.tableCell}>{formatTimeForPDF(task.timeSpent)}</Text>
-            <Text style={styles.tableCell}>R$ {task.earnings.toFixed(2)}</Text>
+            <View style={styles.nameCell}>
+              <Text>{task.name}</Text>
+              <Text style={styles.description}>{task.description || "Sem descrição"}</Text>
+            </View>
+            <Text style={styles.dateCell}>{formatDateForPDF(task.startTime)}</Text>
+            <Text style={styles.dateCell}>{formatDateForPDF(task.endTime)}</Text>
+            <Text style={styles.timeCell}>{formatTimeForPDF(task.timeSpent)}</Text>
+            <Text style={styles.valueCell}>R$ {task.earnings.toFixed(2)}</Text>
           </View>
         ))}
       </View>

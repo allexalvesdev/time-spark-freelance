@@ -40,8 +40,11 @@ export interface ReportData {
   tasks: {
     id: string;
     name: string;
+    description: string;
     timeSpent: number; // em segundos
     earnings: number; // em reais
+    startTime?: Date;
+    endTime?: Date;
   }[];
   totalTime: number; // em segundos
   totalEarnings: number; // em reais

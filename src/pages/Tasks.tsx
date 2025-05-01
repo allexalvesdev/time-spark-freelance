@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAppContext } from '@/contexts/AppContext';
 import TaskItem from '@/components/TaskItem';
@@ -12,6 +13,7 @@ import {
 } from "@/components/ui/select";
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import TaskImportExport from '@/components/task/TaskImportExport';
 
 const Tasks: React.FC = () => {
   const { state, getTaskTags } = useAppContext();
@@ -99,6 +101,13 @@ const Tasks: React.FC = () => {
         <p className="text-muted-foreground">
           Gerencie todas as suas tarefas em um só lugar
         </p>
+      </div>
+      
+      <div className="mb-6">
+        <Card className="p-4">
+          <h3 className="text-lg font-medium mb-3">Importar/Exportar</h3>
+          <TaskImportExport />
+        </Card>
       </div>
       
       <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between mb-6">

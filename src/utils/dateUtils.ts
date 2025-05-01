@@ -34,7 +34,17 @@ export const formatCurrency = (value: number): string => {
   }).format(value);
 };
 
-export const formatDate = (date: Date): string => {
+export const formatDate = (date: Date, format?: string): string => {
+  if (format === 'yyyy-MM-dd HH:mm') {
+    const year = date.getFullYear();
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const day = date.getDate().toString().padStart(2, '0');
+    const hours = date.getHours().toString().padStart(2, '0');
+    const minutes = date.getMinutes().toString().padStart(2, '0');
+    
+    return `${year}-${month}-${day} ${hours}:${minutes}`;
+  }
+  
   return date.toLocaleDateString('pt-BR', {
     year: 'numeric',
     month: '2-digit',

@@ -5,11 +5,7 @@ const config: CapacitorConfig = {
   appId: 'app.workly.timespark',
   appName: 'Workly',
   webDir: 'dist',
-  bundledWebRuntime: false,
-  server: {
-    url: 'https://b036e618-b7bf-4b72-a4dc-86c099eefaa4.lovableproject.com?forceHideBadge=true',
-    cleartext: true
-  },
+  bundledWebRuntime: false
 };
 
 export default config;

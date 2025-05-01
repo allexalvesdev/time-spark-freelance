@@ -71,12 +71,15 @@ export const useTimerManagement = (userId: string, tasks: Task[] = []) => {
           const task = currentTasks.find(t => t.id === taskId);
           
           if (task) {
+            // Use scheduledStartTime as fallback if actualStartTime is not available
+            const taskStartTime = task.actualStartTime || task.scheduledStartTime;
+            
             // Update the task with completed status
             const updatedTask: Task = {
               ...task,
               completed: true,
               actualEndTime: endTime,
-              actualStartTime: task.actualStartTime || startTime,
+              actualStartTime: taskStartTime, // Use the determined start time
               elapsedTime: (task.elapsedTime || 0) + duration,
             };
             

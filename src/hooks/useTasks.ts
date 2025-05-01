@@ -56,12 +56,17 @@ export const useTasks = (userId: string) => {
       const task = tasks.find(t => t.id === taskId);
       if (!task) return;
 
+      // Use scheduledStartTime as fallback when actualStartTime is not set
+      const startTime = task.actualStartTime || task.scheduledStartTime;
+      const endTime = new Date();
+      
       const updatedTask: Task = {
         ...task,
         completed: true,
-        actualEndTime: new Date(),
-        elapsedTime: task.actualStartTime 
-          ? calculateElapsedTime(task.actualStartTime, new Date())
+        actualEndTime: endTime,
+        actualStartTime: startTime, // Use the determined start time
+        elapsedTime: startTime 
+          ? calculateElapsedTime(startTime, endTime)
           : 0
       };
 

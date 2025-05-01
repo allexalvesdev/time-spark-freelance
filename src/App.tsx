@@ -21,6 +21,8 @@ import Settings from "@/pages/Settings";
 import { useAuth } from "@/contexts/AuthContext";
 import Landing from "@/pages/Landing";
 import MobileNavigation from "@/components/MobileNavigation";
+import Index from "./pages/Index";
+import { usePlatform } from "@/hooks/use-platform";
 
 // PrivateRoute component needs to be defined outside of the App component
 const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
@@ -42,6 +44,20 @@ const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
   return children;
 };
 
+// RootPage component to handle the initial routing based on platform
+const RootPage = () => {
+  const { isNative } = usePlatform();
+  const { user } = useAuth();
+  
+  // For native apps, always redirect to auth or dashboard
+  if (isNative) {
+    return <Navigate to={user ? "/dashboard" : "/auth"} />;
+  }
+  
+  // For web, show the landing page
+  return <Landing />;
+};
+
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -55,7 +71,7 @@ const App = () => (
                 <Toaster />
                 <Sonner />
                 <Routes>
-                  <Route path="/" element={<Landing />} />
+                  <Route path="/" element={<RootPage />} />
                   <Route path="/auth" element={<Auth />} />
                   <Route
                     path="/dashboard"

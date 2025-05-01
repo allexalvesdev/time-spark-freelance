@@ -8,13 +8,13 @@ const Index = () => {
   const { user } = useAuth();
   const { isNative } = usePlatform();
   
-  // For mobile app, always navigate to auth (login) if not authenticated
-  // or dashboard if authenticated
+  // Para aplicativos móveis, sempre redirecionar para autenticação (login) se não estiver autenticado
+  // ou para dashboard se estiver autenticado
   if (isNative) {
-    return user ? <Navigate to="/dashboard" /> : <Navigate to="/auth" />;
+    return <Navigate to={user ? "/dashboard" : "/auth"} />;
   }
   
-  // Standard web behavior
+  // Comportamento web padrão - mantém landing page para web
   return user ? <Navigate to="/dashboard" /> : <Navigate to="/" />;
 };
 

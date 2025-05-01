@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Task } from '@/types';
 import { taskService } from '@/services';
@@ -10,7 +9,7 @@ export const useTasks = (userId: string) => {
   const [currentTask, setCurrentTask] = useState<Task | null>(null);
   const { toast } = useToast();
 
-  const addTask = async (taskData: Omit<Task, 'id' | 'completed' | 'actualStartTime' | 'actualEndTime' | 'elapsedTime' | 'userId'>) => {
+  const addTask = async (taskData: Omit<Task, 'id' | 'userId'>) => {
     try {
       const newTask = await taskService.createTask({ 
         ...taskData, 

@@ -1,44 +1,38 @@
 
 import * as XLSX from 'xlsx';
 import { Project, Task } from '@/types';
-import { formatDate } from './dateUtils';
+import { formatDate, parseDate } from './dateUtils';
 
 // Define the template structure for Excel export
 export interface TaskImportTemplate {
+  'Nome do Projeto*': string;
   'Nome da Tarefa*': string;
   'Descrição': string;
-  'Projeto*': string;
   'Horas Estimadas': number;
   'Minutos Estimados': number;
   'Data e Hora de Início*': string;
+  'Data e Hora de Fim': string;
   'Prioridade*': 'Baixa' | 'Média' | 'Alta' | 'Urgente';
   'Tags': string; // Tags separadas por vírgula
 }
 
 // Create a template for users to download
 export const generateTaskTemplate = (): Blob => {
-  const template: TaskImportTemplate[] = [{
-    'Nome da Tarefa*': 'Exemplo: Criar wireframes',
-    'Descrição': 'Exemplo: Desenvolvimento de wireframes para o novo layout',
-    'Projeto*': 'Digite o nome exato do projeto',
-    'Horas Estimadas': 2,
-    'Minutos Estimados': 30,
-    'Data e Hora de Início*': formatDate(new Date(), 'yyyy-MM-dd HH:mm'),
-    'Prioridade*': 'Média',
-    'Tags': 'design, wireframe, ux'
-  }];
-
-  const worksheet = XLSX.utils.json_to_sheet(template);
+  // Criar a estrutura de cabeçalho apenas
+  const worksheet = XLSX.utils.aoa_to_sheet([
+    ['Nome do Projeto* - precisa ser um projeto existente no sistema - Obrigatório', 'Nome da Tarefa* - Obrigatório', 'Descrição', 'Horas Estimadas', 'Minutos Estimados', 'Data e Hora de Início* - deve estar no formato dd-MM-yyyy HH:MM - Obrigatório', 'Data e Hora de Fim - deve estar no formato dd-MM-yyyy HH:MM', 'Prioridade* - deve ser uma das seguintes: Baixa, Média, Alta ou Urgente - Obrigatório', 'Tags - devem ser separadas por vírgula']
+  ]);
   
   // Set column widths
   const columnWidths = [
+    { wch: 35 }, // Nome do Projeto
     { wch: 25 }, // Nome da Tarefa
     { wch: 40 }, // Descrição
-    { wch: 20 }, // Projeto
     { wch: 15 }, // Horas Estimadas
     { wch: 15 }, // Minutos Estimados
-    { wch: 20 }, // Data e Hora de Início
-    { wch: 15 }, // Prioridade
+    { wch: 35 }, // Data e Hora de Início
+    { wch: 35 }, // Data e Hora de Fim
+    { wch: 40 }, // Prioridade
     { wch: 30 }  // Tags
   ];
   
@@ -53,9 +47,10 @@ export const generateTaskTemplate = (): Blob => {
     [''],
     ['1. Os campos com * são obrigatórios'],
     ['2. O "Projeto*" precisa ser um projeto existente no sistema'],
-    ['3. A "Data e Hora de Início*" deve estar no formato YYYY-MM-DD HH:MM'],
-    ['4. A "Prioridade*" deve ser uma das seguintes: Baixa, Média, Alta ou Urgente'],
-    ['5. As "Tags" devem ser separadas por vírgula']
+    ['3. A "Data e Hora de Início*" deve estar no formato DD/MM/YYYY HH:MM'],
+    ['4. A "Data e Hora de Fim" deve estar no formato DD/MM/YYYY HH:MM (opcional)'],
+    ['5. A "Prioridade*" deve ser uma das seguintes: Baixa, Média, Alta ou Urgente'],
+    ['6. As "Tags" devem ser separadas por vírgula']
   ]);
   
   // Add sheets to workbook
@@ -91,9 +86,9 @@ export const parseTasksFromExcel = (file: File): Promise<{
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
         
-        // Skip the first 3 rows (instructions)
+        // Skip the first row (header)
         const jsonData: TaskImportTemplate[] = XLSX.utils.sheet_to_json(worksheet, { 
-          range: 3 
+          range: 1 
         });
         
         // Validate data
@@ -102,30 +97,42 @@ export const parseTasksFromExcel = (file: File): Promise<{
         jsonData.forEach((row, index) => {
           // Validate required fields
           if (!row['Nome da Tarefa*']) {
-            errors.push({ row: index + 4, message: 'Nome da tarefa é obrigatório' });
+            errors.push({ row: index + 2, message: 'Nome da tarefa é obrigatório' });
           }
           
-          if (!row['Projeto*']) {
-            errors.push({ row: index + 4, message: 'Nome do projeto é obrigatório' });
+          if (!row['Nome do Projeto*']) {
+            errors.push({ row: index + 2, message: 'Nome do projeto é obrigatório' });
           }
           
           if (!row['Data e Hora de Início*']) {
-            errors.push({ row: index + 4, message: 'Data e hora de início são obrigatórias' });
+            errors.push({ row: index + 2, message: 'Data e hora de início são obrigatórias' });
           } else {
-            // Validate date format
+            // Validate date format (DD/MM/YYYY HH:MM)
             const dateStr = row['Data e Hora de Início*'].toString();
-            const dateRegex = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/;
+            const dateRegex = /^\d{2}\/\d{2}\/\d{4} \d{2}:\d{2}$/;
             if (!dateRegex.test(dateStr)) {
               errors.push({ 
-                row: index + 4, 
-                message: 'Formato de data e hora inválido. Use YYYY-MM-DD HH:MM' 
+                row: index + 2, 
+                message: 'Formato de data e hora inválido. Use DD/MM/YYYY HH:MM' 
+              });
+            }
+          }
+          
+          // Validate end date format if provided
+          if (row['Data e Hora de Fim']) {
+            const dateStr = row['Data e Hora de Fim'].toString();
+            const dateRegex = /^\d{2}\/\d{2}\/\d{4} \d{2}:\d{2}$/;
+            if (!dateRegex.test(dateStr)) {
+              errors.push({ 
+                row: index + 2, 
+                message: 'Formato de data e hora de fim inválido. Use DD/MM/YYYY HH:MM' 
               });
             }
           }
           
           if (!row['Prioridade*'] || !['Baixa', 'Média', 'Alta', 'Urgente'].includes(row['Prioridade*'])) {
             errors.push({ 
-              row: index + 4, 
+              row: index + 2, 
               message: 'Prioridade inválida. Use "Baixa", "Média", "Alta" ou "Urgente"' 
             });
           }
@@ -151,43 +158,63 @@ export const mapExcelDataToTasks = (
   projects: Project[], 
   userId: string
 ): { 
-  tasks: Omit<Task, 'id' | 'completed' | 'actualStartTime' | 'actualEndTime' | 'elapsedTime' | 'userId'>[];
+  tasks: Omit<Task, 'id' | 'userId'>[];
   errors: { row: number; message: string }[];
 } => {
-  const tasks: Omit<Task, 'id' | 'completed' | 'actualStartTime' | 'actualEndTime' | 'elapsedTime' | 'userId'>[] = [];
+  const tasks: Omit<Task, 'id' | 'userId'>[] = [];
   const errors: { row: number; message: string }[] = [];
   
   data.forEach((row, index) => {
     try {
       // Find the project by name
-      const project = projects.find(p => p.name.toLowerCase() === row['Projeto*'].toLowerCase());
+      const project = projects.find(p => p.name.toLowerCase() === row['Nome do Projeto*'].toLowerCase());
       if (!project) {
-        errors.push({ row: index + 4, message: `Projeto "${row['Projeto*']}" não encontrado` });
+        errors.push({ row: index + 2, message: `Projeto "${row['Nome do Projeto*']}" não encontrado` });
         return;
       }
       
-      // Parse date
-      const dateTime = row['Data e Hora de Início*'].toString();
-      const scheduledStartTime = new Date(dateTime.replace(' ', 'T'));
+      // Parse start date
+      const startDateTime = row['Data e Hora de Início*'].toString();
+      const scheduledStartTime = parseDate(startDateTime, 'dd/MM/yyyy HH:mm');
       
       // Calculate estimated time in minutes
       const hours = row['Horas Estimadas'] || 0;
       const minutes = row['Minutos Estimados'] || 0;
       const estimatedTime = (hours * 60) + minutes;
       
+      // Check if end date is provided to mark task as completed
+      const completed = !!row['Data e Hora de Fim'];
+      let actualEndTime: Date | undefined;
+      let actualStartTime: Date | undefined;
+      let elapsedTime: number | undefined;
+      
+      if (completed && row['Data e Hora de Fim']) {
+        // Parse end date
+        const endDateTime = row['Data e Hora de Fim'].toString();
+        actualEndTime = parseDate(endDateTime, 'dd/MM/yyyy HH:mm');
+        actualStartTime = scheduledStartTime; // Use scheduled start time as actual start time
+        
+        // Calculate elapsed time in seconds
+        elapsedTime = calculateElapsedTime(scheduledStartTime, actualEndTime);
+      }
+      
       // Create task object
-      const task: Omit<Task, 'id' | 'completed' | 'actualStartTime' | 'actualEndTime' | 'elapsedTime' | 'userId'> = {
+      const task: Omit<Task, 'id' | 'userId'> = {
         name: row['Nome da Tarefa*'],
         description: row['Descrição'] || '',
         projectId: project.id,
         estimatedTime,
         scheduledStartTime,
         priority: row['Prioridade*'],
+        completed,
+        actualStartTime,
+        actualEndTime,
+        elapsedTime
       };
       
       tasks.push(task);
     } catch (error) {
-      errors.push({ row: index + 4, message: `Erro ao processar linha: ${error}` });
+      errors.push({ row: index + 2, message: `Erro ao processar linha: ${error}` });
     }
   });
   
@@ -216,4 +243,9 @@ export const getTagMappingsFromExcel = (data: TaskImportTemplate[]): { rowIndex:
       : [];
     return { rowIndex: index, tags };
   });
+};
+
+// Calculate elapsed time between two dates in seconds
+const calculateElapsedTime = (startTime: Date, endTime: Date): number => {
+  return Math.floor((endTime.getTime() - startTime.getTime()) / 1000);
 };

@@ -35,6 +35,16 @@ export const formatCurrency = (value: number): string => {
 };
 
 export const formatDate = (date: Date, format?: string): string => {
+  if (format === 'dd/MM/yyyy HH:mm') {
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const year = date.getFullYear();
+    const hours = date.getHours().toString().padStart(2, '0');
+    const minutes = date.getMinutes().toString().padStart(2, '0');
+    
+    return `${day}/${month}/${year} ${hours}:${minutes}`;
+  }
+  
   if (format === 'yyyy-MM-dd HH:mm') {
     const year = date.getFullYear();
     const month = (date.getMonth() + 1).toString().padStart(2, '0');
@@ -50,4 +60,24 @@ export const formatDate = (date: Date, format?: string): string => {
     month: '2-digit',
     day: '2-digit'
   });
+};
+
+export const parseDate = (dateStr: string, format: 'dd/MM/yyyy HH:mm' | 'yyyy-MM-dd HH:mm'): Date => {
+  if (format === 'dd/MM/yyyy HH:mm') {
+    const [datePart, timePart] = dateStr.split(' ');
+    const [day, month, year] = datePart.split('/').map(Number);
+    const [hours, minutes] = timePart.split(':').map(Number);
+    
+    return new Date(year, month - 1, day, hours, minutes);
+  }
+  
+  if (format === 'yyyy-MM-dd HH:mm') {
+    const [datePart, timePart] = dateStr.split(' ');
+    const [year, month, day] = datePart.split('-').map(Number);
+    const [hours, minutes] = timePart.split(':').map(Number);
+    
+    return new Date(year, month - 1, day, hours, minutes);
+  }
+  
+  return new Date(dateStr);
 };

@@ -63,6 +63,7 @@ const TaskImportExport: React.FC = () => {
         description: 'O modelo para importação foi baixado com sucesso.',
       });
     } catch (error) {
+      console.error('Download error:', error);
       toast({
         title: 'Erro',
         description: 'Não foi possível baixar o modelo.',
@@ -127,7 +128,7 @@ const TaskImportExport: React.FC = () => {
   // Process the import
   const processImport = async (
     excelData: TaskImportTemplate[], 
-    taskData: Omit<Task, 'id' | 'completed' | 'actualStartTime' | 'actualEndTime' | 'elapsedTime' | 'userId'>[]
+    taskData: Omit<Task, 'id' | 'userId'>[]
   ) => {
     try {
       setProgress(0);
@@ -177,8 +178,8 @@ const TaskImportExport: React.FC = () => {
           
           successCount++;
         } catch (error) {
-          console.error(`Error importing row ${i + 4}:`, error);
-          errors.push({ row: i + 4, message: `Erro ao criar tarefa: ${error}` });
+          console.error(`Error importing row ${i + 2}:`, error);
+          errors.push({ row: i + 2, message: `Erro ao criar tarefa: ${error}` });
           failedCount++;
         }
         

@@ -73,29 +73,34 @@ export const formatDate = (date: Date, format?: string): string => {
 };
 
 export const parseDate = (dateStr: string, format: 'dd/MM/yyyy HH:mm' | 'yyyy-MM-dd HH:mm' | 'dd-MM-yyyy HH:mm'): Date => {
-  if (format === 'dd/MM/yyyy HH:mm') {
-    const [datePart, timePart] = dateStr.split(' ');
-    const [day, month, year] = datePart.split('/').map(Number);
-    const [hours, minutes] = timePart.split(':').map(Number);
+  try {
+    if (format === 'dd/MM/yyyy HH:mm') {
+      const [datePart, timePart] = dateStr.split(' ');
+      const [day, month, year] = datePart.split('/').map(Number);
+      const [hours, minutes] = timePart.split(':').map(Number);
+      
+      return new Date(year, month - 1, day, hours, minutes);
+    }
     
-    return new Date(year, month - 1, day, hours, minutes);
-  }
-  
-  if (format === 'dd-MM-yyyy HH:mm') {
-    const [datePart, timePart] = dateStr.split(' ');
-    const [day, month, year] = datePart.split('-').map(Number);
-    const [hours, minutes] = timePart.split(':').map(Number);
+    if (format === 'dd-MM-yyyy HH:mm') {
+      const [datePart, timePart] = dateStr.split(' ');
+      const [day, month, year] = datePart.split('-').map(Number);
+      const [hours, minutes] = timePart.split(':').map(Number);
+      
+      return new Date(year, month - 1, day, hours, minutes);
+    }
     
-    return new Date(year, month - 1, day, hours, minutes);
-  }
-  
-  if (format === 'yyyy-MM-dd HH:mm') {
-    const [datePart, timePart] = dateStr.split(' ');
-    const [year, month, day] = datePart.split('-').map(Number);
-    const [hours, minutes] = timePart.split(':').map(Number);
+    if (format === 'yyyy-MM-dd HH:mm') {
+      const [datePart, timePart] = dateStr.split(' ');
+      const [year, month, day] = datePart.split('-').map(Number);
+      const [hours, minutes] = timePart.split(':').map(Number);
+      
+      return new Date(year, month - 1, day, hours, minutes);
+    }
     
-    return new Date(year, month - 1, day, hours, minutes);
+    return new Date(dateStr);
+  } catch (error) {
+    console.error(`Error parsing date '${dateStr}' with format '${format}':`, error);
+    throw new Error(`Data inválida: ${dateStr}`);
   }
-  
-  return new Date(dateStr);
 };

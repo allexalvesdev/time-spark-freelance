@@ -12,21 +12,21 @@ export interface TaskImportTemplate {
   'Minutos Estimados': number;
   'Data e Hora de Início*': string;
   'Data e Hora de Fim': string;
-  'Prioridade*': 'Baixa' | 'Média' | 'Alta' | 'Urgente';
+  'Prioridade*': string; // 'Baixa' | 'Média' | 'Alta' | 'Urgente'
   'Tags': string; // Tags separadas por vírgula
 }
 
 // Create a template for users to download
 export const generateTaskTemplate = (): Blob => {
-  // Criar os cabeçalhos conforme solicitado
+  // Headers with instructions
   const headers = [
     'Nome do Projeto* - precisa ser um projeto existente no sistema',
     'Nome da Tarefa*',
     'Descrição',
     'Horas Estimadas',
     'Minutos Estimados',
-    'Data e Hora de Início* - deve estar no formato dd-MM-yyyy HH:MM',
-    'Data e Hora de Fim - deve estar no formato dd-MM-yyyy HH:MM',
+    'Data e Hora de Início* - deve estar no formato dd/MM/yyyy HH:mm',
+    'Data e Hora de Fim - deve estar no formato dd/MM/yyyy HH:mm',
     'Prioridade* - deve ser uma das seguintes: Baixa, Média, Alta ou Urgente',
     'Tags - devem ser separadas por vírgula'
   ];
@@ -51,7 +51,7 @@ export const generateTaskTemplate = (): Blob => {
   // Create a workbook
   const workbook = XLSX.utils.book_new();
   
-  // Add only the model sheet, no instructions sheet
+  // Add the model sheet
   XLSX.utils.book_append_sheet(workbook, worksheet, 'Modelo');
   
   // Write as binary string
@@ -83,34 +83,67 @@ export const parseTasksFromExcel = (file: File): Promise<{
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
         
-        // Skip the first row (header)
-        const jsonData: TaskImportTemplate[] = XLSX.utils.sheet_to_json(worksheet, { 
-          range: 1 
+        // Get the headers from the first row
+        const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1');
+        const headers: string[] = [];
+        
+        for (let C = range.s.c; C <= range.e.c; ++C) {
+          const cell = worksheet[XLSX.utils.encode_cell({ r: range.s.r, c: C })];
+          headers.push((cell?.v || '').toString().split(' - ')[0].trim());
+        }
+        
+        console.log('Excel headers:', headers);
+        
+        // Convert to JSON, starting at row 2 (index 1)
+        const rawData = XLSX.utils.sheet_to_json(worksheet, { 
+          range: 1,
+          header: headers
         });
+        
+        console.log('Parsed raw data:', rawData);
+        
+        // Map to our expected format and validate
+        const jsonData: TaskImportTemplate[] = rawData.map((row: any) => ({
+          'Nome do Projeto*': row['Nome do Projeto*'] || '',
+          'Nome da Tarefa*': row['Nome da Tarefa*'] || '',
+          'Descrição': row['Descrição'] || '',
+          'Horas Estimadas': parseFloat(row['Horas Estimadas']) || 0,
+          'Minutos Estimados': parseFloat(row['Minutos Estimados']) || 0,
+          'Data e Hora de Início*': row['Data e Hora de Início*'] || '',
+          'Data e Hora de Fim': row['Data e Hora de Fim'] || '',
+          'Prioridade*': row['Prioridade*'] || '',
+          'Tags': row['Tags'] || ''
+        }));
+        
+        console.log('Mapped data:', jsonData);
         
         // Validate data
         const errors: { row: number; message: string }[] = [];
         
         jsonData.forEach((row, index) => {
+          const rowNum = index + 2; // +2 because we're skipping header row and 0-indexed array
+          
           // Validate required fields
           if (!row['Nome da Tarefa*']) {
-            errors.push({ row: index + 2, message: 'Nome da tarefa é obrigatório' });
+            errors.push({ row: rowNum, message: 'Nome da tarefa é obrigatório' });
           }
           
           if (!row['Nome do Projeto*']) {
-            errors.push({ row: index + 2, message: 'Nome do projeto é obrigatório' });
+            errors.push({ row: rowNum, message: 'Nome do projeto é obrigatório' });
           }
           
           if (!row['Data e Hora de Início*']) {
-            errors.push({ row: index + 2, message: 'Data e hora de início são obrigatórias' });
+            errors.push({ row: rowNum, message: 'Data e hora de início são obrigatórias' });
           } else {
-            // Validate date format (DD-MM-YYYY HH:MM)
+            // Validate date format (DD/MM/YYYY HH:MM or DD-MM-YYYY HH:MM)
             const dateStr = row['Data e Hora de Início*'].toString();
-            const dateRegex = /^\d{2}-\d{2}-\d{4} \d{2}:\d{2}$/;
-            if (!dateRegex.test(dateStr)) {
+            const slashDateRegex = /^\d{2}\/\d{2}\/\d{4} \d{2}:\d{2}$/;
+            const dashDateRegex = /^\d{2}-\d{2}-\d{4} \d{2}:\d{2}$/;
+            
+            if (!slashDateRegex.test(dateStr) && !dashDateRegex.test(dateStr)) {
               errors.push({ 
-                row: index + 2, 
-                message: 'Formato de data e hora inválido. Use DD-MM-YYYY HH:MM' 
+                row: rowNum, 
+                message: 'Formato de data e hora inválido. Use DD/MM/YYYY HH:MM ou DD-MM-YYYY HH:MM' 
               });
             }
           }
@@ -118,18 +151,20 @@ export const parseTasksFromExcel = (file: File): Promise<{
           // Validate end date format if provided
           if (row['Data e Hora de Fim']) {
             const dateStr = row['Data e Hora de Fim'].toString();
-            const dateRegex = /^\d{2}-\d{2}-\d{4} \d{2}:\d{2}$/;
-            if (!dateRegex.test(dateStr)) {
+            const slashDateRegex = /^\d{2}\/\d{2}\/\d{4} \d{2}:\d{2}$/;
+            const dashDateRegex = /^\d{2}-\d{2}-\d{4} \d{2}:\d{2}$/;
+            
+            if (!slashDateRegex.test(dateStr) && !dashDateRegex.test(dateStr)) {
               errors.push({ 
-                row: index + 2, 
-                message: 'Formato de data e hora de fim inválido. Use DD-MM-YYYY HH:MM' 
+                row: rowNum, 
+                message: 'Formato de data e hora de fim inválido. Use DD/MM/YYYY HH:MM ou DD-MM-YYYY HH:MM' 
               });
             }
           }
           
           if (!row['Prioridade*'] || !['Baixa', 'Média', 'Alta', 'Urgente'].includes(row['Prioridade*'])) {
             errors.push({ 
-              row: index + 2, 
+              row: rowNum, 
               message: 'Prioridade inválida. Use "Baixa", "Média", "Alta" ou "Urgente"' 
             });
           }
@@ -137,6 +172,7 @@ export const parseTasksFromExcel = (file: File): Promise<{
         
         resolve({ data: jsonData, errors });
       } catch (error) {
+        console.error('Error parsing Excel:', error);
         reject(error);
       }
     };
@@ -170,13 +206,19 @@ export const mapExcelDataToTasks = (
         return;
       }
       
-      // Parse start date
+      // Parse start date, accepting both slash and dash formats
       const startDateTime = row['Data e Hora de Início*'].toString();
-      const scheduledStartTime = parseDate(startDateTime, 'dd-MM-yyyy HH:mm');
+      let scheduledStartTime: Date;
+      
+      if (startDateTime.includes('/')) {
+        scheduledStartTime = parseDate(startDateTime, 'dd/MM/yyyy HH:mm');
+      } else {
+        scheduledStartTime = parseDate(startDateTime, 'dd-MM-yyyy HH:mm');
+      }
       
       // Calculate estimated time in minutes
       const hours = row['Horas Estimadas'] || 0;
-      const minutes = row['Minutos Estimadas'] || 0;
+      const minutes = row['Minutos Estimados'] || 0;
       const estimatedTime = (hours * 60) + minutes;
       
       // Check if end date is provided to mark task as completed
@@ -186,9 +228,15 @@ export const mapExcelDataToTasks = (
       let elapsedTime: number | undefined;
       
       if (completed && row['Data e Hora de Fim']) {
-        // Parse end date
+        // Parse end date, accepting both slash and dash formats
         const endDateTime = row['Data e Hora de Fim'].toString();
-        actualEndTime = parseDate(endDateTime, 'dd-MM-yyyy HH:mm');
+        
+        if (endDateTime.includes('/')) {
+          actualEndTime = parseDate(endDateTime, 'dd/MM/yyyy HH:mm');
+        } else {
+          actualEndTime = parseDate(endDateTime, 'dd-MM-yyyy HH:mm');
+        }
+        
         actualStartTime = scheduledStartTime; // Use scheduled start time as actual start time
         
         // Calculate elapsed time in seconds
@@ -202,7 +250,7 @@ export const mapExcelDataToTasks = (
         projectId: project.id,
         estimatedTime,
         scheduledStartTime,
-        priority: row['Prioridade*'],
+        priority: row['Prioridade*'] as 'Baixa' | 'Média' | 'Alta' | 'Urgente',
         completed,
         actualStartTime,
         actualEndTime,
@@ -211,6 +259,7 @@ export const mapExcelDataToTasks = (
       
       tasks.push(task);
     } catch (error) {
+      console.error(`Error processing row ${index + 2}:`, error);
       errors.push({ row: index + 2, message: `Erro ao processar linha: ${error}` });
     }
   });

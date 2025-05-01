@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Task } from '@/types';
 import { taskService } from '@/services';
@@ -11,6 +12,7 @@ export const useTasks = (userId: string) => {
 
   const addTask = async (taskData: Omit<Task, 'id' | 'userId'>) => {
     try {
+      console.log('Adding task with data:', taskData);
       const newTask = await taskService.createTask({ 
         ...taskData, 
         userId 
@@ -26,6 +28,7 @@ export const useTasks = (userId: string) => {
       setCurrentTask(typedTask);
       return typedTask;
     } catch (error: any) {
+      console.error('Error adding task:', error);
       toast({
         title: 'Erro',
         description: 'Não foi possível criar a tarefa. Tente novamente.',

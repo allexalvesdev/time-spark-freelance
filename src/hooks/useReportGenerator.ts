@@ -11,8 +11,12 @@ export const useReportGenerator = () => {
     const taskReports = projectTasks.map(task => {
       let timeSpent = 0;
       
-      if (task.completed && task.actualStartTime && task.actualEndTime) {
-        timeSpent = calculateElapsedTime(task.actualStartTime, task.actualEndTime);
+      // Determine start and end times, using scheduled time as fallback
+      const startTime = task.actualStartTime || task.scheduledStartTime;
+      const endTime = task.actualEndTime;
+      
+      if (task.completed && startTime && endTime) {
+        timeSpent = calculateElapsedTime(startTime, endTime);
       } else if (task.elapsedTime) {
         timeSpent = task.elapsedTime;
       }
@@ -25,8 +29,8 @@ export const useReportGenerator = () => {
         description: task.description,
         timeSpent,
         earnings,
-        startTime: task.actualStartTime,
-        endTime: task.actualEndTime
+        startTime, // Ensuring we're using the fallback here as well
+        endTime
       };
     });
     

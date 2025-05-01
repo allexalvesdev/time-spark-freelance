@@ -9,13 +9,19 @@ import {
   Settings,
 } from 'lucide-react';
 import { usePlatform } from '@/hooks/use-platform';
+import { useAuth } from '@/contexts/AuthContext';
 
 const MobileNavigation: React.FC = () => {
   const location = useLocation();
   const { isNative, isAndroid } = usePlatform();
+  const { user } = useAuth();
   
   // Only show the mobile navigation when in a native app or on a mobile device
-  if (!isNative && window.innerWidth > 768) return null;
+  // AND when the user is authenticated
+  if ((!isNative && window.innerWidth > 768) || !user) return null;
+  
+  // Don't show navigation on auth page
+  if (location.pathname === '/auth') return null;
   
   const isActive = (path: string) => {
     return location.pathname === path;

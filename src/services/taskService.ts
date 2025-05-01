@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Task } from '@/types';
 
@@ -31,7 +30,9 @@ export const taskService = {
     return { tasks };
   },
 
-  async createTask(task: Omit<Task, 'id' | 'completed' | 'actualStartTime' | 'actualEndTime' | 'elapsedTime'>) {
+  async createTask(task: Omit<Task, 'id'>) {
+    console.log('Creating task in database:', task);
+    
     const { data, error } = await supabase
       .from('tasks')
       .insert([{
@@ -40,8 +41,11 @@ export const taskService = {
         project_id: task.projectId,
         estimated_time: task.estimatedTime,
         scheduled_start_time: task.scheduledStartTime.toISOString(),
+        actual_start_time: task.actualStartTime ? task.actualStartTime.toISOString() : null,
+        actual_end_time: task.actualEndTime ? task.actualEndTime.toISOString() : null,
+        elapsed_time: task.elapsedTime,
         user_id: task.userId,
-        completed: false,
+        completed: task.completed || false,
         priority: task.priority || 'Média',
       }])
       .select()
@@ -49,6 +53,8 @@ export const taskService = {
 
     if (error) throw error;
 
+    console.log('Task created in database:', data);
+    
     return {
       id: data.id,
       name: data.name,
@@ -56,10 +62,10 @@ export const taskService = {
       projectId: data.project_id,
       estimatedTime: data.estimated_time,
       scheduledStartTime: data.scheduled_start_time ? new Date(data.scheduled_start_time) : undefined,
-      actualStartTime: undefined,
-      actualEndTime: undefined,
-      elapsedTime: 0,
-      completed: false,
+      actualStartTime: data.actual_start_time ? new Date(data.actual_start_time) : undefined,
+      actualEndTime: data.actual_end_time ? new Date(data.actual_end_time) : undefined,
+      elapsedTime: data.elapsed_time,
+      completed: data.completed,
       userId: data.user_id,
       priority: (data.priority === 'Baixa' || data.priority === 'Média' || data.priority === 'Alta' || data.priority === 'Urgente') 
         ? data.priority 

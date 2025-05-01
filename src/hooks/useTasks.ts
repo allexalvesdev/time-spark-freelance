@@ -13,12 +13,30 @@ export const useTasks = (userId: string) => {
   const addTask = async (taskData: Omit<Task, 'id' | 'userId'>) => {
     try {
       console.log('Adding task with data:', taskData);
-      const newTask = await taskService.createTask({ 
-        ...taskData, 
-        userId 
-      });
       
-      // Garantir que a prioridade seja um valor válido
+      // Create the task with the right completion status and timing data
+      const taskToCreate = {
+        ...taskData,
+        userId
+      };
+      
+      // If task has end time and is marked as completed, ensure all timing data is set
+      if (taskData.completed && taskData.actualEndTime) {
+        if (!taskData.actualStartTime) {
+          taskToCreate.actualStartTime = taskData.scheduledStartTime;
+        }
+        
+        if (!taskData.elapsedTime && taskData.actualStartTime) {
+          taskToCreate.elapsedTime = calculateElapsedTime(
+            taskData.actualStartTime, 
+            taskData.actualEndTime
+          );
+        }
+      }
+      
+      const newTask = await taskService.createTask(taskToCreate);
+      
+      // Ensure that the priority is a valid value
       const typedTask: Task = {
         ...newTask,
         priority: newTask.priority as 'Baixa' | 'Média' | 'Alta' | 'Urgente'

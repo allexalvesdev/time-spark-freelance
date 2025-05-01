@@ -1,3 +1,4 @@
+
 import React, { useState, useRef } from 'react';
 import { Download, Upload, AlertTriangle, Check, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -163,9 +164,13 @@ const TaskImportExport: React.FC = () => {
       // Now create tasks and associate tags
       for (let i = 0; i < taskData.length; i++) {
         try {
-          // Create task
+          // Log the task before creation
           const task = taskData[i];
+          console.log(`Processing task for import: ${task.name} (completed: ${task.completed}, elapsedTime: ${task.elapsedTime})`);
+          
+          // Create task
           const newTask = await addTask(task);
+          console.log(`Task created with ID: ${newTask.id}, completed: ${newTask.completed}, elapsedTime: ${newTask.elapsedTime}`);
           
           // Associate tags
           const rowTags = tagMappings[i].tags;

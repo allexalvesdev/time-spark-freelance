@@ -9,7 +9,7 @@ export interface TaskImportTemplate {
   'Nome da Tarefa*': string;
   'Descrição': string;
   'Horas Estimadas': number;
-  'Minutos Estimados': number;
+  'Minutos Estimadas': number;
   'Data e Hora de Início*': string;
   'Data e Hora de Fim': string;
   'Prioridade*': string; // 'Baixa' | 'Média' | 'Alta' | 'Urgente'
@@ -20,15 +20,15 @@ export interface TaskImportTemplate {
 export const generateTaskTemplate = (): Blob => {
   // Headers with instructions
   const headers = [
-    'Nome do Projeto* - precisa ser um projeto existente no sistema',
+    'Nome do Projeto*',
     'Nome da Tarefa*',
     'Descrição',
     'Horas Estimadas',
-    'Minutos Estimados',
-    'Data e Hora de Início* - deve estar no formato dd/MM/yyyy HH:mm',
-    'Data e Hora de Fim - deve estar no formato dd/MM/yyyy HH:mm',
-    'Prioridade* - deve ser uma das seguintes: Baixa, Média, Alta ou Urgente',
-    'Tags - devem ser separadas por vírgula'
+    'Minutos Estimadas',
+    'Data e Hora de Início*',
+    'Data e Hora de Fim',
+    'Prioridade*',
+    'Tags'
   ];
   
   const worksheet = XLSX.utils.aoa_to_sheet([headers]);
@@ -39,7 +39,7 @@ export const generateTaskTemplate = (): Blob => {
     { wch: 25 }, // Nome da Tarefa
     { wch: 40 }, // Descrição
     { wch: 15 }, // Horas Estimadas
-    { wch: 15 }, // Minutos Estimados
+    { wch: 15 }, // Minutos Estimadas
     { wch: 35 }, // Data e Hora de Início
     { wch: 35 }, // Data e Hora de Fim
     { wch: 40 }, // Prioridade
@@ -89,7 +89,14 @@ export const parseTasksFromExcel = (file: File): Promise<{
         
         for (let C = range.s.c; C <= range.e.c; ++C) {
           const cell = worksheet[XLSX.utils.encode_cell({ r: range.s.r, c: C })];
-          headers.push((cell?.v || '').toString().split(' - ')[0].trim());
+          if (cell && cell.v) {
+            // Get only the header name, removing any instructions
+            const headerText = (cell.v || '').toString();
+            const header = headerText.split(' - ')[0].trim();
+            headers.push(header);
+          } else {
+            headers.push('');
+          }
         }
         
         console.log('Excel headers:', headers);
@@ -97,7 +104,8 @@ export const parseTasksFromExcel = (file: File): Promise<{
         // Convert to JSON, starting at row 2 (index 1)
         const rawData = XLSX.utils.sheet_to_json(worksheet, { 
           range: 1,
-          header: headers
+          header: headers,
+          defval: '' // Set default value for empty cells
         });
         
         console.log('Parsed raw data:', rawData);
@@ -108,7 +116,7 @@ export const parseTasksFromExcel = (file: File): Promise<{
           'Nome da Tarefa*': row['Nome da Tarefa*'] || '',
           'Descrição': row['Descrição'] || '',
           'Horas Estimadas': parseFloat(row['Horas Estimadas']) || 0,
-          'Minutos Estimados': parseFloat(row['Minutos Estimados']) || 0,
+          'Minutos Estimadas': parseFloat(row['Minutos Estimadas']) || 0,
           'Data e Hora de Início*': row['Data e Hora de Início*'] || '',
           'Data e Hora de Fim': row['Data e Hora de Fim'] || '',
           'Prioridade*': row['Prioridade*'] || '',
@@ -218,16 +226,17 @@ export const mapExcelDataToTasks = (
       
       // Calculate estimated time in minutes
       const hours = row['Horas Estimadas'] || 0;
-      const minutes = row['Minutos Estimados'] || 0;
+      const minutes = row['Minutos Estimadas'] || 0;
       const estimatedTime = (hours * 60) + minutes;
       
       // Check if end date is provided to mark task as completed
-      const completed = !!row['Data e Hora de Fim'];
+      let completed = false;
       let actualEndTime: Date | undefined;
       let actualStartTime: Date | undefined;
       let elapsedTime: number | undefined;
       
-      if (completed && row['Data e Hora de Fim']) {
+      if (row['Data e Hora de Fim']) {
+        completed = true;
         // Parse end date, accepting both slash and dash formats
         const endDateTime = row['Data e Hora de Fim'].toString();
         
@@ -240,7 +249,10 @@ export const mapExcelDataToTasks = (
         actualStartTime = scheduledStartTime; // Use scheduled start time as actual start time
         
         // Calculate elapsed time in seconds
-        elapsedTime = calculateElapsedTime(scheduledStartTime, actualEndTime);
+        if (actualEndTime && actualStartTime) {
+          elapsedTime = calculateElapsedTime(actualStartTime, actualEndTime);
+          console.log(`Calculated elapsed time for task '${row['Nome da Tarefa*']}': ${elapsedTime} seconds`);
+        }
       }
       
       // Create task object
@@ -257,6 +269,7 @@ export const mapExcelDataToTasks = (
         elapsedTime
       };
       
+      console.log("Created task from Excel:", task);
       tasks.push(task);
     } catch (error) {
       console.error(`Error processing row ${index + 2}:`, error);

@@ -1,6 +1,8 @@
-
 export const calculateElapsedTime = (startTime: Date, endTime: Date): number => {
-  return Math.floor((endTime.getTime() - startTime.getTime()) / 1000);
+  console.log(`Calculating elapsed time from ${startTime} to ${endTime}`);
+  const elapsedSeconds = Math.floor((endTime.getTime() - startTime.getTime()) / 1000);
+  console.log(`Elapsed seconds: ${elapsedSeconds}`);
+  return elapsedSeconds;
 };
 
 export const calculateEarnings = (timeInSeconds: number, hourlyRate: number): number => {
@@ -74,31 +76,66 @@ export const formatDate = (date: Date, format?: string): string => {
 
 export const parseDate = (dateStr: string, format: 'dd/MM/yyyy HH:mm' | 'yyyy-MM-dd HH:mm' | 'dd-MM-yyyy HH:mm'): Date => {
   try {
+    console.log(`Parsing date string: "${dateStr}" with format: "${format}"`);
+    
     if (format === 'dd/MM/yyyy HH:mm') {
       const [datePart, timePart] = dateStr.split(' ');
+      
+      if (!datePart || !timePart) {
+        throw new Error(`Invalid date format: ${dateStr}. Expected format: dd/MM/yyyy HH:mm`);
+      }
+      
       const [day, month, year] = datePart.split('/').map(Number);
       const [hours, minutes] = timePart.split(':').map(Number);
       
-      return new Date(year, month - 1, day, hours, minutes);
+      if (isNaN(day) || isNaN(month) || isNaN(year) || isNaN(hours) || isNaN(minutes)) {
+        throw new Error(`Invalid date components in: ${dateStr}`);
+      }
+      
+      const date = new Date(year, month - 1, day, hours, minutes);
+      console.log(`Parsed date: ${date.toISOString()}`);
+      return date;
     }
     
     if (format === 'dd-MM-yyyy HH:mm') {
       const [datePart, timePart] = dateStr.split(' ');
+      
+      if (!datePart || !timePart) {
+        throw new Error(`Invalid date format: ${dateStr}. Expected format: dd-MM-yyyy HH:mm`);
+      }
+      
       const [day, month, year] = datePart.split('-').map(Number);
       const [hours, minutes] = timePart.split(':').map(Number);
       
-      return new Date(year, month - 1, day, hours, minutes);
+      if (isNaN(day) || isNaN(month) || isNaN(year) || isNaN(hours) || isNaN(minutes)) {
+        throw new Error(`Invalid date components in: ${dateStr}`);
+      }
+      
+      const date = new Date(year, month - 1, day, hours, minutes);
+      console.log(`Parsed date: ${date.toISOString()}`);
+      return date;
     }
     
     if (format === 'yyyy-MM-dd HH:mm') {
       const [datePart, timePart] = dateStr.split(' ');
+      
+      if (!datePart || !timePart) {
+        throw new Error(`Invalid date format: ${dateStr}. Expected format: yyyy-MM-dd HH:mm`);
+      }
+      
       const [year, month, day] = datePart.split('-').map(Number);
       const [hours, minutes] = timePart.split(':').map(Number);
       
-      return new Date(year, month - 1, day, hours, minutes);
+      if (isNaN(day) || isNaN(month) || isNaN(year) || isNaN(hours) || isNaN(minutes)) {
+        throw new Error(`Invalid date components in: ${dateStr}`);
+      }
+      
+      const date = new Date(year, month - 1, day, hours, minutes);
+      console.log(`Parsed date: ${date.toISOString()}`);
+      return date;
     }
     
-    return new Date(dateStr);
+    throw new Error(`Unsupported date format: ${format}`);
   } catch (error) {
     console.error(`Error parsing date '${dateStr}' with format '${format}':`, error);
     throw new Error(`Data inválida: ${dateStr}`);

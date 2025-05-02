@@ -132,3 +132,20 @@ html {
 .dark .landing-page a {
   color: white;
 }
+
+/* Pricing cards styles */
+.pricing-card {
+  @apply bg-black border border-white/10 hover:bg-black/80 transition-colors;
+}
+
+.pricing-button-primary {
+  @apply bg-primary hover:bg-primary/90 text-white;
+}
+
+.pricing-button-outline {
+  @apply bg-white/10 hover:bg-white/20 text-white;
+}
+
+.pricing-button-secondary {
+  @apply bg-secondary hover:bg-secondary/90 text-secondary-foreground;
+}

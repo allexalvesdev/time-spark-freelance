@@ -7,38 +7,49 @@ import { Link } from 'react-router-dom';
 
 interface PricingCardProps {
   name: string;
+  subtitle?: string;
   price: string;
   period: string;
   features: string[];
   cta: string;
   popular?: boolean;
   trial?: boolean;
+  currentPlan?: boolean;
 }
 
 const PricingCard: React.FC<PricingCardProps> = ({ 
   name, 
+  subtitle,
   price, 
   period, 
   features, 
   cta, 
   popular = false,
-  trial = true
+  trial = true,
+  currentPlan = false
 }) => {
   return (
     <Card className={`relative h-full border-border ${
       popular ? 'border-primary shadow-lg' : ''
-    } bg-black/60 backdrop-blur-sm`}>
+    } bg-black hover:bg-black/80 transition-colors`}>
       {popular && (
         <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-primary text-primary-foreground text-xs uppercase font-bold py-1 px-4 rounded-full">
           Mais Popular
         </div>
       )}
       
-      <CardHeader className="text-center p-6">
-        <h3 className="text-xl font-bold text-white mb-4">{name}</h3>
+      {currentPlan && (
+        <div className="absolute top-4 right-4 bg-primary text-primary-foreground text-xs uppercase font-bold py-1 px-3 rounded-full">
+          Atual
+        </div>
+      )}
+      
+      <CardHeader className="p-6">
+        <h3 className="text-xl font-bold text-white mb-1">{name}</h3>
+        {subtitle && <p className="text-sm text-muted-foreground mb-4">{subtitle}</p>}
         <div className="mb-2">
           <span className="text-4xl font-bold text-white">{price}</span>
-          <span className="text-muted-foreground ml-1">/{period}</span>
+          <span className="text-muted-foreground ml-1">{period}</span>
         </div>
         {trial && (
           <div className="text-sm text-primary font-medium">
@@ -47,7 +58,7 @@ const PricingCard: React.FC<PricingCardProps> = ({
         )}
       </CardHeader>
       
-      <CardContent className="px-6 pb-6 pt-0">
+      <CardContent className="px-6 pb-4 pt-0">
         <ul className="space-y-3">
           {features.map((feature, index) => (
             <li key={index} className="flex items-center text-sm text-white">
@@ -58,15 +69,17 @@ const PricingCard: React.FC<PricingCardProps> = ({
         </ul>
       </CardContent>
       
-      <CardFooter className="px-6 pb-6 pt-0">
+      <CardFooter className="px-6 pb-6 pt-2">
         <Link to="/auth" className="w-full">
           <Button 
             className={`w-full ${
-              popular 
-                ? 'bg-primary hover:bg-primary/90 text-primary-foreground' 
-                : 'bg-black/70 hover:bg-black/80 text-white border border-white/10'
+              currentPlan 
+                ? 'bg-secondary hover:bg-secondary/90 text-secondary-foreground' 
+                : popular 
+                  ? 'bg-primary hover:bg-primary/90 text-primary-foreground' 
+                  : 'bg-white/10 hover:bg-white/20 text-white'
             }`}
-            variant={popular ? "default" : "outline"}
+            variant={currentPlan ? "secondary" : popular ? "default" : "outline"}
           >
             {cta}
           </Button>

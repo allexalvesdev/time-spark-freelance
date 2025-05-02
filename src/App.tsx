@@ -50,26 +50,26 @@ const RootPage = () => {
   const { isNative } = usePlatform();
   const { user } = useAuth();
   
-  // For native apps, always redirect to auth or dashboard
+  // Para aplicativos nativos, sempre redirecionar para auth ou dashboard
   if (isNative) {
     return <Navigate to={user ? "/dashboard" : "/auth"} />;
   }
   
-  // For web, show the landing page
+  // Para web, mostrar a página inicial
   return <Landing />;
 };
 
 const queryClient = new QueryClient();
 
 const App = () => (
-  <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-    <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <AuthProvider>
-          <PlanProvider>
-            <AppProvider>
-              <TooltipProvider>
-                <SidebarProvider>
+  <QueryClientProvider client={queryClient}>
+    <BrowserRouter>
+      <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+        <SidebarProvider>
+          <AuthProvider>
+            <PlanProvider>
+              <AppProvider>
+                <TooltipProvider>
                   <Toaster />
                   <Sonner />
                   <Routes>
@@ -148,14 +148,14 @@ const App = () => (
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                   <MobileNavigation />
-                </SidebarProvider>
-              </TooltipProvider>
-            </AppProvider>
-          </PlanProvider>
-        </AuthProvider>
-      </BrowserRouter>
-    </QueryClientProvider>
-  </ThemeProvider>
+                </TooltipProvider>
+              </AppProvider>
+            </PlanProvider>
+          </AuthProvider>
+        </SidebarProvider>
+      </ThemeProvider>
+    </BrowserRouter>
+  </QueryClientProvider>
 );
 
 export default App;

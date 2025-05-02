@@ -16,6 +16,7 @@ import {
   SidebarMenuItem,
   SidebarContent,
   SidebarHeader,
+  Sidebar as SidebarComponent
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import { ThemeToggle } from './ThemeToggle';
@@ -24,7 +25,7 @@ export function Sidebar() {
   const { user, signOut } = useAuth();
   
   return (
-    <aside className="h-full w-64 border-r border-border bg-background hidden md:block">
+    <SidebarComponent className="h-full w-64 border-r border-border bg-background hidden md:block">
       <SidebarHeader className="p-4 flex items-center justify-between">
         <h2 className="text-xl font-bold">
           Workly<span className="text-primary">.</span>
@@ -125,6 +126,6 @@ export function Sidebar() {
           Sair
         </Button>
       </div>
-    </aside>
+    </SidebarComponent>
   );
 }

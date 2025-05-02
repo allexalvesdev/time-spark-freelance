@@ -9,7 +9,7 @@ interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
-  signUp: (email: string, password: string) => Promise<{ error: any }>;
+  signUp: (email: string, password: string) => Promise<{ data: { user: User } | null, error: any }>;
   signOut: () => Promise<void>;
 }
 
@@ -18,7 +18,7 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   isLoading: true,
   signIn: async () => ({ error: null }),
-  signUp: async () => ({ error: null }),
+  signUp: async () => ({ data: null, error: null }),
   signOut: async () => {},
 });
 
@@ -81,13 +81,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const signUp = async (email: string, password: string) => {
     try {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
       });
-      return { error };
+      return { data, error };
     } catch (error) {
-      return { error };
+      return { data: null, error };
     }
   };
 

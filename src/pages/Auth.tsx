@@ -32,8 +32,8 @@ const Auth = () => {
         const result = await signUp(email, password);
         if (result.error) throw result.error;
         
-        // If sign up is successful, set the trial period
-        if (result.user) {
+        // If sign up is successful and we have a user
+        if (result.data && result.data.user) {
           const trialEndDate = getTrialEndDate();
           
           // Update the user's profile with trial information
@@ -44,14 +44,14 @@ const Auth = () => {
               trial_end_date: trialEndDate.toISOString(),
               user_plan: 'basic'
             })
-            .eq('id', result.user.id);
+            .eq('id', result.data.user.id);
+            
+          toast({
+            title: "Conta criada com sucesso!",
+            description: "Você iniciou seu período de teste de 14 dias. Aproveite todas as funcionalidades!",
+          });
+          setIsSignUp(false); // Switch to login view
         }
-        
-        toast({
-          title: "Conta criada com sucesso!",
-          description: "Você iniciou seu período de teste de 14 dias. Aproveite todas as funcionalidades!",
-        });
-        setIsSignUp(false); // Switch to login view
       } else {
         const { error } = await signIn(email, password);
         if (error) throw error;

@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { FileUp, FileDown, Lock } from 'lucide-react';
+import { FileUp, FileDown, Lock, Check } from 'lucide-react';
 import { usePlan } from '@/contexts/PlanContext';
 import { useToast } from '@/hooks/use-toast';
 import * as XLSX from 'xlsx';

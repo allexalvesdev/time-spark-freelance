@@ -1,9 +1,10 @@
+
 import { useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePlan } from '@/contexts/PlanContext';
 import BlockedAccountScreen from '@/components/BlockedAccountScreen';
-import { Sidebar } from './Sidebar';
-import { Header } from './Header';
+import { Sidebar } from '@/components/Sidebar';
+import { Header } from '@/components/Header';
 
 const Layout = ({ children }: { children: React.ReactNode }) => {
   const { user, isLoading: isAuthLoading } = useAuth();

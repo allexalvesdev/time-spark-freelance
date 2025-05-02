@@ -14,10 +14,12 @@ import {
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import TaskImportExport from '@/components/task/TaskImportExport';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Tasks: React.FC = () => {
   const { state, getTaskTags } = useAppContext();
   const { tasks = [], projects = [], tags = [] } = state;
+  const { user } = useAuth();
   
   const [filter, setFilter] = useState<string>('all');
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
@@ -26,6 +28,12 @@ const Tasks: React.FC = () => {
   
   // Ensure tasks is always an array
   const tasksArray = Array.isArray(tasks) ? tasks : [];
+  
+  // Handle tasks imported
+  const handleTasksImported = (newTasks: any[]) => {
+    // Refresh the page or update the tasks list
+    window.location.reload();
+  };
   
   // Carregar mapeamento de tarefas para tags
   useEffect(() => {
@@ -94,6 +102,9 @@ const Tasks: React.FC = () => {
     return projects.find(p => p.id === projectId) || projects[0];
   };
   
+  // Get the first project ID or empty string if no projects
+  const defaultProjectId = projects.length > 0 ? projects[0].id : '';
+  
   return (
     <div>
       <div className="mb-8">
@@ -106,7 +117,12 @@ const Tasks: React.FC = () => {
       <div className="mb-6">
         <Card className="p-4">
           <h3 className="text-lg font-medium mb-3">Importar/Exportar</h3>
-          <TaskImportExport />
+          <TaskImportExport 
+            projectId={defaultProjectId}
+            tasks={tasksArray}
+            userId={user?.id || ''}
+            onTasksImported={handleTasksImported}
+          />
         </Card>
       </div>
       

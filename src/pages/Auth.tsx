@@ -29,11 +29,11 @@ const Auth = () => {
 
     try {
       if (isSignUp) {
-        const { error, data } = await signUp(email, password);
-        if (error) throw error;
+        const result = await signUp(email, password);
+        if (result.error) throw result.error;
         
         // If sign up is successful, set the trial period
-        if (data?.user) {
+        if (result.user) {
           const trialEndDate = getTrialEndDate();
           
           // Update the user's profile with trial information
@@ -44,7 +44,7 @@ const Auth = () => {
               trial_end_date: trialEndDate.toISOString(),
               user_plan: 'basic'
             })
-            .eq('id', data.user.id);
+            .eq('id', result.user.id);
         }
         
         toast({

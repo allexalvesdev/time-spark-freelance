@@ -135,7 +135,7 @@ const NewProjectForm: React.FC = () => {
           <DialogHeader>
             <DialogTitle>Limite de projetos atingido</DialogTitle>
             <DialogDescription>
-              Seu plano atual ({currentPlan.toUpperCase()}) permite apenas {currentPlan === 'free' ? '1 projeto' : '10 projetos'}.
+              Seu plano atual ({currentPlan.toUpperCase()}) permite apenas {currentPlan === 'basic' ? '1 projeto' : '10 projetos'}.
               Faça upgrade para criar mais projetos.
             </DialogDescription>
           </DialogHeader>

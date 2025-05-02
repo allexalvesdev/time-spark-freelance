@@ -1,4 +1,3 @@
-
 import * as XLSX from 'xlsx';
 import { Project, Task } from '@/types';
 import { formatDate, parseDate, calculateElapsedTime } from './dateUtils';
@@ -18,7 +17,7 @@ export interface TaskImportTemplate {
 
 // Create a template for users to download
 export const generateTaskTemplate = (): Blob => {
-  // Headers with instructions
+  // Headers com os nomes exatos solicitados
   const headers = [
     'Nome do Projeto*',
     'Nome da Tarefa*',
@@ -31,21 +30,8 @@ export const generateTaskTemplate = (): Blob => {
     'Tags'
   ];
   
-  // Create example data row
-  const exampleData = [
-    '(Aqui) - Feature Mensagem Alerta',
-    'Tarefa 1 Importação',
-    'Desc Tarefa 4 Importação',
-    '', // Horas Estimadas
-    '', // Minutos Estimados
-    '01/05/2025 08:00',
-    '01/05/2025 10:00',
-    'Baixa',
-    ''  // Tags
-  ];
-  
-  // Create worksheet with headers and example data
-  const worksheet = XLSX.utils.aoa_to_sheet([headers, exampleData]);
+  // Create worksheet with only headers (sem dados de exemplo)
+  const worksheet = XLSX.utils.aoa_to_sheet([headers]);
   
   // Set column widths
   const columnWidths = [
@@ -157,7 +143,7 @@ export const parseTasksFromExcel = (file: File): Promise<{
           if (!row['Data e Hora de Início*']) {
             errors.push({ row: rowNum, message: 'Data e hora de início são obrigatórias' });
           } else {
-            // Validate date format (DD/MM/YYYY HH:MM or DD-MM-YYYY HH:MM)
+            // Validate date format (DD/MM/YYYY HH:MM ou DD-MM-YYYY HH:MM)
             const dateStr = row['Data e Hora de Início*'].toString();
             const slashDateRegex = /^\d{2}\/\d{2}\/\d{4} \d{2}:\d{2}$/;
             const dashDateRegex = /^\d{2}-\d{2}-\d{4} \d{2}:\d{2}$/;

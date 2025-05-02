@@ -5,6 +5,7 @@ import BlockedAccountScreen from '@/components/BlockedAccountScreen';
 import { Sidebar } from '@/components/Sidebar';
 import { Header } from '@/components/Header';
 import { useLocation } from 'react-router-dom';
+import MobileNavigation from './MobileNavigation';
 
 const Layout = ({ children }: { children: React.ReactNode }) => {
   const { user, isLoading: isAuthLoading } = useAuth();
@@ -29,6 +30,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
           <div className="flex-1 flex flex-col">
             <Header />
             <main className="flex-1 p-4 sm:p-6">{children}</main>
+            <MobileNavigation />
           </div>
         </div>
       )}

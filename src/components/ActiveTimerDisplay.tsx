@@ -19,10 +19,36 @@ const ActiveTimerDisplay: React.FC = () => {
   if (!activeTimeEntry) return null;
   
   const taskName = getActiveTaskName();
+  const isCompact = isMobile;
 
   const handleStopTimer = () => {
     stopTimer(true); // Auto-complete task on stop
   };
+  
+  if (isCompact) {
+    return (
+      <div className="flex items-center justify-between w-full gap-2">
+        <div className="flex flex-col">
+          <div className="text-sm font-mono font-medium">{getFormattedTime()}</div>
+          {taskName && (
+            <div className="text-xs opacity-70 truncate max-w-[100px]">
+              {taskName}
+            </div>
+          )}
+        </div>
+        
+        <Button 
+          variant="destructive" 
+          size="sm" 
+          onClick={handleStopTimer}
+          className="h-7 px-2 text-xs shrink-0"
+        >
+          <Square className="h-3 w-3 mr-1" />
+          Parar
+        </Button>
+      </div>
+    );
+  }
   
   return (
     <div className="flex items-center justify-between w-full gap-4">

@@ -5,10 +5,14 @@ import { Button } from '@/components/ui/button';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { useLocation } from 'react-router-dom';
 import { Bell } from 'lucide-react';
+import ActiveTimerDisplay from './ActiveTimerDisplay';
+import { useAppContext } from '@/contexts/AppContext';
 
 export function Header() {
   const { user } = useAuth();
   const location = useLocation();
+  const { state } = useAppContext();
+  const { activeTimeEntry } = state || {};
   
   // Get page title based on current route
   const getPageTitle = () => {
@@ -32,7 +36,13 @@ export function Header() {
         <h1 className="text-lg font-medium">{getPageTitle()}</h1>
       </div>
       
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-4">
+        {activeTimeEntry && (
+          <div className="hidden sm:block max-w-[250px]">
+            <ActiveTimerDisplay />
+          </div>
+        )}
+        
         <Button variant="ghost" size="icon">
           <Bell className="h-5 w-5" />
         </Button>

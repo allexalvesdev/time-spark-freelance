@@ -140,34 +140,94 @@ export const parseTasksFromExcel = (file: File): Promise<{
           if (!row['Nome do Projeto*']) {
             errors.push({ row: rowNum, message: 'Nome do projeto é obrigatório' });
           }
-          
+
+          // Validar o formato de data e hora de início - inclui tratamento para valores numéricos do Excel
           if (!row['Data e Hora de Início*']) {
             errors.push({ row: rowNum, message: 'Data e hora de início são obrigatórias' });
           } else {
-            // Validate date format (DD/MM/YYYY HH:MM ou DD-MM-YYYY HH:MM)
-            const dateStr = row['Data e Hora de Início*'].toString();
-            const slashDateRegex = /^\d{2}\/\d{2}\/\d{4} \d{2}:\d{2}$/;
-            const dashDateRegex = /^\d{2}-\d{2}-\d{4} \d{2}:\d{2}$/;
-            
-            if (!slashDateRegex.test(dateStr) && !dashDateRegex.test(dateStr)) {
-              errors.push({ 
-                row: rowNum, 
-                message: 'Formato de data e hora inválido. Use DD/MM/YYYY HH:MM ou DD-MM-YYYY HH:MM' 
-              });
+            // Tratar valores de data que são números (formato interno do Excel)
+            if (typeof row['Data e Hora de Início*'] === 'number') {
+              // Converter número do Excel para data JavaScript
+              try {
+                const excelDate = XLSX.SSF.parse_date_code(row['Data e Hora de Início*']);
+                const jsDate = new Date(
+                  excelDate.y, 
+                  excelDate.m - 1, 
+                  excelDate.d, 
+                  excelDate.H, 
+                  excelDate.M, 
+                  excelDate.S
+                );
+                // Formatar no padrão esperado
+                const day = jsDate.getDate().toString().padStart(2, '0');
+                const month = (jsDate.getMonth() + 1).toString().padStart(2, '0');
+                const year = jsDate.getFullYear();
+                const hours = jsDate.getHours().toString().padStart(2, '0');
+                const minutes = jsDate.getMinutes().toString().padStart(2, '0');
+                
+                // Substituir o valor numérico pelo formato de string correto
+                row['Data e Hora de Início*'] = `${day}/${month}/${year} ${hours}:${minutes}`;
+              } catch (error) {
+                errors.push({ 
+                  row: rowNum, 
+                  message: 'Erro ao converter data de início do formato Excel. Use DD/MM/YYYY HH:MM' 
+                });
+              }
+            } else {
+              // Validar formato de string normal
+              const dateStr = row['Data e Hora de Início*'].toString();
+              const slashDateRegex = /^\d{2}\/\d{2}\/\d{4} \d{2}:\d{2}$/;
+              const dashDateRegex = /^\d{2}-\d{2}-\d{4} \d{2}:\d{2}$/;
+              
+              if (!slashDateRegex.test(dateStr) && !dashDateRegex.test(dateStr)) {
+                errors.push({ 
+                  row: rowNum, 
+                  message: 'Formato de data e hora inválido. Use DD/MM/YYYY HH:MM ou DD-MM-YYYY HH:MM' 
+                });
+              }
             }
           }
           
-          // Validate end date format if provided
+          // Validar o formato de data e hora de fim - inclui tratamento para valores numéricos do Excel
           if (row['Data e Hora de Fim']) {
-            const dateStr = row['Data e Hora de Fim'].toString();
-            const slashDateRegex = /^\d{2}\/\d{2}\/\d{4} \d{2}:\d{2}$/;
-            const dashDateRegex = /^\d{2}-\d{2}-\d{4} \d{2}:\d{2}$/;
-            
-            if (!slashDateRegex.test(dateStr) && !dashDateRegex.test(dateStr)) {
-              errors.push({ 
-                row: rowNum, 
-                message: 'Formato de data e hora de fim inválido. Use DD/MM/YYYY HH:MM ou DD-MM-YYYY HH:MM' 
-              });
+            if (typeof row['Data e Hora de Fim'] === 'number') {
+              // Converter número do Excel para data JavaScript
+              try {
+                const excelDate = XLSX.SSF.parse_date_code(row['Data e Hora de Fim']);
+                const jsDate = new Date(
+                  excelDate.y, 
+                  excelDate.m - 1, 
+                  excelDate.d, 
+                  excelDate.H, 
+                  excelDate.M, 
+                  excelDate.S
+                );
+                // Formatar no padrão esperado
+                const day = jsDate.getDate().toString().padStart(2, '0');
+                const month = (jsDate.getMonth() + 1).toString().padStart(2, '0');
+                const year = jsDate.getFullYear();
+                const hours = jsDate.getHours().toString().padStart(2, '0');
+                const minutes = jsDate.getMinutes().toString().padStart(2, '0');
+                
+                // Substituir o valor numérico pelo formato de string correto
+                row['Data e Hora de Fim'] = `${day}/${month}/${year} ${hours}:${minutes}`;
+              } catch (error) {
+                errors.push({ 
+                  row: rowNum, 
+                  message: 'Erro ao converter data de fim do formato Excel. Use DD/MM/YYYY HH:MM' 
+                });
+              }
+            } else {
+              const dateStr = row['Data e Hora de Fim'].toString();
+              const slashDateRegex = /^\d{2}\/\d{2}\/\d{4} \d{2}:\d{2}$/;
+              const dashDateRegex = /^\d{2}-\d{2}-\d{4} \d{2}:\d{2}$/;
+              
+              if (!slashDateRegex.test(dateStr) && !dashDateRegex.test(dateStr)) {
+                errors.push({ 
+                  row: rowNum, 
+                  message: 'Formato de data e hora de fim inválido. Use DD/MM/YYYY HH:MM ou DD-MM-YYYY HH:MM' 
+                });
+              }
             }
           }
           
@@ -215,7 +275,7 @@ export const mapExcelDataToTasks = (
         return;
       }
       
-      // Parse start date, accepting both slash and dash formats
+      // Parse start date, accepting both slash and dash formats, and Excel date numbers
       const startDateTime = row['Data e Hora de Início*'].toString();
       let scheduledStartTime: Date;
       

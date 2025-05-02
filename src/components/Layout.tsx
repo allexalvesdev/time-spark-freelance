@@ -4,15 +4,21 @@ import { usePlan } from '@/contexts/PlanContext';
 import BlockedAccountScreen from '@/components/BlockedAccountScreen';
 import { Sidebar } from '@/components/Sidebar';
 import { Header } from '@/components/Header';
+import { useLocation } from 'react-router-dom';
 
 const Layout = ({ children }: { children: React.ReactNode }) => {
   const { user, isLoading: isAuthLoading } = useAuth();
   const { isAccountBlocked } = usePlan();
+  const location = useLocation();
 
+  // Check if the current page is the settings page
+  const isSettingsPage = location.pathname === '/configuracoes';
+  
   // Determine if we should block access to content
-  const shouldBlockAccess = user && isAccountBlocked && !isAuthLoading;
+  // Don't block access if user is on settings page
+  const shouldBlockAccess = user && isAccountBlocked && !isAuthLoading && !isSettingsPage;
 
-  // If account is blocked, show the blocked screen instead of normal content
+  // If account is blocked and not on settings page, show the blocked screen instead of normal content
   return (
     <>
       {shouldBlockAccess ? (

@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
@@ -241,6 +240,11 @@ const PlanSubscription = () => {
     return pendingPlan === planName;
   };
 
+  // Function to determine if the button should show "Pagar Agora" (trial users with active plan)
+  const shouldShowPayNow = (planName: string) => {
+    return isTrialActive && currentPlan === planName;
+  };
+
   // Renderizar características do plano Básico
   const renderBasicPlanFeatures = () => (
     <>
@@ -399,12 +403,13 @@ const PlanSubscription = () => {
           <CardFooter>
             <Button
               className="w-full"
-              variant={isPlanActive('basic') ? 'outline' : 'default'}
-              disabled={isPlanActive('basic') || loading}
+              variant={isPlanActive('basic') && !isTrialActive ? 'outline' : 'default'}
+              disabled={isPlanActive('basic') && !isTrialActive || loading}
               onClick={() => handleSubscribe('basic')}
             >
               {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-              {isPlanActive('basic') ? 'Plano atual' : 'Assinar'}
+              {shouldShowPayNow('basic') ? 'Pagar Agora' : 
+                isPlanActive('basic') ? 'Plano atual' : 'Assinar'}
             </Button>
           </CardFooter>
         </Card>
@@ -435,14 +440,15 @@ const PlanSubscription = () => {
           <CardFooter>
             <Button
               className="w-full"
-              disabled={isPlanActive('pro') || loading || isPlanPending('pro')}
+              disabled={isPlanActive('pro') && !isTrialActive || loading || isPlanPending('pro')}
               onClick={() => handleSubscribe('pro')}
             >
               {loading ? 
                 <Loader2 className="h-4 w-4 animate-spin mr-2" /> : 
                 null
               }
-              {isPlanActive('pro') ? 'Plano atual' : isPlanPending('pro') ? 'Pagamento pendente' : 'Assinar'}
+              {shouldShowPayNow('pro') ? 'Pagar Agora' : 
+                isPlanActive('pro') ? 'Plano atual' : isPlanPending('pro') ? 'Pagamento pendente' : 'Assinar'}
             </Button>
           </CardFooter>
         </Card>
@@ -473,14 +479,15 @@ const PlanSubscription = () => {
           <CardFooter>
             <Button
               className="w-full"
-              disabled={isPlanActive('enterprise') || loading || isPlanPending('enterprise')}
+              disabled={isPlanActive('enterprise') && !isTrialActive || loading || isPlanPending('enterprise')}
               onClick={() => handleSubscribe('enterprise')}
             >
               {loading ? 
                 <Loader2 className="h-4 w-4 animate-spin mr-2" /> : 
                 null
               }
-              {isPlanActive('enterprise') ? 'Plano atual' : isPlanPending('enterprise') ? 'Pagamento pendente' : 'Assinar'}
+              {shouldShowPayNow('enterprise') ? 'Pagar Agora' : 
+                isPlanActive('enterprise') ? 'Plano atual' : isPlanPending('enterprise') ? 'Pagamento pendente' : 'Assinar'}
             </Button>
           </CardFooter>
         </Card>

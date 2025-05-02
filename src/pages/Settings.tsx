@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { CreditCard, Check } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import PlanSubscription from '@/components/PlanSubscription';
+import { useLocation } from 'react-router-dom';
 
 const Settings = () => {
   const { user } = useAuth();

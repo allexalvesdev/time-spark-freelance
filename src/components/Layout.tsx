@@ -19,7 +19,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
       {shouldBlockAccess ? (
         <BlockedAccountScreen />
       ) : (
-        <div className="min-h-screen flex dark:bg-neutral-950">
+        <div className="min-h-screen flex w-full dark:bg-neutral-950">
           <Sidebar />
           <div className="flex-1 flex flex-col">
             <Header />

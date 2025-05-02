@@ -29,9 +29,9 @@ const PricingSection = () => {
         "Suporte prioritário",
         "Exportação de dados"
       ],
-      cta: "Plano atual",
+      cta: "Assinar",
       popular: true,
-      currentPlan: true
+      currentPlan: false
     },
     {
       name: "Enterprise",

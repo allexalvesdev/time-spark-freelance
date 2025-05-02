@@ -14,7 +14,8 @@ const PricingSection = () => {
         "Controle de tempo",
         "Relatórios simples"
       ],
-      cta: "Assinar",
+      cta: "Teste Grátis",
+      trialDays: 14,
       popular: false
     },
     {
@@ -29,7 +30,8 @@ const PricingSection = () => {
         "Suporte prioritário",
         "Exportação de dados"
       ],
-      cta: "Assinar",
+      cta: "Teste Grátis",
+      trialDays: 14,
       popular: true,
       currentPlan: false
     },
@@ -46,7 +48,8 @@ const PricingSection = () => {
         "Gerenciamento de equipe",
         "Customização total"
       ],
-      cta: "Assinar",
+      cta: "Teste Grátis",
+      trialDays: 14,
       popular: false
     }
   ];
@@ -68,9 +71,10 @@ const PricingSection = () => {
                 period={plan.period}
                 features={plan.features}
                 cta={plan.cta}
+                trialDays={plan.trialDays}
                 popular={plan.popular}
                 currentPlan={plan.currentPlan}
-                trial={false}
+                trial={true}
               />
             </div>
           ))}

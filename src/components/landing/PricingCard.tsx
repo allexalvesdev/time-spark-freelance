@@ -12,6 +12,7 @@ interface PricingCardProps {
   period: string;
   features: string[];
   cta: string;
+  trialDays?: number;
   popular?: boolean;
   trial?: boolean;
   currentPlan?: boolean;
@@ -24,12 +25,13 @@ const PricingCard: React.FC<PricingCardProps> = ({
   period, 
   features, 
   cta, 
+  trialDays,
   popular = false,
   trial = false,
   currentPlan = false
 }) => {
   return (
-    <Card className={`relative h-full border-border ${
+    <Card className={`relative h-full flex flex-col border-border ${
       popular ? 'border-primary shadow-lg' : ''
     } bg-black hover:bg-black/80 transition-colors`}>
       {popular && (
@@ -47,7 +49,7 @@ const PricingCard: React.FC<PricingCardProps> = ({
         </div>
       </CardHeader>
       
-      <CardContent className="px-6 pb-4 pt-0">
+      <CardContent className="px-6 pb-4 pt-0 flex-grow">
         <ul className="space-y-3">
           {features.map((feature, index) => (
             <li key={index} className="flex items-center text-sm text-white">
@@ -58,19 +60,22 @@ const PricingCard: React.FC<PricingCardProps> = ({
         </ul>
       </CardContent>
       
-      <CardFooter className="px-6 pb-6 pt-2">
-        <Link to="/auth" className="w-full">
-          <Button 
-            className={`w-full ${
-              currentPlan 
-                ? 'pricing-button-secondary bg-purple-700 hover:bg-purple-800' 
-                : 'pricing-button-primary bg-purple-500 hover:bg-purple-600'
-            }`}
-            variant={currentPlan ? "secondary" : "default"}
-          >
-            {cta}
-          </Button>
-        </Link>
+      <CardFooter className="px-6 pb-6 pt-2 mt-auto">
+        <div className="w-full flex flex-col items-center">
+          <Link to="/auth" className="w-full">
+            <Button 
+              className="w-full bg-purple-500 hover:bg-purple-600 text-white"
+              variant="default"
+            >
+              {cta}
+            </Button>
+          </Link>
+          {trialDays && (
+            <span className="text-xs text-muted-foreground mt-2">
+              {trialDays} dias de teste grátis
+            </span>
+          )}
+        </div>
       </CardFooter>
     </Card>
   );

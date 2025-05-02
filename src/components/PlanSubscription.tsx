@@ -1,8 +1,9 @@
+
 import React, { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Check, Loader2, ExternalLink, AlertCircle } from 'lucide-react';
+import { Check, Loader2, ExternalLink, AlertCircle, Clock } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePlan } from '@/contexts/PlanContext';
@@ -11,8 +12,11 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface SubscriptionStatus {
   user_plan: string;
-  status: 'active' | 'no_subscription';
+  status: 'active' | 'no_subscription' | 'trial';
   pending_plan: string | null;
+  is_trial: boolean;
+  trial_end_date: string | null;
+  is_blocked: boolean;
   subscription?: {
     id: string;
     current_period_end: string;
@@ -24,7 +28,7 @@ interface SubscriptionStatus {
 const PlanSubscription = () => {
   const { toast } = useToast();
   const { user } = useAuth();
-  const { currentPlan, loadUserPlan } = usePlan();
+  const { currentPlan, loadUserPlan, isTrialActive, trialEndsAt, daysLeftInTrial } = usePlan();
   const [loading, setLoading] = useState(false);
   const [checkingStatus, setCheckingStatus] = useState(false);
   const [subscriptionStatus, setSubscriptionStatus] = useState<SubscriptionStatus | null>(null);
@@ -237,20 +241,20 @@ const PlanSubscription = () => {
     return pendingPlan === planName;
   };
 
-  // Renderizar características do plano Free
-  const renderFreePlanFeatures = () => (
+  // Renderizar características do plano Básico
+  const renderBasicPlanFeatures = () => (
     <>
       <li className="flex items-center gap-2">
         <Check className="h-4 w-4 text-primary" />
-        <span>Até 1 projeto</span>
+        <span>Até 5 projetos</span>
       </li>
       <li className="flex items-center gap-2">
         <Check className="h-4 w-4 text-primary" />
-        <span>Relatórios básicos</span>
+        <span>Controle de tempo</span>
       </li>
       <li className="flex items-center gap-2">
         <Check className="h-4 w-4 text-primary" />
-        <span>Suporte por email</span>
+        <span>Relatórios simples</span>
       </li>
     </>
   );
@@ -265,6 +269,10 @@ const PlanSubscription = () => {
       <li className="flex items-center gap-2">
         <Check className="h-4 w-4 text-primary" />
         <span>Relatórios avançados</span>
+      </li>
+      <li className="flex items-center gap-2">
+        <Check className="h-4 w-4 text-primary" />
+        <span>Importação de dados</span>
       </li>
       <li className="flex items-center gap-2">
         <Check className="h-4 w-4 text-primary" />
@@ -287,6 +295,10 @@ const PlanSubscription = () => {
       <li className="flex items-center gap-2">
         <Check className="h-4 w-4 text-primary" />
         <span>API personalizada</span>
+      </li>
+      <li className="flex items-center gap-2">
+        <Check className="h-4 w-4 text-primary" />
+        <span>Importação de dados</span>
       </li>
       <li className="flex items-center gap-2">
         <Check className="h-4 w-4 text-primary" />
@@ -343,6 +355,19 @@ const PlanSubscription = () => {
         </Alert>
       )}
 
+      {isTrialActive && trialEndsAt && (
+        <div className="bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 p-4 rounded-lg mb-6">
+          <div className="flex items-center gap-2 text-amber-800 dark:text-amber-300 font-medium">
+            <Clock className="h-5 w-5" />
+            <span>
+              {daysLeftInTrial > 0 
+                ? `Você está no período de teste. Restam ${daysLeftInTrial} dia${daysLeftInTrial !== 1 ? 's' : ''}.`
+                : 'Seu período de teste termina hoje. Escolha um plano para continuar usando o sistema.'}
+            </span>
+          </div>
+        </div>
+      )}
+
       {subscriptionStatus?.status === 'active' && subscriptionStatus.subscription && (
         <div className="bg-muted p-4 rounded-lg mb-6">
           <p className="font-medium">
@@ -353,30 +378,33 @@ const PlanSubscription = () => {
       )}
 
       <div className="grid gap-6 md:grid-cols-3">
-        {/* Plano Free */}
-        <Card className={`${isPlanActive('free') ? 'border-primary' : ''} h-full flex flex-col`}>
+        {/* Plano Básico */}
+        <Card className={`${isPlanActive('basic') ? 'border-primary' : ''} h-full flex flex-col`}>
           <CardHeader>
             <div className="flex justify-between items-center">
-              <CardTitle>Free</CardTitle>
-              {isPlanActive('free') && <Badge>Atual</Badge>}
+              <CardTitle>Básico</CardTitle>
+              {isPlanActive('basic') && <Badge>Atual</Badge>}
             </div>
             <CardDescription>Para uso pessoal</CardDescription>
             <div className="mt-2">
-              <span className="text-3xl font-bold">Grátis</span>
+              <span className="text-3xl font-bold">R$ 19,90</span>
+              <span className="text-muted-foreground">/mês</span>
             </div>
           </CardHeader>
           <CardContent className="flex-grow">
             <ul className="space-y-2 mb-6">
-              {renderFreePlanFeatures()}
+              {renderBasicPlanFeatures()}
             </ul>
           </CardContent>
           <CardFooter>
             <Button
               className="w-full"
-              variant={isPlanActive('free') ? 'outline' : 'default'}
-              disabled={isPlanActive('free') || loading}
+              variant={isPlanActive('basic') ? 'outline' : 'default'}
+              disabled={isPlanActive('basic') || loading}
+              onClick={() => handleSubscribe('basic')}
             >
-              {isPlanActive('free') ? 'Plano atual' : 'Plano base'}
+              {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              {isPlanActive('basic') ? 'Plano atual' : 'Assinar'}
             </Button>
           </CardFooter>
         </Card>

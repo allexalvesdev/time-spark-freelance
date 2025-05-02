@@ -23,7 +23,7 @@ serve(async (req) => {
     // Verificar o corpo da requisição
     const { plan } = await req.json();
     
-    if (!plan || (plan !== 'pro' && plan !== 'enterprise')) {
+    if (!plan || (plan !== 'basic' && plan !== 'pro' && plan !== 'enterprise')) {
       throw new Error("Plano inválido ou não especificado");
     }
 
@@ -46,8 +46,40 @@ serve(async (req) => {
       throw new Error("Email do usuário não disponível");
     }
 
+    // Verificar se o usuário tem projetos demais para fazer downgrade
+    if (plan === 'basic') {
+      // Get user's current plan
+      const { data: profileData, error: profileError } = await supabaseClient
+        .from("profiles")
+        .select("user_plan")
+        .eq("id", user.id)
+        .single();
+      
+      if (profileError) {
+        throw new Error("Erro ao buscar perfil do usuário");
+      }
+      
+      // If downgrading from pro or enterprise to basic, check project count
+      if (profileData.user_plan === 'pro' || profileData.user_plan === 'enterprise') {
+        // Count projects
+        const { count, error: projectCountError } = await supabaseClient
+          .from("projects")
+          .select("id", { count: 'exact', head: true })
+          .eq("user_id", user.id);
+        
+        if (projectCountError) {
+          throw new Error("Erro ao contar projetos do usuário");
+        }
+        
+        // If user has more than 5 projects, prevent downgrade
+        if (count && count > 5) {
+          throw new Error(`Não é possível fazer downgrade para o plano Básico. Você tem ${count} projetos, mas o plano Básico permite apenas 5. Remova alguns projetos antes de continuar.`);
+        }
+      }
+    }
+
     // Preços baseados no plano selecionado
-    const amount = plan === 'pro' ? 2990 : 5990;
+    const amount = plan === 'basic' ? 1990 : (plan === 'pro' ? 2990 : 5990);
     
     // Criar cliente Stripe
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
@@ -82,15 +114,17 @@ serve(async (req) => {
       { auth: { persistSession: false } }
     );
     
-    // Atualizar o perfil do usuário com pending_plan
+    // Atualizar o perfil do usuário com pending_plan e stripe_customer_id
     await supabaseAdmin
       .from("profiles")
       .update({
-        pending_plan: plan
+        pending_plan: plan,
+        stripe_customer_id: stripeCustomerId
       })
       .eq("id", user.id);
     
     // Criar a sessão do checkout
+    const planName = plan === 'basic' ? "Básico" : plan === 'pro' ? "Profissional" : "Enterprise";
     const session = await stripe.checkout.sessions.create({
       customer: stripeCustomerId,
       line_items: [
@@ -98,8 +132,8 @@ serve(async (req) => {
           price_data: {
             currency: "brl",
             product_data: {
-              name: plan === 'pro' ? "Plano Profissional" : "Plano Enterprise",
-              description: plan === 'pro' ? "Assinatura mensal do plano Profissional" : "Assinatura mensal do plano Enterprise"
+              name: `Plano ${planName}`,
+              description: `Assinatura mensal do plano ${planName}`
             },
             unit_amount: amount,
             recurring: {

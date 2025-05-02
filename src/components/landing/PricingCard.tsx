@@ -12,9 +12,18 @@ interface PricingCardProps {
   features: string[];
   cta: string;
   popular?: boolean;
+  trial?: boolean;
 }
 
-const PricingCard: React.FC<PricingCardProps> = ({ name, price, period, features, cta, popular = false }) => {
+const PricingCard: React.FC<PricingCardProps> = ({ 
+  name, 
+  price, 
+  period, 
+  features, 
+  cta, 
+  popular = false,
+  trial = true
+}) => {
   return (
     <Card className={`h-full flex flex-col relative bg-background/50 backdrop-blur-sm ${
       popular ? 'border-primary shadow-lg scale-105 z-10' : 'border-border'
@@ -30,10 +39,16 @@ const PricingCard: React.FC<PricingCardProps> = ({ name, price, period, features
       </CardHeader>
       
       <CardContent className="flex-grow flex flex-col items-center text-center pt-6">
-        <div className="mb-6">
+        <div className="mb-2">
           <span className="text-4xl font-bold">{price}</span>
           <span className="text-muted-foreground">/{period}</span>
         </div>
+        
+        {trial && (
+          <div className="mb-6 text-sm text-primary font-medium">
+            14 dias de teste grátis
+          </div>
+        )}
         
         <ul className="space-y-3 w-full mb-8">
           {features.map((feature, index) => (

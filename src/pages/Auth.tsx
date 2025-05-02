@@ -6,6 +6,14 @@ import { Card, CardHeader, CardContent, CardFooter } from '@/components/ui/card'
 import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { Link } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client'; 
+
+// Helper function to calculate trial end date (14 days from now)
+const getTrialEndDate = () => {
+  const date = new Date();
+  date.setDate(date.getDate() + 14);
+  return date;
+};
 
 const Auth = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -21,11 +29,27 @@ const Auth = () => {
 
     try {
       if (isSignUp) {
-        const { error } = await signUp(email, password);
+        const { error, data } = await signUp(email, password);
         if (error) throw error;
+        
+        // If sign up is successful, set the trial period
+        if (data?.user) {
+          const trialEndDate = getTrialEndDate();
+          
+          // Update the user's profile with trial information
+          await supabase
+            .from('profiles')
+            .update({
+              is_trial: true,
+              trial_end_date: trialEndDate.toISOString(),
+              user_plan: 'basic'
+            })
+            .eq('id', data.user.id);
+        }
+        
         toast({
           title: "Conta criada com sucesso!",
-          description: "Você já pode fazer login com suas credenciais.",
+          description: "Você iniciou seu período de teste de 14 dias. Aproveite todas as funcionalidades!",
         });
         setIsSignUp(false); // Switch to login view
       } else {
@@ -56,6 +80,11 @@ const Auth = () => {
           <h1 className="text-2xl font-bold text-center">
             {isSignUp ? 'Criar conta' : 'Entrar'}
           </h1>
+          {isSignUp && (
+            <p className="text-center text-muted-foreground">
+              Comece com 14 dias de teste grátis
+            </p>
+          )}
         </CardHeader>
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">

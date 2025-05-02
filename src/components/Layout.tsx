@@ -1,200 +1,32 @@
-
-import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { 
-  LayoutDashboard, 
-  CalendarDays, 
-  ClipboardList, 
-  BarChart2, 
-  Settings,
-  Menu,
-  Timer,
-  LogOut
-} from 'lucide-react';
-import { ThemeToggle } from './ThemeToggle';
-import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { useAppContext } from '@/contexts/AppContext';
-import { useIsMobile } from '@/hooks/use-mobile';
+import { useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import ActiveTimerDisplay from './ActiveTimerDisplay';
+import { usePlan } from '@/contexts/PlanContext';
+import BlockedAccountScreen from '@/components/BlockedAccountScreen';
+import { Sidebar } from './Sidebar';
+import { Header } from './Header';
 
-interface LayoutProps {
-  children: React.ReactNode;
-}
+const Layout = ({ children }: { children: React.ReactNode }) => {
+  const { user, isLoading: isAuthLoading } = useAuth();
+  const { isAccountBlocked } = usePlan();
 
-const Layout: React.FC<LayoutProps> = ({ children }) => {
-  const location = useLocation();
-  const { state } = useAppContext();
-  const { activeTimeEntry } = state;
-  const isMobile = useIsMobile();
-  const { signOut } = useAuth();
+  // Determine if we should block access to content
+  const shouldBlockAccess = user && isAccountBlocked && !isAuthLoading;
 
-  const isActive = (path: string) => {
-    return location.pathname === path;
-  };
-
-  const handleLogout = async () => {
-    try {
-      await signOut();
-      // Redirect is handled by the auth context
-    } catch (error) {
-      console.error('Error logging out:', error);
-    }
-  };
-
-  const navItems = [
-    { path: '/dashboard', label: 'Dashboard', icon: <LayoutDashboard size={20} /> },
-    { path: '/agenda', label: 'Agenda', icon: <CalendarDays size={20} /> },
-    { path: '/tarefas', label: 'Tarefas', icon: <ClipboardList size={20} /> },
-    { path: '/relatorios', label: 'Relatórios', icon: <BarChart2 size={20} /> },
-    { path: '/configuracoes', label: 'Configurações', icon: <Settings size={20} /> }
-  ];
-  
-  const renderNavLink = (path: string, label: string, icon: React.ReactNode) => {
-    const active = isActive(path);
-    return (
-      <Link 
-        key={path}
-        to={path}
-        className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-          active 
-            ? 'bg-primary text-white font-medium' 
-            : 'hover:bg-muted'
-        }`}
-      >
-        {icon}
-        <span>{label}</span>
-      </Link>
-    );
-  };
-
+  // If account is blocked, show the blocked screen instead of normal content
   return (
-    <div className="min-h-screen flex flex-col bg-background">
-      {activeTimeEntry && (
-        <div className="fixed top-0 left-0 right-0 z-50 bg-primary text-primary-foreground shadow-md">
-          <div className="container flex items-center justify-between px-4 py-2 max-w-7xl">
-            <div className="flex items-center gap-2">
-              <Timer className="animate-pulse" size={20} />
-              <ActiveTimerDisplay />
-            </div>
+    <>
+      {shouldBlockAccess ? (
+        <BlockedAccountScreen />
+      ) : (
+        <div className="min-h-screen flex dark:bg-neutral-950">
+          <Sidebar />
+          <div className="flex-1 flex flex-col">
+            <Header />
+            <main className="flex-1 p-4 sm:p-6">{children}</main>
           </div>
         </div>
       )}
-
-      <header className={`lg:hidden border-b p-4 bg-card shadow-sm ${activeTimeEntry ? 'mt-12' : ''}`}>
-        <div className="flex items-center justify-between">
-          <Link to="/dashboard" className="flex items-center gap-2">
-            <span className="w-8 h-8 bg-primary rounded-md flex items-center justify-center">
-              <ClipboardList size={20} className="text-white" />
-            </span>
-            <h1 className="text-xl font-semibold">Workly<span className="text-accent">.</span></h1>
-          </Link>
-          
-          <div className="flex items-center gap-2">
-            <ThemeToggle />
-            <Sheet>
-              <SheetTrigger asChild>
-                <Button variant="outline" size="icon">
-                  <Menu size={20} />
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="left">
-                <div className="flex flex-col gap-6 py-4">
-                  <Link to="/dashboard" className="flex items-center gap-2">
-                    <span className="w-8 h-8 bg-primary rounded-md flex items-center justify-center">
-                      <ClipboardList size={20} className="text-white" />
-                    </span>
-                    <h1 className="text-xl font-semibold">Workly<span className="text-accent">.</span></h1>
-                  </Link>
-                  
-                  <Separator />
-                  
-                  <nav className="flex flex-col gap-1">
-                    {navItems.map((item) => (
-                      <Link 
-                        key={item.path}
-                        to={item.path}
-                        className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                          isActive(item.path) 
-                            ? 'bg-primary text-white font-medium' 
-                            : 'hover:bg-muted'
-                        }`}
-                      >
-                        {item.icon}
-                        <span>{item.label}</span>
-                      </Link>
-                    ))}
-                  </nav>
-                  
-                  {activeTimeEntry && (
-                    <div className="mt-4 p-4 bg-muted rounded-lg">
-                      <ActiveTimerDisplay />
-                    </div>
-                  )}
-                  
-                  <Button 
-                    onClick={handleLogout}
-                    variant="destructive"
-                    className="flex items-center justify-center gap-2 mt-auto"
-                  >
-                    <LogOut size={18} />
-                    <span>Sair</span>
-                  </Button>
-                </div>
-              </SheetContent>
-            </Sheet>
-          </div>
-        </div>
-      </header>
-
-      <div className={`flex-1 flex ${activeTimeEntry ? 'mt-12' : ''}`}>
-        <aside className="hidden lg:flex w-64 flex-col border-r bg-card">
-          <div className="p-6">
-            <Link to="/dashboard" className="flex items-center gap-2">
-              <span className="w-8 h-8 bg-primary rounded-md flex items-center justify-center">
-                <ClipboardList size={20} className="text-white" />
-              </span>
-              <h1 className="text-xl font-semibold">Workly<span className="text-accent">.</span></h1>
-            </Link>
-          </div>
-          
-          <Separator />
-          
-          <nav className="flex-1 p-4 flex flex-col gap-1">
-            {navItems.map((item) => renderNavLink(item.path, item.label, item.icon))}
-          </nav>
-          
-          <div className="p-4 border-t">
-            <div className="flex items-center justify-between mb-4">
-              <ThemeToggle />
-            </div>
-            
-            {activeTimeEntry && (
-              <div className="p-3 bg-muted rounded-md mb-4">
-                <ActiveTimerDisplay />
-              </div>
-            )}
-            
-            <Button 
-              onClick={handleLogout}
-              variant="destructive"
-              className="flex items-center justify-center gap-2 w-full"
-            >
-              <LogOut size={18} />
-              <span>Sair</span>
-            </Button>
-          </div>
-        </aside>
-
-        <main className="flex-1 overflow-auto">
-          <div className="container px-4 py-6 max-w-7xl">
-            {children}
-          </div>
-        </main>
-      </div>
-    </div>
+    </>
   );
 };
 

@@ -15,8 +15,11 @@ export type Database = {
           created_at: string
           full_name: string | null
           id: string
+          is_blocked: boolean | null
+          is_trial: boolean | null
           pending_plan: string | null
           stripe_customer_id: string | null
+          trial_end_date: string | null
           updated_at: string
           user_plan: string | null
           username: string | null
@@ -26,8 +29,11 @@ export type Database = {
           created_at?: string
           full_name?: string | null
           id: string
+          is_blocked?: boolean | null
+          is_trial?: boolean | null
           pending_plan?: string | null
           stripe_customer_id?: string | null
+          trial_end_date?: string | null
           updated_at?: string
           user_plan?: string | null
           username?: string | null
@@ -37,8 +43,11 @@ export type Database = {
           created_at?: string
           full_name?: string | null
           id?: string
+          is_blocked?: boolean | null
+          is_trial?: boolean | null
           pending_plan?: string | null
           stripe_customer_id?: string | null
+          trial_end_date?: string | null
           updated_at?: string
           user_plan?: string | null
           username?: string | null

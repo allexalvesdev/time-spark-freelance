@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAppContext } from '@/contexts/AppContext';
 import TaskItem from '@/components/TaskItem';
@@ -119,6 +118,7 @@ const Tasks: React.FC = () => {
               tasks={tasksArray}
               userId={user.id}
               onTasksImported={handleTasksImported}
+              tags={tags} // Pass the tags from the context
             />
           )}
         </Card>

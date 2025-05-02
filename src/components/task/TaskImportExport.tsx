@@ -28,7 +28,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { generateTaskTemplate, parseTasksFromExcel, mapExcelDataToTasks, extractTagsFromExcel, getTagMappingsFromExcel } from '@/utils/excelUtils';
-import { useAppContext } from '@/contexts/AppContext';
+import { AppContext } from '@/contexts/AppContext';
 
 interface TaskImportExportProps {
   projectId: string;
@@ -57,8 +57,9 @@ const TaskImportExport: React.FC<TaskImportExportProps> = ({
 }) => {
   const { toast } = useToast();
   const { currentPlan } = usePlan();
-  // Attempt to use AppContext if available, otherwise use props
-  const appContext = React.useContext(useAppContext);
+  // Use the AppContext object with useContext, not the hook itself
+  const appContext = React.useContext(AppContext);
+  // Safely access projects from context or use an empty array as fallback
   const projects = appContext?.state?.projects || [];
   
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);

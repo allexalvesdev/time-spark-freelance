@@ -4,8 +4,8 @@ import { FileUp, FileDown, Lock, Check, AlertCircle, FileText } from 'lucide-rea
 import { usePlan } from '@/contexts/PlanContext';
 import { useToast } from '@/hooks/use-toast';
 import * as XLSX from 'xlsx';
-import { Task } from '@/types';
-import { taskService } from '@/services';
+import { Task, Tag } from '@/types';
+import { taskService, tagService } from '@/services';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { 
@@ -29,13 +29,13 @@ import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { generateTaskTemplate, parseTasksFromExcel, mapExcelDataToTasks, extractTagsFromExcel, getTagMappingsFromExcel } from '@/utils/excelUtils';
 import { useAppContext } from '@/contexts/AppContext';
-import { tagService } from '@/services';
 
 interface TaskImportExportProps {
   projectId: string;
   tasks: Task[];
   userId: string;
   onTasksImported: (tasks: Task[]) => void;
+  tags?: Tag[]; // Making tags optional so we can pass them from parent component
 }
 
 interface ImportResult {
@@ -48,11 +48,18 @@ const isPremiumPlan = (plan: string) => {
   return plan === 'pro' || plan === 'enterprise';
 };
 
-const TaskImportExport: React.FC<TaskImportExportProps> = ({ projectId, tasks, userId, onTasksImported }) => {
+const TaskImportExport: React.FC<TaskImportExportProps> = ({ 
+  projectId, 
+  tasks, 
+  userId, 
+  onTasksImported,
+  tags = [] // Default value for tags
+}) => {
   const { toast } = useToast();
   const { currentPlan } = usePlan();
-  const { state, addTag } = useAppContext();
-  const { projects = [], tags = [] } = state;
+  // Attempt to use AppContext if available, otherwise use props
+  const appContext = React.useContext(useAppContext);
+  const projects = appContext?.state?.projects || [];
   
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
@@ -157,21 +164,13 @@ const TaskImportExport: React.FC<TaskImportExportProps> = ({ projectId, tasks, u
       
       // Check which tags already exist in the system
       for (const tagName of excelTagNames) {
-        const existingTag = tags.find(t => t.name.toLowerCase() === tagName.toLowerCase());
-        
-        if (existingTag) {
-          // Tag already exists, use its ID
-          tagNameToIdMap.set(tagName, existingTag.id);
-          console.log(`Using existing tag: ${tagName} with ID: ${existingTag.id}`);
-        } else {
-          // Tag doesn't exist, create a new one
-          try {
-            const newTag = await addTag(tagName);
-            tagNameToIdMap.set(tagName, newTag.id);
-            console.log(`Created new tag: ${tagName} with ID: ${newTag.id}`);
-          } catch (error) {
-            console.error(`Failed to create tag "${tagName}":`, error);
-          }
+        try {
+          // Create the tag (the service will check if it exists first)
+          const newTag = await tagService.createTag(tagName, userId);
+          tagNameToIdMap.set(tagName, newTag.id);
+          console.log(`Using tag: ${tagName} with ID: ${newTag.id}`);
+        } catch (error) {
+          console.error(`Failed to create/get tag "${tagName}":`, error);
         }
       }
       
@@ -234,10 +233,10 @@ const TaskImportExport: React.FC<TaskImportExportProps> = ({ projectId, tasks, u
         return;
       }
       
-      // Get projects from context
+      // Map Excel data to tasks using available projects
       const { tasks: mappedTasks, errors: mappingErrors } = mapExcelDataToTasks(
         data,
-        projects, // Use the projects from the context
+        projects, // Use the projects from props or context
         userId
       );
       

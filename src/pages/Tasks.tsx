@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAppContext } from '@/contexts/AppContext';
 import TaskItem from '@/components/TaskItem';
@@ -111,12 +112,15 @@ const Tasks: React.FC = () => {
       <div className="mb-6">
         <Card className="p-4">
           <h3 className="text-lg font-medium mb-3">Importar/Exportar</h3>
-          <TaskImportExport 
-            projectId={defaultProjectId}
-            tasks={tasksArray}
-            userId={user?.id || ''}
-            onTasksImported={handleTasksImported}
-          />
+          
+          {user && (
+            <TaskImportExport 
+              projectId={defaultProjectId}
+              tasks={tasksArray}
+              userId={user.id}
+              onTasksImported={handleTasksImported}
+            />
+          )}
         </Card>
       </div>
       

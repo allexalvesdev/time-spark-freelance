@@ -69,12 +69,12 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center bg-black p-4">
+      <Card className="w-full max-w-md bg-black/90 border-white/10 text-white">
         <CardHeader>
           <Link to="/" className="flex justify-center mb-6">
             <h1 className="text-2xl font-bold">
-              Workly<span className="text-timespark-accent">.</span>
+              Workly<span className="text-primary">.</span>
             </h1>
           </Link>
           <h1 className="text-2xl font-bold text-center">
@@ -99,6 +99,7 @@ const Auth = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
+                className="bg-white/5 border-white/10 text-white"
               />
             </div>
             <div className="space-y-2">
@@ -112,17 +113,18 @@ const Auth = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                className="bg-white/5 border-white/10 text-white"
               />
             </div>
           </CardContent>
           <CardFooter className="flex flex-col space-y-4">
-            <Button type="submit" className="w-full" disabled={isLoading}>
+            <Button type="submit" className="w-full bg-primary text-white" disabled={isLoading}>
               {isLoading ? 'Carregando...' : isSignUp ? 'Criar conta' : 'Entrar'}
             </Button>
             <Button
               type="button"
               variant="link"
-              className="w-full"
+              className="w-full text-primary"
               onClick={() => setIsSignUp(!isSignUp)}
             >
               {isSignUp ? 'Já tem uma conta? Entre' : 'Não tem uma conta? Crie uma'}

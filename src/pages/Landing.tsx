@@ -131,7 +131,7 @@ const Landing = () => {
   const fadeInClass = "animate-fade-in";
 
   return (
-    <div className="landing-page overflow-x-hidden">
+    <div className="landing-page overflow-x-hidden bg-black text-white">
       <LandingHeader 
         scrollToFeatures={() => scrollToSection(featuresRef)}
         scrollToTestimonials={() => scrollToSection(testimonialsRef)}
@@ -140,9 +140,8 @@ const Landing = () => {
       
       <section 
         ref={heroRef}
-        className="relative min-h-screen flex items-center justify-center bg-background pattern-grid"
+        className="relative min-h-screen flex items-center justify-center"
       >
-        <div className="absolute inset-0 bg-gradient-to-b from-background via-background/95 to-background"></div>
         <div className="container mx-auto px-4 z-10 text-center">
           <h1 className="text-4xl md:text-6xl font-bold mb-6">
             Gerencie seu tempo, <br className="hidden md:block" />
@@ -157,15 +156,14 @@ const Landing = () => {
                 Comece Agora <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             </Link>
-            <Button size="lg" variant="outline" onClick={() => scrollToSection(featuresRef)}>
+            <Button size="lg" variant="outline" onClick={() => scrollToSection(featuresRef)} className="border-white/20 text-white hover:bg-white/10">
               Ver Recursos
             </Button>
           </div>
         </div>
       </section>
 
-      <section id="features" ref={featuresRef} className="py-20 bg-background pattern-dots relative">
-        <div className="absolute inset-0 bg-gradient-to-b from-background via-background/50 to-background"></div>
+      <section id="features" ref={featuresRef} className="py-20 bg-black relative">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">Recursos Poderosos para Gerenciar seu Tempo</h2>
@@ -203,7 +201,7 @@ const Landing = () => {
         </div>
       </div>
 
-      <section id="testimonials" ref={testimonialsRef} className="py-20 bg-muted/50">
+      <section id="testimonials" ref={testimonialsRef} className="py-20 bg-black/80">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">O que Nossos Clientes Dizem</h2>
@@ -227,7 +225,7 @@ const Landing = () => {
         </div>
       </section>
 
-      <section id="pricing" ref={pricingRef} className="py-20 bg-background">
+      <section id="pricing" ref={pricingRef} className="py-20 bg-black">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">Planos para Todas as Necessidades</h2>
@@ -260,15 +258,14 @@ const Landing = () => {
             Junte-se a milhares de profissionais que já estão aproveitando ao máximo cada minuto do seu dia.
           </p>
           <Link to="/auth">
-            <Button size="lg" className="bg-white text-primary hover:bg-white/90">
+            <Button size="lg" className="bg-black text-white hover:bg-black/90 border border-white/20">
               Comece Grátis Hoje
             </Button>
           </Link>
         </div>
       </section>
 
-      <footer className="bg-background pattern-grid relative py-12">
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/95 to-background/50"></div>
+      <footer className="bg-black py-12 border-t border-white/10">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div>
@@ -304,7 +301,7 @@ const Landing = () => {
               </ul>
             </div>
           </div>
-          <div className="border-t border-border mt-8 pt-8 text-center text-muted-foreground">
+          <div className="border-t border-white/10 mt-8 pt-8 text-center text-muted-foreground">
             <p>&copy; {new Date().getFullYear()} Workly. Todos os direitos reservados.</p>
           </div>
         </div>

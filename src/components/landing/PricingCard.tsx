@@ -33,8 +33,8 @@ const PricingCard: React.FC<PricingCardProps> = ({
       popular ? 'border-primary shadow-lg' : ''
     } bg-black hover:bg-black/80 transition-colors`}>
       {popular && (
-        <div className="absolute top-0 right-4 translate-y-4 bg-primary text-primary-foreground text-xs uppercase font-bold py-1 px-4 rounded-full">
-          Atual
+        <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-primary text-primary-foreground text-xs uppercase font-bold py-1 px-4 rounded-full">
+          Mais Popular
         </div>
       )}
       

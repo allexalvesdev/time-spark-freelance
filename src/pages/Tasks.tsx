@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAppContext } from '@/contexts/AppContext';
 import TaskItem from '@/components/TaskItem';
@@ -97,11 +96,6 @@ const Tasks: React.FC = () => {
     return true;
   });
   
-  // Obter projeto pelo ID
-  const getProject = (projectId: string) => {
-    return projects.find(p => p.id === projectId) || projects[0];
-  };
-  
   // Get the first project ID or empty string if no projects
   const defaultProjectId = projects.length > 0 ? projects[0].id : '';
   
@@ -126,6 +120,7 @@ const Tasks: React.FC = () => {
         </Card>
       </div>
       
+      {/* Filter controls and task list */}
       <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between mb-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 w-full">
           <div>

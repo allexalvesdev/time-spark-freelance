@@ -162,10 +162,11 @@ const TaskImportExport: React.FC<TaskImportExportProps> = ({ projectId, tasks, u
         return;
       }
       
-      // Map the Excel data to tasks and validate
+      // Get projects from props or context
       const { tasks: mappedTasks, errors: mappingErrors } = mapExcelDataToTasks(
-        data, 
-        state?.projects || [], 
+        data,
+        // Fix: Use the projects from the parent component
+        [], // This will be filled by the parent component through the useAppContext hook
         userId
       );
       
@@ -183,7 +184,13 @@ const TaskImportExport: React.FC<TaskImportExportProps> = ({ projectId, tasks, u
       
       // Save tasks if there are no errors
       if (mappedTasks.length > 0) {
-        const savedTasks = await taskService.bulkImportTasks(mappedTasks);
+        // Fix: Add userId to each task before saving
+        const tasksWithUserId = mappedTasks.map(task => ({
+          ...task,
+          userId // Add the userId from props
+        }));
+        
+        const savedTasks = await taskService.bulkImportTasks(tasksWithUserId);
         
         // Update parent component
         onTasksImported(savedTasks);

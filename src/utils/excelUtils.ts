@@ -9,7 +9,7 @@ export interface TaskImportTemplate {
   'Nome da Tarefa*': string;
   'Descrição': string;
   'Horas Estimadas': number;
-  'Minutos Estimadas': number;
+  'Minutos Estimados': number; // Updated to match the required name
   'Data e Hora de Início*': string;
   'Data e Hora de Fim': string;
   'Prioridade*': string; // 'Baixa' | 'Média' | 'Alta' | 'Urgente'
@@ -24,7 +24,7 @@ export const generateTaskTemplate = (): Blob => {
     'Nome da Tarefa*',
     'Descrição',
     'Horas Estimadas',
-    'Minutos Estimadas',
+    'Minutos Estimados', // Updated to match the required name
     'Data e Hora de Início*',
     'Data e Hora de Fim',
     'Prioridade*',
@@ -39,7 +39,7 @@ export const generateTaskTemplate = (): Blob => {
     { wch: 25 }, // Nome da Tarefa
     { wch: 40 }, // Descrição
     { wch: 15 }, // Horas Estimadas
-    { wch: 15 }, // Minutos Estimadas
+    { wch: 15 }, // Minutos Estimados
     { wch: 35 }, // Data e Hora de Início
     { wch: 35 }, // Data e Hora de Fim
     { wch: 40 }, // Prioridade
@@ -116,7 +116,7 @@ export const parseTasksFromExcel = (file: File): Promise<{
           'Nome da Tarefa*': row['Nome da Tarefa*'] || '',
           'Descrição': row['Descrição'] || '',
           'Horas Estimadas': parseFloat(row['Horas Estimadas']) || 0,
-          'Minutos Estimadas': parseFloat(row['Minutos Estimadas']) || 0,
+          'Minutos Estimados': parseFloat(row['Minutos Estimados']) || 0, // Updated to match
           'Data e Hora de Início*': row['Data e Hora de Início*'] || '',
           'Data e Hora de Fim': row['Data e Hora de Fim'] || '',
           'Prioridade*': row['Prioridade*'] || '',
@@ -199,10 +199,10 @@ export const mapExcelDataToTasks = (
   projects: Project[], 
   userId: string
 ): { 
-  tasks: Omit<Task, 'id' | 'userId'>[];
+  tasks: Omit<Task, 'id'>[];
   errors: { row: number; message: string }[];
 } => {
-  const tasks: Omit<Task, 'id' | 'userId'>[] = [];
+  const tasks: Omit<Task, 'id'>[] = [];
   const errors: { row: number; message: string }[] = [];
   
   data.forEach((row, index) => {
@@ -226,7 +226,7 @@ export const mapExcelDataToTasks = (
       
       // Calculate estimated time in minutes
       const hours = row['Horas Estimadas'] || 0;
-      const minutes = row['Minutos Estimadas'] || 0;
+      const minutes = row['Minutos Estimados'] || 0; // Updated to match
       const estimatedTime = (hours * 60) + minutes;
       
       // Check if end date is provided to mark task as completed
@@ -256,10 +256,11 @@ export const mapExcelDataToTasks = (
       }
       
       // Create task object
-      const task: Omit<Task, 'id' | 'userId'> = {
+      const task: Omit<Task, 'id'> = {
         name: row['Nome da Tarefa*'],
         description: row['Descrição'] || '',
         projectId: project.id,
+        userId,
         estimatedTime,
         scheduledStartTime,
         priority: row['Prioridade*'] as 'Baixa' | 'Média' | 'Alta' | 'Urgente',

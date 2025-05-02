@@ -18,17 +18,17 @@ export interface TaskImportTemplate {
 
 // Create a template for users to download
 export const generateTaskTemplate = (): Blob => {
-  // Cabeçalhos exatamente como solicitado
+  // Cabeçalhos exatamente como solicitado pelo usuário
   const headers = [
-    'Nome do Projeto*',
+    'Nome do Projeto* - precisa ser um projeto existente no sistema',
     'Nome da Tarefa*',
     'Descrição',
     'Horas Estimadas',
     'Minutos Estimados',
-    'Data e Hora de Início*',
-    'Data e Hora de Fim',
-    'Prioridade*',
-    'Tags'
+    'Data e Hora de Início* - deve estar no formato (01/01/0001 00:00)',
+    'Data e Hora de Fim - deve estar no formato (01/01/0001 00:00)',
+    'Prioridade* - deve ser uma das seguintes: Baixa, Média, Alta ou Urgente',
+    'Tags - devem ser separadas por vírgula'
   ];
   
   // Create worksheet with only headers (sem dados de exemplo)
@@ -36,14 +36,14 @@ export const generateTaskTemplate = (): Blob => {
   
   // Set column widths
   const columnWidths = [
-    { wch: 35 }, // Nome do Projeto
+    { wch: 40 }, // Nome do Projeto
     { wch: 25 }, // Nome da Tarefa
     { wch: 40 }, // Descrição
     { wch: 15 }, // Horas Estimadas
     { wch: 15 }, // Minutos Estimados
-    { wch: 35 }, // Data e Hora de Início
-    { wch: 35 }, // Data e Hora de Fim
-    { wch: 40 }, // Prioridade
+    { wch: 40 }, // Data e Hora de Início
+    { wch: 40 }, // Data e Hora de Fim
+    { wch: 45 }, // Prioridade
     { wch: 30 }  // Tags
   ];
   

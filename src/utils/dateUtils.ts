@@ -1,3 +1,4 @@
+
 export const calculateElapsedTime = (startTime: Date, endTime: Date): number => {
   console.log(`Calculating elapsed time from ${startTime} to ${endTime}`);
   const elapsedSeconds = Math.floor((endTime.getTime() - startTime.getTime()) / 1000);
@@ -77,6 +78,11 @@ export const formatDate = (date: Date, format?: string): string => {
 export const parseDate = (dateStr: string, format: 'dd/MM/yyyy HH:mm' | 'yyyy-MM-dd HH:mm' | 'dd-MM-yyyy HH:mm'): Date => {
   try {
     console.log(`Parsing date string: "${dateStr}" with format: "${format}"`);
+    
+    // Verificar se a data está no formato parentizado (01/01/0001 00:00)
+    if (dateStr.includes('(') && dateStr.includes(')')) {
+      dateStr = dateStr.replace(/[\(\)]/g, '').trim();
+    }
     
     if (format === 'dd/MM/yyyy HH:mm') {
       const [datePart, timePart] = dateStr.split(' ');

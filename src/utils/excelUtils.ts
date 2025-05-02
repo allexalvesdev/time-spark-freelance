@@ -1,4 +1,3 @@
-
 import * as XLSX from 'xlsx';
 import { Project, Task, Tag } from '@/types';
 import { formatDate, parseDate, calculateElapsedTime } from './dateUtils';
@@ -9,7 +8,7 @@ export interface TaskImportTemplate {
   'Nome da Tarefa*': string;
   'Descrição': string;
   'Horas Estimadas': number;
-  'Minutos Estimadas': number;
+  'Minutos Estimados': number;  // Changed from 'Minutos Estimadas' to match actual data
   'Data e Hora de Início*': string;
   'Data e Hora de Fim': string;
   'Prioridade*': string; // 'Baixa' | 'Média' | 'Alta' | 'Urgente'

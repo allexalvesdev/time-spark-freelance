@@ -21,6 +21,26 @@ export const tagService = {
   },
 
   async createTag(name: string, userId: string) {
+    // Check if tag already exists for this user to avoid duplicates
+    const { data: existingTag, error: checkError } = await supabase
+      .from('tags')
+      .select('*')
+      .eq('name', name)
+      .eq('user_id', userId)
+      .maybeSingle();
+      
+    if (checkError) throw checkError;
+    
+    // Return existing tag if found
+    if (existingTag) {
+      return {
+        id: existingTag.id,
+        name: existingTag.name,
+        userId: existingTag.user_id,
+      };
+    }
+    
+    // Create new tag if it doesn't exist
     const { data, error } = await supabase
       .from('tags')
       .insert([{ name, user_id: userId }])

@@ -42,8 +42,8 @@ const LandingHeader: React.FC<LandingHeaderProps> = ({
     >
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between">
-          <Link to="/" className="text-2xl font-bold text-white">
-            Workly<span className="text-primary">.</span>
+          <Link to="/" className="text-2xl font-archivo-black text-white">
+            Focusly<span className="text-primary">.</span>
           </Link>
 
           <nav className="hidden md:flex items-center space-x-6">

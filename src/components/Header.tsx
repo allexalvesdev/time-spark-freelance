@@ -26,7 +26,7 @@ export function Header() {
     if (path === '/configuracoes') return 'Configurações';
     if (path.includes('/projeto/')) return 'Detalhes do Projeto';
     
-    return 'Workly';
+    return 'Focusly';
   };
   
   return (

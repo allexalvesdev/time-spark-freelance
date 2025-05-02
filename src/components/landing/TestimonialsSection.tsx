@@ -8,13 +8,13 @@ const TestimonialsSection = () => {
       name: "Carlos Silva",
       role: "Designer Freelancer",
       image: "https://randomuser.me/api/portraits/men/1.jpg",
-      content: "O Workly transformou meu fluxo de trabalho. Agora consigo gerenciar meus projetos freelance com muito mais eficiência e transparência para meus clientes."
+      content: "O Focusly transformou meu fluxo de trabalho. Agora consigo gerenciar meus projetos freelance com muito mais eficiência e transparência para meus clientes."
     },
     {
       name: "Ana Martins",
       role: "Gerente de Projetos",
       image: "https://randomuser.me/api/portraits/women/2.jpg",
-      content: "Como gerente de uma equipe remota, o Workly nos permitiu sincronizar melhor nosso trabalho e ter uma visão clara de quanto tempo cada tarefa está consumindo."
+      content: "Como gerente de uma equipe remota, o Focusly nos permitiu sincronizar melhor nosso trabalho e ter uma visão clara de quanto tempo cada tarefa está consumindo."
     },
     {
       name: "Rodrigo Mendes",
@@ -30,7 +30,7 @@ const TestimonialsSection = () => {
         <div className="text-center mb-16">
           <h2 className="text-3xl md:text-4xl font-bold mb-4">O que Nossos Clientes Dizem</h2>
           <p className="text-muted-foreground max-w-2xl mx-auto">
-            Veja como o Workly está ajudando profissionais como você a gerenciar seu tempo.
+            Veja como o Focusly está ajudando profissionais como você a gerenciar seu tempo.
           </p>
         </div>
         

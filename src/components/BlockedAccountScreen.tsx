@@ -34,7 +34,7 @@ const BlockedAccountScreen = () => {
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Acesso limitado</AlertTitle>
             <AlertDescription>
-              Para continuar utilizando o Workly com todas as funcionalidades, 
+              Para continuar utilizando o Focusly com todas as funcionalidades, 
               escolha um dos nossos planos de assinatura.
             </AlertDescription>
           </Alert>

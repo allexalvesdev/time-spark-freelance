@@ -25,7 +25,7 @@ const PricingCard: React.FC<PricingCardProps> = ({
   features, 
   cta, 
   popular = false,
-  trial = true,
+  trial = false,
   currentPlan = false
 }) => {
   return (
@@ -33,13 +33,7 @@ const PricingCard: React.FC<PricingCardProps> = ({
       popular ? 'border-primary shadow-lg' : ''
     } bg-black hover:bg-black/80 transition-colors`}>
       {popular && (
-        <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-primary text-primary-foreground text-xs uppercase font-bold py-1 px-4 rounded-full">
-          Mais Popular
-        </div>
-      )}
-      
-      {currentPlan && (
-        <div className="absolute top-4 right-4 bg-primary text-primary-foreground text-xs uppercase font-bold py-1 px-3 rounded-full">
+        <div className="absolute top-0 right-4 translate-y-4 bg-primary text-primary-foreground text-xs uppercase font-bold py-1 px-4 rounded-full">
           Atual
         </div>
       )}
@@ -51,11 +45,6 @@ const PricingCard: React.FC<PricingCardProps> = ({
           <span className="text-4xl font-bold text-white">{price}</span>
           <span className="text-muted-foreground ml-1">{period}</span>
         </div>
-        {trial && (
-          <div className="text-sm text-primary font-medium">
-            14 dias de teste grátis
-          </div>
-        )}
       </CardHeader>
       
       <CardContent className="px-6 pb-4 pt-0">
@@ -74,12 +63,10 @@ const PricingCard: React.FC<PricingCardProps> = ({
           <Button 
             className={`w-full ${
               currentPlan 
-                ? 'bg-secondary hover:bg-secondary/90 text-secondary-foreground' 
-                : popular 
-                  ? 'bg-primary hover:bg-primary/90 text-primary-foreground' 
-                  : 'bg-white/10 hover:bg-white/20 text-white'
+                ? 'pricing-button-secondary bg-purple-700 hover:bg-purple-800' 
+                : 'pricing-button-primary bg-purple-500 hover:bg-purple-600'
             }`}
-            variant={currentPlan ? "secondary" : popular ? "default" : "outline"}
+            variant={currentPlan ? "secondary" : "default"}
           >
             {cta}
           </Button>

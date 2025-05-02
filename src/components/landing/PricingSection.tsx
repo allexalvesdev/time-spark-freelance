@@ -5,38 +5,39 @@ import PricingCard from '@/components/landing/PricingCard';
 const PricingSection = () => {
   const pricingPlans = [
     {
-      name: "Free",
+      name: "Básico",
       subtitle: "Para uso pessoal",
-      price: "R$0",
-      period: "/sempre",
+      price: "R$19,90",
+      period: "/mês",
       features: [
-        "1 projeto ativo",
+        "Até 5 projetos",
         "Controle de tempo",
         "Relatórios simples"
       ],
-      cta: "Começar Grátis",
+      cta: "Assinar",
       popular: false
     },
     {
       name: "Profissional",
       subtitle: "Para profissionais e freelancers",
       price: "R$29,90",
-      period: "/por mês",
+      period: "/mês",
       features: [
-        "10 projetos ativos",
-        "Relatórios detalhados",
+        "Até 10 projetos",
+        "Relatórios avançados",
         "Importação de dados",
         "Suporte prioritário",
         "Exportação de dados"
       ],
-      cta: "Assinar Agora",
-      popular: true
+      cta: "Plano atual",
+      popular: true,
+      currentPlan: true
     },
     {
       name: "Enterprise",
       subtitle: "Para equipes e empresas",
       price: "R$59,90",
-      period: "/por mês",
+      period: "/mês",
       features: [
         "Projetos ilimitados",
         "API personalizada",
@@ -45,7 +46,7 @@ const PricingSection = () => {
         "Gerenciamento de equipe",
         "Customização total"
       ],
-      cta: "Contato Comercial",
+      cta: "Assinar",
       popular: false
     }
   ];
@@ -68,6 +69,8 @@ const PricingSection = () => {
                 features={plan.features}
                 cta={plan.cta}
                 popular={plan.popular}
+                currentPlan={plan.currentPlan}
+                trial={false}
               />
             </div>
           ))}

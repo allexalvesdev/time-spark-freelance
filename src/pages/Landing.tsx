@@ -41,7 +41,7 @@ const Landing = () => {
   };
 
   return (
-    <div className="landing-page overflow-x-hidden bg-black text-white">
+    <div className="landing-page w-full min-h-screen overflow-x-hidden bg-black text-white">
       <LandingHeader 
         scrollToFeatures={() => scrollToSection(featuresRef)}
         scrollToTestimonials={() => scrollToSection(testimonialsRef)}

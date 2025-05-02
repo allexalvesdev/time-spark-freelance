@@ -6,7 +6,7 @@ import { Link } from 'react-router-dom';
 
 const HeroSection = () => {
   return (
-    <section className="relative min-h-screen flex items-center justify-center">
+    <section className="w-full relative min-h-screen flex items-center justify-center">
       <div className="container mx-auto px-4 z-10 text-center">
         <h1 className="text-4xl md:text-6xl font-bold mb-6">
           Gerencie seu tempo, <br className="hidden md:block" />

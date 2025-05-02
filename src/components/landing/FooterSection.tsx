@@ -13,7 +13,7 @@ const FooterSection: React.FC<FooterSectionProps> = ({
   scrollToPricing 
 }) => {
   return (
-    <footer className="bg-black py-12 border-t border-white/10">
+    <footer className="w-full bg-black py-12 border-t border-white/10">
       <div className="container mx-auto px-4">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div>

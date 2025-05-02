@@ -1,3 +1,4 @@
+
 import * as XLSX from 'xlsx';
 import { Project, Task } from '@/types';
 import { formatDate, parseDate, calculateElapsedTime } from './dateUtils';
@@ -17,7 +18,7 @@ export interface TaskImportTemplate {
 
 // Create a template for users to download
 export const generateTaskTemplate = (): Blob => {
-  // Headers com os nomes exatos solicitados
+  // Cabeçalhos exatamente como solicitado
   const headers = [
     'Nome do Projeto*',
     'Nome da Tarefa*',

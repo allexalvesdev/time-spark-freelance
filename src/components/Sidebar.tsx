@@ -20,13 +20,9 @@ import {
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import { ThemeToggle } from './ThemeToggle';
-import ActiveTimerDisplay from './ActiveTimerDisplay';
-import { useAppContext } from '@/contexts/AppContext';
 
 export function Sidebar() {
   const { user, signOut } = useAuth();
-  const { state } = useAppContext();
-  const { activeTimeEntry } = state || {};
   
   return (
     <SidebarComponent className="h-full w-64 border-r border-border bg-background hidden md:block">
@@ -35,14 +31,6 @@ export function Sidebar() {
           Workly<span className="text-primary">.</span>
         </h2>
       </SidebarHeader>
-      
-      {activeTimeEntry && (
-        <div className="px-4 pb-2">
-          <div className="w-full p-2 bg-muted/60 rounded-md">
-            <ActiveTimerDisplay />
-          </div>
-        </div>
-      )}
       
       <SidebarContent>
         <SidebarMenu>

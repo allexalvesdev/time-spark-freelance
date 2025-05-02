@@ -9,7 +9,7 @@ export interface TaskImportTemplate {
   'Nome da Tarefa*': string;
   'Descrição': string;
   'Horas Estimadas': number;
-  'Minutos Estimados': number; // Updated to match the required name
+  'Minutos Estimados': number;
   'Data e Hora de Início*': string;
   'Data e Hora de Fim': string;
   'Prioridade*': string; // 'Baixa' | 'Média' | 'Alta' | 'Urgente'
@@ -24,14 +24,28 @@ export const generateTaskTemplate = (): Blob => {
     'Nome da Tarefa*',
     'Descrição',
     'Horas Estimadas',
-    'Minutos Estimados', // Updated to match the required name
+    'Minutos Estimados',
     'Data e Hora de Início*',
     'Data e Hora de Fim',
     'Prioridade*',
     'Tags'
   ];
   
-  const worksheet = XLSX.utils.aoa_to_sheet([headers]);
+  // Create example data row
+  const exampleData = [
+    '(Aqui) - Feature Mensagem Alerta',
+    'Tarefa 1 Importação',
+    'Desc Tarefa 4 Importação',
+    '', // Horas Estimadas
+    '', // Minutos Estimados
+    '01/05/2025 08:00',
+    '01/05/2025 10:00',
+    'Baixa',
+    ''  // Tags
+  ];
+  
+  // Create worksheet with headers and example data
+  const worksheet = XLSX.utils.aoa_to_sheet([headers, exampleData]);
   
   // Set column widths
   const columnWidths = [
@@ -116,7 +130,7 @@ export const parseTasksFromExcel = (file: File): Promise<{
           'Nome da Tarefa*': row['Nome da Tarefa*'] || '',
           'Descrição': row['Descrição'] || '',
           'Horas Estimadas': parseFloat(row['Horas Estimadas']) || 0,
-          'Minutos Estimados': parseFloat(row['Minutos Estimados']) || 0, // Updated to match
+          'Minutos Estimados': parseFloat(row['Minutos Estimados']) || 0,
           'Data e Hora de Início*': row['Data e Hora de Início*'] || '',
           'Data e Hora de Fim': row['Data e Hora de Fim'] || '',
           'Prioridade*': row['Prioridade*'] || '',
@@ -226,7 +240,7 @@ export const mapExcelDataToTasks = (
       
       // Calculate estimated time in minutes
       const hours = row['Horas Estimadas'] || 0;
-      const minutes = row['Minutos Estimados'] || 0; // Updated to match
+      const minutes = row['Minutos Estimados'] || 0;
       const estimatedTime = (hours * 60) + minutes;
       
       // Check if end date is provided to mark task as completed

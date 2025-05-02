@@ -29,6 +29,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { generateTaskTemplate, parseTasksFromExcel, mapExcelDataToTasks } from '@/utils/excelUtils';
+import { useAppContext } from '@/contexts/AppContext';
 
 interface TaskImportExportProps {
   projectId: string;
@@ -50,6 +51,9 @@ const isPremiumPlan = (plan: string) => {
 const TaskImportExport: React.FC<TaskImportExportProps> = ({ projectId, tasks, userId, onTasksImported }) => {
   const { toast } = useToast();
   const { currentPlan } = usePlan();
+  const { state } = useAppContext();
+  const { projects = [] } = state;
+  
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
   const [showImportResultDialog, setShowImportResultDialog] = useState(false);
@@ -162,11 +166,10 @@ const TaskImportExport: React.FC<TaskImportExportProps> = ({ projectId, tasks, u
         return;
       }
       
-      // Get projects from props or context
+      // Get projects from context
       const { tasks: mappedTasks, errors: mappingErrors } = mapExcelDataToTasks(
         data,
-        // Fix: Use the projects from the parent component
-        [], // This will be filled by the parent component through the useAppContext hook
+        projects, // Use the projects from the context
         userId
       );
       
@@ -184,13 +187,7 @@ const TaskImportExport: React.FC<TaskImportExportProps> = ({ projectId, tasks, u
       
       // Save tasks if there are no errors
       if (mappedTasks.length > 0) {
-        // Fix: Add userId to each task before saving
-        const tasksWithUserId = mappedTasks.map(task => ({
-          ...task,
-          userId // Add the userId from props
-        }));
-        
-        const savedTasks = await taskService.bulkImportTasks(tasksWithUserId);
+        const savedTasks = await taskService.bulkImportTasks(mappedTasks);
         
         // Update parent component
         onTasksImported(savedTasks);

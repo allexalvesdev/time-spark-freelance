@@ -1,5 +1,4 @@
 
-import { useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePlan } from '@/contexts/PlanContext';
 import BlockedAccountScreen from '@/components/BlockedAccountScreen';

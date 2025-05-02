@@ -21,7 +21,7 @@ const TestimonialCard: React.FC<TestimonialCardProps> = ({ name, role, image, co
   };
 
   return (
-    <Card className="h-full bg-black/60 border-white/10 text-white">
+    <Card className="h-full bg-black/60 border-white/10 backdrop-blur-sm text-white">
       <CardContent className="p-6">
         <div className="mb-4">
           <p className="italic text-muted-foreground">"{content}"</p>
@@ -34,7 +34,7 @@ const TestimonialCard: React.FC<TestimonialCardProps> = ({ name, role, image, co
             </AvatarFallback>
           </Avatar>
           <div>
-            <p className="font-medium">{name}</p>
+            <p className="font-medium text-white">{name}</p>
             <p className="text-sm text-muted-foreground">{role}</p>
           </div>
         </div>

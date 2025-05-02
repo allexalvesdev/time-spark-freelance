@@ -25,9 +25,9 @@ const PricingCard: React.FC<PricingCardProps> = ({
   trial = true
 }) => {
   return (
-    <Card className={`relative border-border bg-transparent backdrop-blur-sm ${
-      popular ? 'relative border-primary shadow-lg' : ''
-    }`}>
+    <Card className={`relative h-full border-border ${
+      popular ? 'border-primary shadow-lg' : ''
+    } bg-black/60 backdrop-blur-sm`}>
       {popular && (
         <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-primary text-primary-foreground text-xs uppercase font-bold py-1 px-4 rounded-full">
           Mais Popular
@@ -35,9 +35,9 @@ const PricingCard: React.FC<PricingCardProps> = ({
       )}
       
       <CardHeader className="text-center p-6">
-        <h3 className="text-xl font-bold mb-4">{name}</h3>
+        <h3 className="text-xl font-bold text-white mb-4">{name}</h3>
         <div className="mb-2">
-          <span className="text-4xl font-bold">{price}</span>
+          <span className="text-4xl font-bold text-white">{price}</span>
           <span className="text-muted-foreground ml-1">/{period}</span>
         </div>
         {trial && (
@@ -50,7 +50,7 @@ const PricingCard: React.FC<PricingCardProps> = ({
       <CardContent className="px-6 pb-6 pt-0">
         <ul className="space-y-3">
           {features.map((feature, index) => (
-            <li key={index} className="flex items-center text-sm">
+            <li key={index} className="flex items-center text-sm text-white">
               <Check className="h-5 w-5 mr-2 text-primary flex-shrink-0" />
               <span>{feature}</span>
             </li>
@@ -64,7 +64,7 @@ const PricingCard: React.FC<PricingCardProps> = ({
             className={`w-full ${
               popular 
                 ? 'bg-primary hover:bg-primary/90 text-primary-foreground' 
-                : 'bg-black/70 hover:bg-black/80 text-white dark:bg-white/10 dark:hover:bg-white/20'
+                : 'bg-black/70 hover:bg-black/80 text-white border border-white/10'
             }`}
             variant={popular ? "default" : "outline"}
           >

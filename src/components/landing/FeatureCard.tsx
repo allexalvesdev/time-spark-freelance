@@ -10,12 +10,12 @@ interface FeatureCardProps {
 
 const FeatureCard: React.FC<FeatureCardProps> = ({ icon, title, description }) => {
   return (
-    <Card className="h-full bg-black/60 border-white/10 hover:border-primary transition-colors text-white">
+    <Card className="h-full bg-black/60 border-white/10 backdrop-blur-sm hover:border-primary transition-colors text-white">
       <CardContent className="p-6 flex flex-col items-center text-center">
-        <div className="mb-5">
+        <div className="mb-5 text-primary">
           {icon}
         </div>
-        <h3 className="text-lg font-semibold mb-2">{title}</h3>
+        <h3 className="text-lg font-semibold mb-2 text-white">{title}</h3>
         <p className="text-muted-foreground">{description}</p>
       </CardContent>
     </Card>

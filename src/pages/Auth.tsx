@@ -69,7 +69,7 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-black p-4">
+    <div className="min-h-screen w-full flex items-center justify-center bg-black p-4">
       <Card className="w-full max-w-md bg-black/90 border-white/10 text-white">
         <CardHeader>
           <Link to="/" className="flex justify-center mb-6">

@@ -66,92 +66,94 @@ const App = () => (
     <BrowserRouter>
       <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
         <SidebarProvider>
-          <AuthProvider>
-            <PlanProvider>
-              <AppProvider>
-                <TooltipProvider>
-                  <Toaster />
-                  <Sonner />
-                  <Routes>
-                    <Route path="/" element={<RootPage />} />
-                    <Route path="/auth" element={<Auth />} />
-                    <Route
-                      path="/dashboard"
-                      element={
-                        <PrivateRoute>
-                          <Layout>
-                            <Dashboard />
-                          </Layout>
-                        </PrivateRoute>
-                      }
-                    />
-                    <Route
-                      path="/novo-projeto"
-                      element={
-                        <PrivateRoute>
-                          <Layout>
-                            <NewProject />
-                          </Layout>
-                        </PrivateRoute>
-                      }
-                    />
-                    <Route
-                      path="/projeto/:projectId"
-                      element={
-                        <PrivateRoute>
-                          <Layout>
-                            <ProjectDetails />
-                          </Layout>
-                        </PrivateRoute>
-                      }
-                    />
-                    <Route
-                      path="/agenda"
-                      element={
-                        <PrivateRoute>
-                          <Layout>
-                            <Agenda />
-                          </Layout>
-                        </PrivateRoute>
-                      }
-                    />
-                    <Route
-                      path="/tarefas"
-                      element={
-                        <PrivateRoute>
-                          <Layout>
-                            <Tasks />
-                          </Layout>
-                        </PrivateRoute>
-                      }
-                    />
-                    <Route
-                      path="/relatorios"
-                      element={
-                        <PrivateRoute>
-                          <Layout>
-                            <Reports />
-                          </Layout>
-                        </PrivateRoute>
-                      }
-                    />
-                    <Route
-                      path="/configuracoes"
-                      element={
-                        <PrivateRoute>
-                          <Layout>
-                            <Settings />
-                          </Layout>
-                        </PrivateRoute>
-                      }
-                    />
-                    <Route path="*" element={<NotFound />} />
-                  </Routes>
-                  <MobileNavigation />
-                </TooltipProvider>
-              </AppProvider>
-            </PlanProvider>
-          </AuthProvider>
+          <div className="w-full min-h-screen">
+            <AuthProvider>
+              <PlanProvider>
+                <AppProvider>
+                  <TooltipProvider>
+                    <Toaster />
+                    <Sonner />
+                    <Routes>
+                      <Route path="/" element={<RootPage />} />
+                      <Route path="/auth" element={<Auth />} />
+                      <Route
+                        path="/dashboard"
+                        element={
+                          <PrivateRoute>
+                            <Layout>
+                              <Dashboard />
+                            </Layout>
+                          </PrivateRoute>
+                        }
+                      />
+                      <Route
+                        path="/novo-projeto"
+                        element={
+                          <PrivateRoute>
+                            <Layout>
+                              <NewProject />
+                            </Layout>
+                          </PrivateRoute>
+                        }
+                      />
+                      <Route
+                        path="/projeto/:projectId"
+                        element={
+                          <PrivateRoute>
+                            <Layout>
+                              <ProjectDetails />
+                            </Layout>
+                          </PrivateRoute>
+                        }
+                      />
+                      <Route
+                        path="/agenda"
+                        element={
+                          <PrivateRoute>
+                            <Layout>
+                              <Agenda />
+                            </Layout>
+                          </PrivateRoute>
+                        }
+                      />
+                      <Route
+                        path="/tarefas"
+                        element={
+                          <PrivateRoute>
+                            <Layout>
+                              <Tasks />
+                            </Layout>
+                          </PrivateRoute>
+                        }
+                      />
+                      <Route
+                        path="/relatorios"
+                        element={
+                          <PrivateRoute>
+                            <Layout>
+                              <Reports />
+                            </Layout>
+                          </PrivateRoute>
+                        }
+                      />
+                      <Route
+                        path="/configuracoes"
+                        element={
+                          <PrivateRoute>
+                            <Layout>
+                              <Settings />
+                            </Layout>
+                          </PrivateRoute>
+                        }
+                      />
+                      <Route path="*" element={<NotFound />} />
+                    </Routes>
+                    <MobileNavigation />
+                  </TooltipProvider>
+                </AppProvider>
+              </PlanProvider>
+            </AuthProvider>
+          </div>
         </SidebarProvider>
       </ThemeProvider>
     </BrowserRouter>

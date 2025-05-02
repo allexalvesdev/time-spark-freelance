@@ -57,7 +57,13 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground w-full;
+    margin: 0;
+    padding: 0;
+  }
+  html, body, #root {
+    width: 100%;
+    min-height: 100vh;
   }
 }
 

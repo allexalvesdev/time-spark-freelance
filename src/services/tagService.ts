@@ -55,11 +55,23 @@ export const tagService = {
   },
 
   async addTagToTask(taskId: string, tagId: string) {
-    const { error } = await supabase
+    // Check if the association already exists to avoid duplicates
+    const { data: existingData, error: checkError } = await supabase
       .from('task_tags')
-      .insert([{ task_id: taskId, tag_id: tagId }]);
+      .select('*')
+      .eq('task_id', taskId)
+      .eq('tag_id', tagId);
     
-    if (error) throw error;
+    if (checkError) throw checkError;
+    
+    // Only insert if the association doesn't exist
+    if (!existingData || existingData.length === 0) {
+      const { error } = await supabase
+        .from('task_tags')
+        .insert([{ task_id: taskId, tag_id: tagId }]);
+      
+      if (error) throw error;
+    }
   },
 
   async removeTagFromTask(taskId: string, tagId: string) {

@@ -1,6 +1,6 @@
 
 import * as XLSX from 'xlsx';
-import { Project, Task } from '@/types';
+import { Project, Task, Tag } from '@/types';
 import { formatDate, parseDate, calculateElapsedTime } from './dateUtils';
 
 // Define the template structure for Excel export
@@ -9,7 +9,7 @@ export interface TaskImportTemplate {
   'Nome da Tarefa*': string;
   'Descrição': string;
   'Horas Estimadas': number;
-  'Minutos Estimados': number;
+  'Minutos Estimadas': number;
   'Data e Hora de Início*': string;
   'Data e Hora de Fim': string;
   'Prioridade*': string; // 'Baixa' | 'Média' | 'Alta' | 'Urgente'

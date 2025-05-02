@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { FileUp, FileDown, Lock, Check, AlertCircle, FileText } from 'lucide-react';
@@ -28,8 +27,9 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { generateTaskTemplate, parseTasksFromExcel, mapExcelDataToTasks } from '@/utils/excelUtils';
+import { generateTaskTemplate, parseTasksFromExcel, mapExcelDataToTasks, extractTagsFromExcel, getTagMappingsFromExcel } from '@/utils/excelUtils';
 import { useAppContext } from '@/contexts/AppContext';
+import { tagService } from '@/services';
 
 interface TaskImportExportProps {
   projectId: string;
@@ -51,8 +51,8 @@ const isPremiumPlan = (plan: string) => {
 const TaskImportExport: React.FC<TaskImportExportProps> = ({ projectId, tasks, userId, onTasksImported }) => {
   const { toast } = useToast();
   const { currentPlan } = usePlan();
-  const { state } = useAppContext();
-  const { projects = [] } = state;
+  const { state, addTag } = useAppContext();
+  const { projects = [], tags = [] } = state;
   
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
@@ -140,6 +140,74 @@ const TaskImportExport: React.FC<TaskImportExportProps> = ({ projectId, tasks, u
     }
   };
   
+  // Function to process tags from Excel
+  const processTagsFromExcel = async (data: any[], createdTasks: Task[]) => {
+    try {
+      // Extract unique tag names from Excel
+      const excelTagNames = extractTagsFromExcel(data);
+      console.log('Extracted tags from Excel:', excelTagNames);
+      
+      if (excelTagNames.length === 0) {
+        console.log('No tags found in Excel data');
+        return;
+      }
+      
+      // Map of tag names to their IDs (for both existing and newly created tags)
+      const tagNameToIdMap = new Map<string, string>();
+      
+      // Check which tags already exist in the system
+      for (const tagName of excelTagNames) {
+        const existingTag = tags.find(t => t.name.toLowerCase() === tagName.toLowerCase());
+        
+        if (existingTag) {
+          // Tag already exists, use its ID
+          tagNameToIdMap.set(tagName, existingTag.id);
+          console.log(`Using existing tag: ${tagName} with ID: ${existingTag.id}`);
+        } else {
+          // Tag doesn't exist, create a new one
+          try {
+            const newTag = await addTag(tagName);
+            tagNameToIdMap.set(tagName, newTag.id);
+            console.log(`Created new tag: ${tagName} with ID: ${newTag.id}`);
+          } catch (error) {
+            console.error(`Failed to create tag "${tagName}":`, error);
+          }
+        }
+      }
+      
+      // Get tag mappings for each Excel row
+      const tagMappings = getTagMappingsFromExcel(data);
+      console.log('Tag mappings:', tagMappings);
+      
+      // Associate tags with created tasks
+      for (let i = 0; i < createdTasks.length; i++) {
+        const task = createdTasks[i];
+        const mapping = tagMappings[i];
+        
+        if (mapping && mapping.tags.length > 0) {
+          console.log(`Processing tags for task: ${task.name}`);
+          
+          for (const tagName of mapping.tags) {
+            const tagId = tagNameToIdMap.get(tagName);
+            
+            if (tagId) {
+              try {
+                await tagService.addTagToTask(task.id, tagId);
+                console.log(`Added tag "${tagName}" (ID: ${tagId}) to task "${task.name}" (ID: ${task.id})`);
+              } catch (error) {
+                console.error(`Failed to add tag "${tagName}" to task "${task.name}":`, error);
+              }
+            }
+          }
+        }
+      }
+      
+      console.log('Finished processing tags');
+    } catch (error) {
+      console.error('Error processing tags:', error);
+    }
+  };
+  
   const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
     if (!hasPremiumAccess) {
       setShowUpgradeDialog(true);
@@ -188,6 +256,9 @@ const TaskImportExport: React.FC<TaskImportExportProps> = ({ projectId, tasks, u
       // Save tasks if there are no errors
       if (mappedTasks.length > 0) {
         const savedTasks = await taskService.bulkImportTasks(mappedTasks);
+        
+        // Process tags after tasks are created
+        await processTagsFromExcel(data, savedTasks);
         
         // Update parent component
         onTasksImported(savedTasks);

@@ -1,4 +1,3 @@
-
 export interface Project {
   id: string;
   name: string;
@@ -84,4 +83,5 @@ export interface TeamInvitation {
   expiresAt: Date;
   createdAt: Date;
   used: boolean;
+  teamName?: string; // Nome da equipe (opcional)
 }

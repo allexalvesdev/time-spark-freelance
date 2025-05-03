@@ -1,23 +1,73 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { Project } from '@/types';
 
 export const projectService = {
   async loadProjects() {
-    const { data: projects, error } = await supabase
-      .from('projects')
-      .select('*')
-      .order('created_at', { ascending: false });
-    
-    if (error) throw error;
-    
-    return projects?.map(project => ({
-      id: project.id,
-      name: project.name,
-      hourlyRate: project.hourly_rate,
-      createdAt: new Date(project.created_at),
-      userId: project.user_id,
-    })) || [];
+    try {
+      // Obter o usuário atual
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        console.error('Nenhum usuário logado ao tentar carregar projetos');
+        return [];
+      }
+      
+      // Buscar projetos onde o usuário é o proprietário
+      const { data: ownProjects, error: ownError } = await supabase
+        .from('projects')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+      
+      if (ownError) {
+        console.error('Erro ao carregar projetos próprios:', ownError);
+        return [];
+      }
+
+      // Buscar projetos onde o usuário é membro da equipe
+      const { data: teamMembers, error: teamError } = await supabase
+        .from('team_members')
+        .select('team_id')
+        .eq('user_id', user.id)
+        .eq('invitation_status', 'accepted');
+
+      let teamProjects = [];
+      
+      if (!teamError && teamMembers && teamMembers.length > 0) {
+        const teamIds = teamMembers.map(member => member.team_id);
+        
+        // Buscar projetos associados às equipes do usuário
+        const { data: projectsFromTeams, error: projError } = await supabase
+          .from('projects')
+          .select('*')
+          .in('team_id', teamIds)
+          .order('created_at', { ascending: false });
+        
+        if (!projError) {
+          teamProjects = projectsFromTeams || [];
+        } else {
+          console.error('Erro ao carregar projetos de equipes:', projError);
+        }
+      }
+      
+      // Combinar projetos próprios e de equipes
+      const allProjects = [...(ownProjects || []), ...teamProjects];
+      
+      // Remover possíveis duplicatas (caso um projeto esteja associado a várias equipes)
+      const uniqueProjects = Array.from(new Map(allProjects.map(project => [project.id, project])).values());
+      
+      return uniqueProjects.map(project => ({
+        id: project.id,
+        name: project.name,
+        hourlyRate: project.hourly_rate,
+        createdAt: new Date(project.created_at),
+        userId: project.user_id,
+        teamId: project.team_id || null,
+      }));
+    } catch (error) {
+      console.error('Erro inesperado ao carregar projetos:', error);
+      return [];
+    }
   },
 
   async createProject(project: Omit<Project, 'id' | 'createdAt'>) {

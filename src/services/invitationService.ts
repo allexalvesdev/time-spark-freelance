@@ -61,9 +61,13 @@ export const invitationService = {
     try {
       const now = new Date().toISOString();
       
+      // Busca detalhes do convite e da equipe relacionada
       const { data, error } = await supabase
         .from('team_invitations')
-        .select('*, teams(name)')
+        .select(`
+          id, team_id, email, token, expires_at, created_at, used,
+          teams:team_id (id, name, description)
+        `)
         .eq('token', token)
         .gt('expires_at', now)
         .eq('used', false)
@@ -74,7 +78,7 @@ export const invitationService = {
         return null;
       }
       
-      // Convert from DB schema to our TeamInvitation type
+      // Converte do schema do DB para o tipo TeamInvitation
       if (data) {
         return {
           id: data.id,
@@ -83,7 +87,8 @@ export const invitationService = {
           token: data.token,
           expiresAt: new Date(data.expires_at),
           createdAt: new Date(data.created_at),
-          used: data.used
+          used: data.used,
+          teamName: data.teams?.name
         };
       }
       
@@ -102,7 +107,10 @@ export const invitationService = {
     try {
       const { data, error } = await supabase
         .from('team_invitations')
-        .select('*')
+        .select(`
+          id, team_id, email, token, expires_at, created_at, used,
+          teams:team_id (id, name, description)
+        `)
         .eq('token', token)
         .single();
         
@@ -111,7 +119,7 @@ export const invitationService = {
         return null;
       }
       
-      // Convert from DB schema to our TeamInvitation type
+      // Converte do schema do DB para o tipo TeamInvitation
       if (data) {
         return {
           id: data.id,
@@ -120,7 +128,8 @@ export const invitationService = {
           token: data.token,
           expiresAt: new Date(data.expires_at),
           createdAt: new Date(data.created_at),
-          used: data.used
+          used: data.used,
+          teamName: data.teams?.name
         };
       }
       

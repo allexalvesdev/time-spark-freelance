@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -15,6 +16,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
+import { Loader2 } from 'lucide-react';
 
 const AcceptInvitation: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -40,15 +42,17 @@ const AcceptInvitation: React.FC = () => {
       }
       
       try {
-        // Use validateInvitation instead of getInvitationByToken
+        // Use validateInvitation para verificar se o token é válido
         const invitation = await invitationService.validateInvitation(token);
         
         if (invitation) {
           setInvitation(invitation);
           setEmail(invitation.email); // Pré-preencher o email do convite
           setInvitationValid(true);
+          console.log('Convite válido encontrado:', invitation);
         } else {
           setInvitationValid(false);
+          console.log('Convite inválido ou expirado');
         }
       } catch (error) {
         console.error('Erro ao verificar convite:', error);
@@ -68,24 +72,32 @@ const AcceptInvitation: React.FC = () => {
         try {
           setIsLoading(true);
           
+          console.log('Usuário autenticado aceitando convite:', {user, invitation});
+          
           // Busca o membro pelo email
           const member = await teamService.getMemberByEmail(invitation.email);
           
           if (member) {
+            console.log('Membro encontrado:', member);
             // Atualiza o membro com o ID do usuário e status aceito
-            await teamService.updateMemberStatus(member.id, user.id, 'accepted');
+            await teamService.updateTeamMember({
+              ...member,
+              userId: user.id,
+              invitationStatus: 'accepted'
+            });
             
             // Marca o convite como usado
             await invitationService.markInvitationAsUsed(invitation.token);
             
             toast({
               title: 'Convite aceito!',
-              description: 'Você agora é um membro da equipe.',
+              description: `Você agora é um membro da equipe ${invitation.teamName || ''}.`,
             });
             
             // Redireciona para o dashboard
             navigate('/dashboard');
           } else {
+            console.error('Membro não encontrado para o email:', invitation.email);
             toast({
               title: 'Erro',
               description: 'Não encontramos o seu registro como membro da equipe.',
@@ -134,6 +146,8 @@ const AcceptInvitation: React.FC = () => {
           title: 'Conta criada',
           description: 'Sua conta foi criada com sucesso! Verifique seu email para confirmar.',
         });
+      } else {
+        console.log('Usuário já existe, login realizado');
       }
       
       // O usuário será logado e o useEffect acima cuidará do resto
@@ -155,6 +169,9 @@ const AcceptInvitation: React.FC = () => {
         <Card className="w-full max-w-md mx-auto">
           <CardHeader>
             <CardTitle className="text-center">Verificando convite...</CardTitle>
+            <CardDescription className="text-center">
+              <Loader2 className="h-8 w-8 animate-spin mx-auto mt-2" />
+            </CardDescription>
           </CardHeader>
         </Card>
       </div>
@@ -191,6 +208,9 @@ const AcceptInvitation: React.FC = () => {
         <CardHeader>
           <CardTitle className="text-center">Aceitar convite</CardTitle>
           <CardDescription className="text-center">
+            {invitation?.teamName && (
+              <>Você foi convidado para participar da equipe <strong>{invitation.teamName}</strong>.<br /></>
+            )}
             Entre com sua conta ou crie uma nova para aceitar o convite.
           </CardDescription>
         </CardHeader>
@@ -223,7 +243,12 @@ const AcceptInvitation: React.FC = () => {
               className="w-full" 
               disabled={isLoading}
             >
-              {isLoading ? 'Processando...' : 'Entrar / Cadastrar'}
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <span>Processando...</span>
+                </>
+              ) : 'Entrar / Cadastrar'}
             </Button>
           </form>
         </CardContent>

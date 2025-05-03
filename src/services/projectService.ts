@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { Project } from '@/types';
 
@@ -53,8 +54,10 @@ export const projectService = {
       // Combinar projetos próprios e de equipes
       const allProjects = [...(ownProjects || []), ...teamProjects];
       
-      // Remover possíveis duplicatas (caso um projeto esteja associado a várias equipes)
-      const uniqueProjects = Array.from(new Map(allProjects.map(project => [project.id, project])).values());
+      // Usar um Map para remover possíveis duplicatas
+      const uniqueProjectsMap = new Map();
+      allProjects.forEach(project => uniqueProjectsMap.set(project.id, project));
+      const uniqueProjects = Array.from(uniqueProjectsMap.values());
       
       return uniqueProjects.map(project => ({
         id: project.id,

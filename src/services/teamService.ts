@@ -5,7 +5,7 @@ export const teamService = {
   /**
    * Carrega todas as equipes de um usuário
    */
-  async loadTeams(userId: string): Promise<Team[]> {
+  async loadTeams(userId: string): Promise<{ teams: Team[] }> {
     try {
       // Busca as equipes onde o usuário é o criador
       const { data: createdTeams, error: createdError } = await supabase
@@ -15,7 +15,7 @@ export const teamService = {
         
       if (createdError) {
         console.error('Erro ao carregar equipes criadas:', createdError);
-        return [];
+        return { teams: [] };
       }
       
       // Busca as equipes onde o usuário é membro
@@ -27,40 +27,46 @@ export const teamService = {
         
       if (memberError) {
         console.error('Erro ao carregar equipes como membro:', memberError);
-        return [];
+        return { teams: [] };
       }
       
       // Extrai os IDs das equipes onde o usuário é membro
-      const teamIds = memberTeams.map(member => member.team_id);
+      const teamIds = memberTeams?.map(member => member.team_id) || [];
       
-      // Busca os detalhes das equipes onde o usuário é membro
-      const { data: teamsDetails, error: teamsError } = await supabase
-        .from('teams')
-        .select('*')
-        .in('id', teamIds);
-        
-      if (teamsError) {
-        console.error('Erro ao carregar detalhes das equipes:', teamsError);
-        return [];
+      let teamsDetails = [];
+      if (teamIds.length > 0) {
+        // Busca os detalhes das equipes onde o usuário é membro
+        const { data: teamData, error: teamsError } = await supabase
+          .from('teams')
+          .select('*')
+          .in('id', teamIds);
+          
+        if (teamsError) {
+          console.error('Erro ao carregar detalhes das equipes:', teamsError);
+        } else {
+          teamsDetails = teamData || [];
+        }
       }
       
       // Combina as equipes criadas e as equipes como membro
-      const allTeams = [...createdTeams || [], ...teamsDetails || []];
+      const allTeams = [...(createdTeams || []), ...teamsDetails];
       
       // Remove duplicatas
       const uniqueTeams = Array.from(new Map(allTeams.map(team => [team.id, team])).values());
       
       // Converte para o tipo Team
-      return uniqueTeams.map(team => ({
-        id: team.id,
-        name: team.name,
-        description: team.description,
-        ownerId: team.owner_id,
-        createdAt: new Date(team.created_at),
-      }));
+      return { 
+        teams: uniqueTeams.map(team => ({
+          id: team.id,
+          name: team.name,
+          description: team.description,
+          ownerId: team.owner_id,
+          createdAt: new Date(team.created_at),
+        }))
+      };
     } catch (error) {
       console.error('Erro em loadTeams:', error);
-      return [];
+      return { teams: [] };
     }
   },
   
@@ -161,20 +167,17 @@ export const teamService = {
   
   /**
    * Adiciona um membro a uma equipe
-   * @param teamId ID da equipe
-   * @param name Nome do membro
-   * @param email Email do membro
-   * @param role Função do membro na equipe
+   * @param member Dados do membro a ser adicionado
    */
-  async addTeamMember(teamId: string, name: string, email: string, role: string): Promise<TeamMember | null> {
+  async addTeamMember(member: { teamId: string; name: string; userEmail: string; role: string }): Promise<TeamMember> {
     try {
       const { data, error } = await supabase
         .from('team_members')
         .insert([{
-          team_id: teamId,
-          name,
-          user_email: email,
-          role,
+          team_id: member.teamId,
+          name: member.name,
+          user_email: member.userEmail,
+          role: member.role,
           invitation_status: 'pending',
         }])
         .select('*')
@@ -182,7 +185,7 @@ export const teamService = {
         
       if (error) {
         console.error('Erro ao adicionar membro à equipe:', error);
-        return null;
+        throw error;
       }
       
       return {
@@ -197,7 +200,7 @@ export const teamService = {
       };
     } catch (error) {
       console.error('Erro em addTeamMember:', error);
-      return null;
+      throw error;
     }
   },
   
@@ -214,6 +217,7 @@ export const teamService = {
           role: member.role,
           user_id: member.userId,
           invitation_status: member.invitationStatus,
+          user_email: member.userEmail,
         })
         .eq('id', member.id);
         
@@ -256,7 +260,7 @@ export const teamService = {
    * Busca os membros de uma equipe
    * @param teamId ID da equipe
    */
-  async getTeamMembers(teamId: string): Promise<TeamMember[]> {
+  async getTeamMembers(teamId: string): Promise<{ members: TeamMember[] }> {
     try {
       const { data, error } = await supabase
         .from('team_members')
@@ -265,22 +269,24 @@ export const teamService = {
         
       if (error) {
         console.error('Erro ao buscar membros da equipe:', error);
-        return [];
+        return { members: [] };
       }
       
-      return data.map(member => ({
-        id: member.id,
-        teamId: member.team_id,
-        name: member.name,
-        role: member.role,
-        userEmail: member.user_email,
-        userId: member.user_id,
-        invitationStatus: member.invitation_status,
-        createdAt: new Date(member.created_at),
-      }));
+      return { 
+        members: data.map(member => ({
+          id: member.id,
+          teamId: member.team_id,
+          name: member.name,
+          role: member.role,
+          userEmail: member.user_email,
+          userId: member.user_id,
+          invitationStatus: member.invitation_status,
+          createdAt: new Date(member.created_at),
+        }))
+      };
     } catch (error) {
       console.error('Erro em getTeamMembers:', error);
-      return [];
+      return { members: [] };
     }
   },
 

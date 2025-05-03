@@ -21,7 +21,7 @@ export const useTeams = (userId: string) => {
       // Load members for each team
       const allMembers: TeamMember[] = [];
       for (const team of loadedTeams) {
-        const { members } = await teamService.loadTeamMembers(team.id);
+        const { members } = await teamService.getTeamMembers(team.id);
         allMembers.push(...members);
       }
       setTeamMembers(allMembers);
@@ -41,7 +41,15 @@ export const useTeams = (userId: string) => {
   const createTeam = useCallback(
     async (team: Omit<Team, 'id' | 'ownerId' | 'createdAt'>): Promise<Team> => {
       try {
-        const newTeam = await teamService.createTeam(team, userId);
+        const newTeam = await teamService.createTeam({
+          ...team,
+          ownerId: userId
+        });
+        
+        if (!newTeam) {
+          throw new Error('Failed to create team');
+        }
+        
         setTeams((prevTeams) => [newTeam, ...prevTeams]);
         
         toast({
@@ -116,7 +124,7 @@ export const useTeams = (userId: string) => {
   );
 
   const addTeamMember = useCallback(
-    async (member: Omit<TeamMember, 'id' | 'createdAt' | 'userId' | 'invitationStatus'>): Promise<TeamMember> => {
+    async (member: { teamId: string; name: string; userEmail: string; role: string }): Promise<TeamMember> => {
       try {
         const newMember = await teamService.addTeamMember(member);
         setTeamMembers((prevMembers) => [newMember, ...prevMembers]);
@@ -201,6 +209,10 @@ export const useTeams = (userId: string) => {
     async (teamId: string, email: string): Promise<TeamInvitation> => {
       try {
         const invitation = await invitationService.createInvitation(teamId, email);
+        
+        if (!invitation) {
+          throw new Error('Failed to create invitation');
+        }
         
         // Aqui você implementaria o envio real de email
         const inviteLink = `${window.location.origin}/convite?token=${invitation.token}`;

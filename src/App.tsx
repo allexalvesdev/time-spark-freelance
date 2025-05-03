@@ -1,6 +1,6 @@
 
 import { useEffect, useState } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from '@/components/ThemeProvider';
 import { AppProvider } from '@/contexts/AppContext';
 import { AuthProvider } from '@/contexts/AuthContext';
@@ -24,19 +24,10 @@ import AcceptInvitation from '@/pages/AcceptInvitation';
 import './App.css';
 
 function App() {
-  const [isLoading, setIsLoading] = useState(true);
+  const [splashFinished, setSplashFinished] = useState(false);
 
-  useEffect(() => {
-    // Simular tempo de carregamento
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 1200);
-
-    return () => clearTimeout(timer);
-  }, []);
-
-  if (isLoading) {
-    return <SplashScreen />;
+  if (!splashFinished) {
+    return <SplashScreen onFinished={() => setSplashFinished(true)} />;
   }
 
   return (

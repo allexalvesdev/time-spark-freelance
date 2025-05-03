@@ -34,64 +34,66 @@ function App() {
   return (
     <ThemeProvider defaultTheme="light" storageKey="focusly-theme">
       <Router>
-        <AuthProvider>
-          <PlanProvider>
-            <AppProvider>
-              <SidebarProvider>
-                <Routes>
-                  <Route path="/" element={<Landing />} />
-                  <Route path="/auth" element={<Auth />} />
-                  <Route path="/index" element={<Index />} />
-                  <Route path="/convite" element={<AcceptInvitation />} />
+        <SidebarProvider>
+          <div className="min-h-screen flex w-full">
+            <AuthProvider>
+              <PlanProvider>
+                <AppProvider>
+                  <Routes>
+                    <Route path="/" element={<Landing />} />
+                    <Route path="/auth" element={<Auth />} />
+                    <Route path="/index" element={<Index />} />
+                    <Route path="/convite" element={<AcceptInvitation />} />
 
-                  {/* Rotas protegidas */}
-                  <Route path="/dashboard" element={
-                    <Layout>
-                      <Dashboard />
-                    </Layout>
-                  } />
-                  <Route path="/tarefas" element={
-                    <Layout>
-                      <Tasks />
-                    </Layout>
-                  } />
-                  <Route path="/agenda" element={
-                    <Layout>
-                      <Agenda />
-                    </Layout>
-                  } />
-                  <Route path="/configuracoes" element={
-                    <Layout>
-                      <Settings />
-                    </Layout>
-                  } />
-                  <Route path="/equipes" element={
-                    <Layout>
-                      <Teams />
-                    </Layout>
-                  } />
-                  <Route path="/relatorios" element={
-                    <Layout>
-                      <Reports />
-                    </Layout>
-                  } />
-                  <Route path="/novo-projeto" element={
-                    <Layout>
-                      <NewProject />
-                    </Layout>
-                  } />
-                  <Route path="/projeto/:id" element={
-                    <Layout>
-                      <ProjectDetails />
-                    </Layout>
-                  } />
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-                <Toaster />
-              </SidebarProvider>
-            </AppProvider>
-          </PlanProvider>
-        </AuthProvider>
+                    {/* Rotas protegidas */}
+                    <Route path="/dashboard" element={
+                      <Layout>
+                        <Dashboard />
+                      </Layout>
+                    } />
+                    <Route path="/tarefas" element={
+                      <Layout>
+                        <Tasks />
+                      </Layout>
+                    } />
+                    <Route path="/agenda" element={
+                      <Layout>
+                        <Agenda />
+                      </Layout>
+                    } />
+                    <Route path="/configuracoes" element={
+                      <Layout>
+                        <Settings />
+                      </Layout>
+                    } />
+                    <Route path="/equipes" element={
+                      <Layout>
+                        <Teams />
+                      </Layout>
+                    } />
+                    <Route path="/relatorios" element={
+                      <Layout>
+                        <Reports />
+                      </Layout>
+                    } />
+                    <Route path="/novo-projeto" element={
+                      <Layout>
+                        <NewProject />
+                      </Layout>
+                    } />
+                    <Route path="/projeto/:id" element={
+                      <Layout>
+                        <ProjectDetails />
+                      </Layout>
+                    } />
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                  <Toaster />
+                </AppProvider>
+              </PlanProvider>
+            </AuthProvider>
+          </div>
+        </SidebarProvider>
       </Router>
     </ThemeProvider>
   );

@@ -33,7 +33,20 @@ export const invitationService = {
         return null;
       }
       
-      return data as TeamInvitation;
+      // Convert from DB schema to our TeamInvitation type
+      if (data) {
+        return {
+          id: data.id,
+          teamId: data.team_id,
+          email: data.email,
+          token: data.token,
+          expiresAt: new Date(data.expires_at),
+          createdAt: new Date(data.created_at),
+          used: data.used
+        };
+      }
+      
+      return null;
     } catch (error) {
       console.error('Error in createInvitation:', error);
       return null;
@@ -61,9 +74,59 @@ export const invitationService = {
         return null;
       }
       
-      return data as unknown as TeamInvitation;
+      // Convert from DB schema to our TeamInvitation type
+      if (data) {
+        return {
+          id: data.id,
+          teamId: data.team_id,
+          email: data.email,
+          token: data.token,
+          expiresAt: new Date(data.expires_at),
+          createdAt: new Date(data.created_at),
+          used: data.used
+        };
+      }
+      
+      return null;
     } catch (error) {
       console.error('Error in validateInvitation:', error);
+      return null;
+    }
+  },
+  
+  /**
+   * Busca um convite pelo token
+   * @param token Token do convite
+   */
+  async getInvitationByToken(token: string): Promise<TeamInvitation | null> {
+    try {
+      const { data, error } = await supabase
+        .from('team_invitations')
+        .select('*')
+        .eq('token', token)
+        .single();
+        
+      if (error) {
+        console.error('Error getting invitation by token:', error);
+        return null;
+      }
+      
+      // Convert from DB schema to our TeamInvitation type
+      if (data) {
+        return {
+          id: data.id,
+          teamId: data.team_id,
+          email: data.email,
+          token: data.token,
+          expiresAt: new Date(data.expires_at),
+          createdAt: new Date(data.created_at),
+          used: data.used
+        };
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('Error in getInvitationByToken:', error);
       return null;
     }
   },

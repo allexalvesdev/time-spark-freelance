@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -41,7 +40,8 @@ const AcceptInvitation: React.FC = () => {
       }
       
       try {
-        const invitation = await invitationService.getInvitationByToken(token);
+        // Use validateInvitation instead of getInvitationByToken
+        const invitation = await invitationService.validateInvitation(token);
         
         if (invitation) {
           setInvitation(invitation);
@@ -76,7 +76,7 @@ const AcceptInvitation: React.FC = () => {
             await teamService.updateMemberStatus(member.id, user.id, 'accepted');
             
             // Marca o convite como usado
-            await invitationService.markInvitationAsUsed(invitation.id);
+            await invitationService.markInvitationAsUsed(invitation.token);
             
             toast({
               title: 'Convite aceito!',

@@ -5,6 +5,7 @@ import { ThemeProvider } from '@/components/ThemeProvider';
 import { AppProvider } from '@/contexts/AppContext';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { PlanProvider } from '@/contexts/PlanContext';
+import { SidebarProvider } from '@/components/ui/sidebar';
 import Layout from '@/components/Layout';
 import SplashScreen from '@/components/SplashScreen';
 import { Toaster } from '@/components/ui/toaster';
@@ -36,56 +37,58 @@ function App() {
         <AuthProvider>
           <PlanProvider>
             <AppProvider>
-              <Routes>
-                <Route path="/" element={<Landing />} />
-                <Route path="/auth" element={<Auth />} />
-                <Route path="/index" element={<Index />} />
-                <Route path="/convite" element={<AcceptInvitation />} />
+              <SidebarProvider>
+                <Routes>
+                  <Route path="/" element={<Landing />} />
+                  <Route path="/auth" element={<Auth />} />
+                  <Route path="/index" element={<Index />} />
+                  <Route path="/convite" element={<AcceptInvitation />} />
 
-                {/* Rotas protegidas */}
-                <Route path="/dashboard" element={
-                  <Layout>
-                    <Dashboard />
-                  </Layout>
-                } />
-                <Route path="/tarefas" element={
-                  <Layout>
-                    <Tasks />
-                  </Layout>
-                } />
-                <Route path="/agenda" element={
-                  <Layout>
-                    <Agenda />
-                  </Layout>
-                } />
-                <Route path="/configuracoes" element={
-                  <Layout>
-                    <Settings />
-                  </Layout>
-                } />
-                <Route path="/equipes" element={
-                  <Layout>
-                    <Teams />
-                  </Layout>
-                } />
-                <Route path="/relatorios" element={
-                  <Layout>
-                    <Reports />
-                  </Layout>
-                } />
-                <Route path="/novo-projeto" element={
-                  <Layout>
-                    <NewProject />
-                  </Layout>
-                } />
-                <Route path="/projeto/:id" element={
-                  <Layout>
-                    <ProjectDetails />
-                  </Layout>
-                } />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-              <Toaster />
+                  {/* Rotas protegidas */}
+                  <Route path="/dashboard" element={
+                    <Layout>
+                      <Dashboard />
+                    </Layout>
+                  } />
+                  <Route path="/tarefas" element={
+                    <Layout>
+                      <Tasks />
+                    </Layout>
+                  } />
+                  <Route path="/agenda" element={
+                    <Layout>
+                      <Agenda />
+                    </Layout>
+                  } />
+                  <Route path="/configuracoes" element={
+                    <Layout>
+                      <Settings />
+                    </Layout>
+                  } />
+                  <Route path="/equipes" element={
+                    <Layout>
+                      <Teams />
+                    </Layout>
+                  } />
+                  <Route path="/relatorios" element={
+                    <Layout>
+                      <Reports />
+                    </Layout>
+                  } />
+                  <Route path="/novo-projeto" element={
+                    <Layout>
+                      <NewProject />
+                    </Layout>
+                  } />
+                  <Route path="/projeto/:id" element={
+                    <Layout>
+                      <ProjectDetails />
+                    </Layout>
+                  } />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+                <Toaster />
+              </SidebarProvider>
             </AppProvider>
           </PlanProvider>
         </AuthProvider>

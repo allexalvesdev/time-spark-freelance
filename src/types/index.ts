@@ -72,4 +72,16 @@ export interface TeamMember {
   name: string;
   role: string;
   createdAt: Date;
+  userId?: string; // ID do usuário Supabase associado
+  invitationStatus: string; // 'pending', 'accepted', 'expired'
+}
+
+export interface TeamInvitation {
+  id: string;
+  teamId: string;
+  email: string;
+  token: string;
+  expiresAt: Date;
+  createdAt: Date;
+  used: boolean;
 }

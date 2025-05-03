@@ -1,13 +1,13 @@
 
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 import { AppState, AppContextType } from '@/types/app';
-import { Project, Task, TimeEntry, ReportData, Tag, Team, TeamMember } from '@/types';
+import { Project, Task, TimeEntry, ReportData, Tag, Team, TeamMember, TeamInvitation } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProjects } from '@/hooks/useProjects';
 import { useTasks } from '@/hooks/useTasks';
 import { useTimerManagement } from '@/hooks/useTimerManagement';
 import { useReportGenerator } from '@/hooks/useReportGenerator';
-import { projectService, taskService, timeEntryService, tagService, teamService } from '@/services';
+import { projectService, taskService, timeEntryService, tagService, teamService, invitationService } from '@/services';
 import { useTags } from '@/hooks/useTags';
 import { useTeams } from '@/hooks/useTeams';
 
@@ -82,7 +82,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     updateTeamMember,
     deleteTeamMember,
     loadTeams,
-    getTeamMembers
+    getTeamMembers,
+    createAndSendInvitation
   } = useTeams(userId);
   
   const { generateReport } = useReportGenerator();
@@ -204,6 +205,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     updateTeamMember,
     deleteTeamMember,
     getTeamMembers,
+    createAndSendInvitation,
   };
   
   return (

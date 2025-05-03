@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, ArrowLeft, Users } from 'lucide-react';
+import { Plus, ArrowLeft, Users, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAppContext } from '@/contexts/AppContext';
 import { usePlan } from '@/contexts/PlanContext';
@@ -27,11 +27,13 @@ import MemberList from '@/components/team/MemberList';
 import TeamDialog from '@/components/team/TeamDialog';
 import MemberDialog from '@/components/team/MemberDialog';
 import { Team, TeamMember } from '@/types';
+import { useToast } from '@/hooks/use-toast';
 
 const Teams: React.FC = () => {
-  const { state, deleteTeam, deleteTeamMember } = useAppContext();
+  const { state, deleteTeam, deleteTeamMember, createAndSendInvitation } = useAppContext();
   const { currentPlan } = usePlan();
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   const [isTeamDialogOpen, setIsTeamDialogOpen] = useState(false);
   const [isMemberDialogOpen, setIsMemberDialogOpen] = useState(false);
@@ -110,6 +112,27 @@ const Teams: React.FC = () => {
     setSelectedTeam(undefined);
   };
 
+  const handleResendInvite = async (member: TeamMember) => {
+    try {
+      if (!viewingTeamId) return;
+      
+      const invitation = await createAndSendInvitation(viewingTeamId, member.userEmail);
+      const inviteLink = `${window.location.origin}/convite?token=${invitation.token}`;
+      
+      toast({
+        title: 'Convite reenviado',
+        description: `Link de convite para ${member.name}: ${inviteLink}`,
+      });
+    } catch (error) {
+      console.error('Erro ao reenviar convite:', error);
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível reenviar o convite. Tente novamente.',
+        variant: 'destructive',
+      });
+    }
+  };
+
   return (
     <div>
       <div className="flex justify-between items-center mb-8">
@@ -169,6 +192,7 @@ const Teams: React.FC = () => {
               teamId={viewingTeamId}
               onEditMember={handleOpenMemberDialog}
               onDeleteMember={handleDeleteMember}
+              onResendInvite={handleResendInvite}
             />
           </CardContent>
         </Card>

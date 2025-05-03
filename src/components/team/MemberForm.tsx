@@ -13,6 +13,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Select,
   SelectContent,
@@ -26,6 +27,7 @@ const formSchema = z.object({
   name: z.string().min(2, 'O nome deve ter pelo menos 2 caracteres'),
   userEmail: z.string().email('Insira um email válido'),
   role: z.string().min(1, 'Selecione uma função'),
+  sendInvite: z.boolean().default(true)
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -51,6 +53,7 @@ const MemberForm: React.FC<MemberFormProps> = ({
       name: member?.name || '',
       userEmail: member?.userEmail || '',
       role: member?.role || 'member',
+      sendInvite: !member // Por padrão, enviar convite apenas para novos membros
     },
   });
 
@@ -120,6 +123,29 @@ const MemberForm: React.FC<MemberFormProps> = ({
             </FormItem>
           )}
         />
+
+        {!member && (
+          <FormField
+            control={form.control}
+            name="sendInvite"
+            render={({ field }) => (
+              <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                <FormControl>
+                  <Checkbox
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                  />
+                </FormControl>
+                <div className="space-y-1 leading-none">
+                  <FormLabel>Enviar convite por email</FormLabel>
+                  <p className="text-sm text-muted-foreground">
+                    O membro receberá um link para criar sua conta e acessar o sistema.
+                  </p>
+                </div>
+              </FormItem>
+            )}
+          />
+        )}
 
         <div className="flex justify-end gap-2 pt-4">
           <Button

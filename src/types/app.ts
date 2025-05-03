@@ -1,5 +1,5 @@
 
-import { Project, Task, TimeEntry, ReportData, Tag, Team, TeamMember } from './index';
+import { Project, Task, TimeEntry, ReportData, Tag, Team, TeamMember, TeamInvitation } from './index';
 
 export interface AppState {
   projects: Project[];
@@ -38,8 +38,9 @@ export interface AppContextType {
   createTeam: (team: Omit<Team, 'id' | 'ownerId' | 'createdAt'>) => Promise<Team>;
   updateTeam: (team: Team) => Promise<void>;
   deleteTeam: (teamId: string) => Promise<void>;
-  addTeamMember: (member: Omit<TeamMember, 'id' | 'createdAt'>) => Promise<TeamMember>;
+  addTeamMember: (member: Omit<TeamMember, 'id' | 'createdAt' | 'userId' | 'invitationStatus'>) => Promise<TeamMember>;
   updateTeamMember: (member: TeamMember) => Promise<void>;
   deleteTeamMember: (memberId: string) => Promise<void>;
   getTeamMembers: (teamId: string) => TeamMember[];
+  createAndSendInvitation: (teamId: string, email: string) => Promise<TeamInvitation>;
 }

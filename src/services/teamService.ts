@@ -82,20 +82,23 @@ export const teamService = {
       userEmail: member.user_email,
       name: member.name,
       role: member.role,
-      createdAt: new Date(member.created_at)
+      createdAt: new Date(member.created_at),
+      userId: member.user_id || undefined,
+      invitationStatus: member.invitation_status || 'pending'
     } as TeamMember)) || [];
     
     return { members };
   },
 
-  async addTeamMember(member: Omit<TeamMember, 'id' | 'createdAt'>): Promise<TeamMember> {
+  async addTeamMember(member: Omit<TeamMember, 'id' | 'createdAt' | 'userId' | 'invitationStatus'>): Promise<TeamMember> {
     const { data, error } = await supabase
       .from('team_members')
       .insert([{
         team_id: member.teamId,
         user_email: member.userEmail,
         name: member.name,
-        role: member.role
+        role: member.role,
+        invitation_status: 'pending'
       }])
       .select()
       .single();
@@ -108,7 +111,8 @@ export const teamService = {
       userEmail: data.user_email,
       name: data.name,
       role: data.role,
-      createdAt: new Date(data.created_at)
+      createdAt: new Date(data.created_at),
+      invitationStatus: data.invitation_status
     };
   },
 
@@ -118,11 +122,48 @@ export const teamService = {
       .update({
         name: member.name,
         user_email: member.userEmail,
-        role: member.role
+        role: member.role,
+        invitation_status: member.invitationStatus,
+        user_id: member.userId
       })
       .eq('id', member.id);
     
     if (error) throw error;
+  },
+
+  async updateMemberStatus(memberId: string, userId: string, status: string): Promise<void> {
+    const { error } = await supabase
+      .from('team_members')
+      .update({
+        user_id: userId,
+        invitation_status: status
+      })
+      .eq('id', memberId);
+    
+    if (error) throw error;
+  },
+
+  async getMemberByEmail(email: string): Promise<TeamMember | null> {
+    const { data, error } = await supabase
+      .from('team_members')
+      .select('*')
+      .eq('user_email', email)
+      .maybeSingle();
+    
+    if (error) throw error;
+    
+    if (!data) return null;
+    
+    return {
+      id: data.id,
+      teamId: data.team_id,
+      userEmail: data.user_email,
+      name: data.name,
+      role: data.role,
+      createdAt: new Date(data.created_at),
+      userId: data.user_id || undefined,
+      invitationStatus: data.invitation_status
+    };
   },
 
   async deleteTeamMember(memberId: string): Promise<void> {

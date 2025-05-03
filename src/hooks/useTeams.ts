@@ -1,7 +1,7 @@
 
 import { useState, useCallback } from 'react';
-import { Team, TeamMember } from '@/types';
-import { teamService } from '@/services';
+import { Team, TeamMember, TeamInvitation } from '@/types';
+import { teamService, invitationService } from '@/services';
 import { useToast } from '@/hooks/use-toast';
 
 export const useTeams = (userId: string) => {
@@ -116,7 +116,7 @@ export const useTeams = (userId: string) => {
   );
 
   const addTeamMember = useCallback(
-    async (member: Omit<TeamMember, 'id' | 'createdAt'>): Promise<TeamMember> => {
+    async (member: Omit<TeamMember, 'id' | 'createdAt' | 'userId' | 'invitationStatus'>): Promise<TeamMember> => {
       try {
         const newMember = await teamService.addTeamMember(member);
         setTeamMembers((prevMembers) => [newMember, ...prevMembers]);
@@ -197,6 +197,34 @@ export const useTeams = (userId: string) => {
     [teamMembers]
   );
 
+  const createAndSendInvitation = useCallback(
+    async (teamId: string, email: string): Promise<TeamInvitation> => {
+      try {
+        const invitation = await invitationService.createInvitation(teamId, email);
+        
+        // Aqui você implementaria o envio real de email
+        const inviteLink = `${window.location.origin}/convite?token=${invitation.token}`;
+        console.log(`Convite criado: ${inviteLink}`);
+        
+        toast({
+          title: 'Convite enviado',
+          description: `Um convite foi enviado para ${email}`,
+        });
+        
+        return invitation;
+      } catch (error) {
+        console.error('Error creating invitation:', error);
+        toast({
+          title: 'Erro ao criar convite',
+          description: 'Não foi possível criar o convite. Tente novamente.',
+          variant: 'destructive',
+        });
+        throw error;
+      }
+    },
+    [toast]
+  );
+
   return {
     teams,
     teamMembers,
@@ -209,5 +237,6 @@ export const useTeams = (userId: string) => {
     updateTeamMember,
     deleteTeamMember,
     getTeamMembers,
+    createAndSendInvitation,
   };
 };

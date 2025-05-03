@@ -11,21 +11,37 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Edit, Trash2 } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Edit, Trash2, Mail } from 'lucide-react';
 
 interface MemberListProps {
   teamId: string;
   onEditMember: (member: TeamMember) => void;
   onDeleteMember: (memberId: string) => void;
+  onResendInvite?: (member: TeamMember) => void;
 }
 
 const MemberList: React.FC<MemberListProps> = ({
   teamId,
   onEditMember,
   onDeleteMember,
+  onResendInvite,
 }) => {
   const { state } = useAppContext();
   const members = state.teamMembers.filter(m => m.teamId === teamId);
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'accepted':
+        return <Badge variant="success">Ativo</Badge>;
+      case 'pending':
+        return <Badge variant="outline">Pendente</Badge>;
+      case 'expired':
+        return <Badge variant="destructive">Expirado</Badge>;
+      default:
+        return <Badge variant="outline">{status}</Badge>;
+    }
+  };
 
   if (members.length === 0) {
     return (
@@ -45,6 +61,7 @@ const MemberList: React.FC<MemberListProps> = ({
           <TableHead>Nome</TableHead>
           <TableHead>Email</TableHead>
           <TableHead>Função</TableHead>
+          <TableHead>Status</TableHead>
           <TableHead className="text-right">Ações</TableHead>
         </TableRow>
       </TableHeader>
@@ -56,7 +73,20 @@ const MemberList: React.FC<MemberListProps> = ({
             <TableCell>
               <span className="capitalize">{member.role}</span>
             </TableCell>
+            <TableCell>
+              {getStatusBadge(member.invitationStatus)}
+            </TableCell>
             <TableCell className="text-right">
+              {member.invitationStatus === 'pending' && onResendInvite && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => onResendInvite(member)}
+                  title="Reenviar convite"
+                >
+                  <Mail className="h-4 w-4" />
+                </Button>
+              )}
               <Button
                 variant="ghost"
                 size="icon"

@@ -243,12 +243,86 @@ export const useTeams = (userId: string) => {
     isLoading,
     loadTeams,
     createTeam,
-    updateTeam,
-    deleteTeam,
+    updateTeam: useCallback(async (team: Team) => {
+      try {
+        await teamService.updateTeam(team);
+        setTeams(prevTeams => prevTeams.map(p => p.id === team.id ? team : p));
+        
+        toast({
+          title: 'Equipe atualizada',
+          description: `A equipe "${team.name}" foi atualizada com sucesso.`,
+        });
+      } catch (error) {
+        console.error('Error updating team:', error);
+        toast({
+          title: 'Erro ao atualizar equipe',
+          description: 'Não foi possível atualizar a equipe. Tente novamente.',
+          variant: 'destructive',
+        });
+        throw error;
+      }
+    }, [toast]),
+    deleteTeam: useCallback(async (teamId: string) => {
+      try {
+        await teamService.deleteTeam(teamId);
+        setTeams(prevTeams => prevTeams.filter(p => p.id !== teamId));
+        setTeamMembers(prevMembers => prevMembers.filter(m => m.teamId !== teamId));
+        
+        toast({
+          title: 'Equipe excluída',
+          description: 'A equipe foi excluída com sucesso.',
+        });
+      } catch (error) {
+        console.error('Error deleting team:', error);
+        toast({
+          title: 'Erro ao excluir equipe',
+          description: 'Não foi possível excluir a equipe. Tente novamente.',
+          variant: 'destructive',
+        });
+        throw error;
+      }
+    }, [toast]),
     addTeamMember,
-    updateTeamMember,
-    deleteTeamMember,
+    updateTeamMember: useCallback(async (member: TeamMember) => {
+      try {
+        await teamService.updateTeamMember(member);
+        setTeamMembers(prevMembers => prevMembers.map(m => m.id === member.id ? member : m));
+        
+        toast({
+          title: 'Membro atualizado',
+          description: `As informações de ${member.name} foram atualizadas com sucesso.`,
+        });
+      } catch (error) {
+        console.error('Error updating team member:', error);
+        toast({
+          title: 'Erro ao atualizar membro',
+          description: 'Não foi possível atualizar as informações do membro. Tente novamente.',
+          variant: 'destructive',
+        });
+        throw error;
+      }
+    }, [toast]),
+    deleteTeamMember: useCallback(async (memberId: string) => {
+      try {
+        await teamService.deleteTeamMember(memberId);
+        setTeamMembers(prevMembers => prevMembers.filter(m => m.id !== memberId));
+        
+        toast({
+          title: 'Membro removido',
+          description: 'O membro foi removido da equipe com sucesso.',
+        });
+      } catch (error) {
+        console.error('Error deleting team member:', error);
+        toast({
+          title: 'Erro ao remover membro',
+          description: 'Não foi possível remover o membro da equipe. Tente novamente.',
+          variant: 'destructive',
+        });
+        throw error;
+      }
+    }, [toast]),
     getTeamMembers,
     createAndSendInvitation,
   };
 };
+

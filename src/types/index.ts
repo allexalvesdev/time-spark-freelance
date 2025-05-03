@@ -1,9 +1,11 @@
+
 export interface Project {
   id: string;
   name: string;
   hourlyRate: number;
   createdAt: Date;
   userId: string;
+  teamId?: string | null;
 }
 
 export interface Task {
@@ -85,3 +87,4 @@ export interface TeamInvitation {
   used: boolean;
   teamName?: string; // Nome da equipe (opcional)
 }
+

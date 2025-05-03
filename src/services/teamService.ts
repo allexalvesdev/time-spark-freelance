@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { Team, TeamMember } from '@/types';
 
@@ -325,34 +326,6 @@ export const teamService = {
       console.error('Erro em getMemberByEmail:', error);
       return null;
     }
-  },
-  
-  /**
-   * Atualiza um membro de equipe
-   * @param member Dados do membro a ser atualizado
-   */
-  async updateTeamMember(member: TeamMember): Promise<boolean> {
-    try {
-      const { error } = await supabase
-        .from('team_members')
-        .update({
-          name: member.name,
-          role: member.role,
-          user_id: member.userId,
-          invitation_status: member.invitationStatus,
-          user_email: member.userEmail,
-        })
-        .eq('id', member.id);
-        
-      if (error) {
-        console.error('Erro ao atualizar membro:', error);
-        return false;
-      }
-      
-      return true;
-    } catch (error) {
-      console.error('Erro em updateTeamMember:', error);
-      return false;
-    }
   }
 };
+

@@ -1,14 +1,15 @@
 
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 import { AppState, AppContextType } from '@/types/app';
-import { Project, Task, TimeEntry, ReportData, Tag } from '@/types';
+import { Project, Task, TimeEntry, ReportData, Tag, Team, TeamMember } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProjects } from '@/hooks/useProjects';
 import { useTasks } from '@/hooks/useTasks';
 import { useTimerManagement } from '@/hooks/useTimerManagement';
 import { useReportGenerator } from '@/hooks/useReportGenerator';
-import { projectService, taskService, timeEntryService, tagService } from '@/services';
+import { projectService, taskService, timeEntryService, tagService, teamService } from '@/services';
 import { useTags } from '@/hooks/useTags';
+import { useTeams } from '@/hooks/useTeams';
 
 // Defina o estado inicial
 const initialState: AppState = {
@@ -19,6 +20,8 @@ const initialState: AppState = {
   currentProject: null,
   currentTask: null,
   tags: [],
+  teams: [],
+  teamMembers: [],
 };
 
 // Crie o contexto
@@ -68,6 +71,19 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     removeTagFromTask,
     getTaskTags
   } = useTags(userId);
+
+  const {
+    teams,
+    teamMembers,
+    createTeam,
+    updateTeam,
+    deleteTeam,
+    addTeamMember,
+    updateTeamMember,
+    deleteTeamMember,
+    loadTeams,
+    getTeamMembers
+  } = useTeams(userId);
   
   const { generateReport } = useReportGenerator();
   
@@ -88,8 +104,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       currentProject: state.currentProject,
       currentTask,
       tags,
+      teams,
+      teamMembers,
     });
-  }, [projects, tasks, timeEntries, activeTimeEntry, currentTask, tags]);
+  }, [projects, tasks, timeEntries, activeTimeEntry, currentTask, tags, teams, teamMembers]);
   
   // Listen for task-completed events to update global task list
   useEffect(() => {
@@ -136,8 +154,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         // Carregar tags
         const { tags: tagsData } = await tagService.loadTags(user.id);
         setTags(tagsData);
+        
+        // Carregar equipes e membros
+        await loadTeams();
       } catch (error) {
         // Tratar erro de carregamento de dados
+        console.error('Error loading initial data:', error);
       }
     };
     
@@ -175,6 +197,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     addTagToTask,
     removeTagFromTask,
     getTaskTags,
+    createTeam,
+    updateTeam,
+    deleteTeam,
+    addTeamMember,
+    updateTeamMember,
+    deleteTeamMember,
+    getTeamMembers,
   };
   
   return (

@@ -23,6 +23,7 @@ export const taskService = {
       elapsedTime: task.elapsed_time,
       completed: task.completed,
       userId: task.user_id,
+      assigneeId: task.assignee_id || undefined,
       priority: (task.priority === 'Baixa' || task.priority === 'Média' || task.priority === 'Alta' || task.priority === 'Urgente') 
         ? task.priority 
         : 'Média'
@@ -46,6 +47,7 @@ export const taskService = {
         actual_end_time: task.actualEndTime ? task.actualEndTime.toISOString() : null,
         elapsed_time: task.elapsedTime,
         user_id: task.userId,
+        assignee_id: task.assigneeId || null,
         completed: task.completed || false,
         priority: task.priority || 'Média',
       }])
@@ -68,6 +70,7 @@ export const taskService = {
       elapsedTime: data.elapsed_time,
       completed: data.completed,
       userId: data.user_id,
+      assigneeId: data.assignee_id || undefined,
       priority: (data.priority === 'Baixa' || data.priority === 'Média' || data.priority === 'Alta' || data.priority === 'Urgente') 
         ? data.priority 
         : 'Média'
@@ -87,6 +90,7 @@ export const taskService = {
         actual_end_time: task.actualEndTime ? task.actualEndTime.toISOString() : null,
         elapsed_time: task.elapsedTime,
         completed: task.completed,
+        assignee_id: task.assigneeId || null,
         priority: task.priority || 'Média',
       })
       .eq('id', task.id);

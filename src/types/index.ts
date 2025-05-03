@@ -20,6 +20,7 @@ export interface Task {
   completed: boolean;
   userId: string;
   priority: 'Baixa' | 'Média' | 'Alta' | 'Urgente';
+  assigneeId?: string; // ID do membro da equipe responsável pela tarefa
 }
 
 export interface TimeEntry {
@@ -54,4 +55,21 @@ export interface Tag {
   id: string;
   name: string;
   userId: string;
+}
+
+export interface Team {
+  id: string;
+  name: string;
+  description?: string;
+  ownerId: string;
+  createdAt: Date;
+}
+
+export interface TeamMember {
+  id: string;
+  teamId: string;
+  userEmail: string;
+  name: string;
+  role: string;
+  createdAt: Date;
 }

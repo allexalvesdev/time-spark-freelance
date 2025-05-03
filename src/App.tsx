@@ -24,6 +24,7 @@ import Landing from "@/pages/Landing";
 import MobileNavigation from "@/components/MobileNavigation";
 import Index from "./pages/Index";
 import { usePlatform } from "@/hooks/use-platform";
+import Teams from "@/pages/Teams";
 
 // PrivateRoute component needs to be defined outside of the App component
 const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
@@ -132,6 +133,16 @@ const App = () => (
                           <PrivateRoute>
                             <Layout>
                               <Reports />
+                            </Layout>
+                          </PrivateRoute>
+                        }
+                      />
+                      <Route
+                        path="/equipes"
+                        element={
+                          <PrivateRoute>
+                            <Layout>
+                              <Teams />
                             </Layout>
                           </PrivateRoute>
                         }

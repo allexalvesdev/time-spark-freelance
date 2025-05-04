@@ -33,8 +33,8 @@ export function Sidebar() {
   return (
     <SidebarComponent className="h-full w-64 border-r border-border bg-background hidden md:block">
       <SidebarHeader className="p-4 flex items-center justify-between">
-        <h2 className="text-xl font-archivo-black">
-          Focusly<span className="text-primary">.</span>
+        <h2 className="text-xl font-bold">
+          Workly<span className="text-primary">.</span>
         </h2>
       </SidebarHeader>
       

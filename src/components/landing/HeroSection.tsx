@@ -13,7 +13,7 @@ const HeroSection = () => {
           <span className="text-primary">potencialize seus resultados</span>
         </h1>
         <p className="text-xl md:text-2xl text-muted-foreground mb-8 max-w-2xl mx-auto">
-          O Focusly é a ferramenta de gerenciamento de tempo que vai transformar sua produtividade e organização.
+          O Workly é a ferramenta de gerenciamento de tempo que vai transformar sua produtividade e organização.
         </p>
         <div className="flex flex-col md:flex-row gap-4 justify-center">
           <Link to="/auth">

@@ -1,9 +1,8 @@
-
 import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'app.focusly.timespark',
-  appName: 'Focusly',
+  appId: 'app.workly.timespark',
+  appName: 'Workly',
   webDir: 'dist',
   bundledWebRuntime: false
 };

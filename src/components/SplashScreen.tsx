@@ -33,8 +33,8 @@ const SplashScreen: React.FC<{ onFinished: () => void }> = ({ onFinished }) => {
       }`}
     >
       <div className="text-center">
-        <h1 className="text-4xl font-archivo-black mb-2">
-          Focusly<span className="text-primary">.</span>
+        <h1 className="text-4xl font-bold mb-2">
+          Workly<span className="text-primary">.</span>
         </h1>
         <p className="text-muted-foreground">Gerencie seu tempo, potencialize seus resultados</p>
       </div>

@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { FileUp, FileDown, Lock, Check, AlertCircle, FileText } from 'lucide-react';
@@ -28,7 +29,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { generateTaskTemplate, parseTasksFromExcel, mapExcelDataToTasks, extractTagsFromExcel, getTagMappingsFromExcel } from '@/utils/excelUtils';
-import { AppContext } from '@/contexts/AppContext';
+import { useAppContext } from '@/contexts/AppContext';
 
 interface TaskImportExportProps {
   projectId: string;
@@ -57,10 +58,10 @@ const TaskImportExport: React.FC<TaskImportExportProps> = ({
 }) => {
   const { toast } = useToast();
   const { currentPlan } = usePlan();
-  // Use the AppContext object with useContext, not the hook itself
-  const appContext = React.useContext(AppContext);
-  // Safely access projects from context or use an empty array as fallback
-  const projects = appContext?.state?.projects || [];
+  // Use the useAppContext hook correctly
+  const appContext = useAppContext();
+  // Safely access projects from context
+  const projects = appContext.state.projects;
   
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
   const [importResult, setImportResult] = useState<ImportResult | null>(null);

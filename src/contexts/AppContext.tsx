@@ -1,3 +1,4 @@
+
 import React, {
   createContext,
   useState,
@@ -45,7 +46,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     try {
       setIsLoading(true);
       
-      // Carregar projetos
+      // Load projects
       const loadedProjects = await projectService.loadProjects();
       setState(prev => ({
         ...prev,
@@ -54,42 +55,62 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
       
       console.log('Projetos carregados:', loadedProjects);
       
-      // Carregar tarefas
+      // Load tasks
       const loadedTasks = await taskService.loadTasks();
-      setState(prev => ({
-        ...prev,
-        tasks: loadedTasks || []
+      
+      // Ensure the priority is within allowed values
+      const typedTasks = loadedTasks.map(task => ({
+        ...task,
+        priority: (task.priority === 'Baixa' || task.priority === 'Média' || 
+                  task.priority === 'Alta' || task.priority === 'Urgente') 
+          ? task.priority as 'Baixa' | 'Média' | 'Alta' | 'Urgente'
+          : 'Média' as const
       }));
       
-      console.log('Tarefas carregadas:', loadedTasks);
+      setState(prev => ({
+        ...prev,
+        tasks: typedTasks || []
+      }));
+      
+      console.log('Tarefas carregadas:', typedTasks);
 
-      // Carregar time entries
+      // Load time entries
       const loadedTimeEntries = await timeEntryService.loadTimeEntries();
       setState(prev => ({
         ...prev,
         timeEntries: loadedTimeEntries || []
       }));
 
-      // Carregar active time entry
+      // Load active time entry
       const activeEntry = loadedTimeEntries.find(entry => entry.isRunning) || null;
       setState(prev => ({
         ...prev,
         activeTimeEntry: activeEntry
       }));
 
-      // Carregar tags
+      // Load tags
       const loadedTags = await tagService.loadTags();
       setState(prev => ({
         ...prev,
         tags: loadedTags || []
       }));
 
-      // Load teams and team members
-      const { teams: loadedTeams, teamMembers: loadedTeamMembers } = await teamService.loadTeamsWithMembers(user.id);
+      // Load teams
+      const loadedTeams = await teamService.loadTeams(user.id);
+      
+      // Load team members (separate requests)
+      let allTeamMembers: TeamMember[] = [];
+      if (loadedTeams && loadedTeams.teams) {
+        for (const team of loadedTeams.teams) {
+          const members = await teamService.getTeamMembers(team.id);
+          allTeamMembers = [...allTeamMembers, ...(members || [])];
+        }
+      }
+      
       setState(prev => ({
         ...prev,
-        teams: loadedTeams || [],
-        teamMembers: loadedTeamMembers || [],
+        teams: loadedTeams?.teams || [],
+        teamMembers: allTeamMembers || [],
       }));
       
     } catch (error) {
@@ -138,7 +159,14 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
   const addTask = async (task: Omit<Task, 'id' | 'completed' | 'actualStartTime' | 'actualEndTime' | 'elapsedTime' | 'userId'>): Promise<Task> => {
     if (!user) throw new Error('User not authenticated');
     try {
-      const newTask = await taskService.createTask({ ...task, userId: user.id });
+      // Ensure completed is included with a default value
+      const taskWithDefaults = {
+        ...task,
+        userId: user.id,
+        completed: false
+      };
+      
+      const newTask = await taskService.createTask(taskWithDefaults);
       setState(prev => ({ ...prev, tasks: [newTask, ...prev.tasks] }));
       return newTask;
     } catch (error) {
@@ -249,8 +277,9 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
         timeEntries: prev.timeEntries.map(te => (te.id === updatedTimeEntry.id ? updatedTimeEntry : te)),
       }));
 
-      if (completeTask) {
-        await this.completeTask(state.activeTimeEntry.taskId);
+      // Fix the error by calling the completeTask method with the correct parameter
+      if (completeTask && state.activeTimeEntry) {
+        await completeTask(state.activeTimeEntry.taskId);
       }
     } catch (error) {
       console.error('Erro ao parar o timer:', error);
@@ -328,9 +357,10 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     }
   };
 
+  // Define the missing task tag methods
   const addTagToTask = async (taskId: string, tagId: string): Promise<void> => {
     try {
-      await taskService.addTagToTask(taskId, tagId);
+      await tagService.addTagToTask(taskId, tagId);
     } catch (error) {
       console.error('Erro ao adicionar tag à tarefa:', error);
     }
@@ -338,7 +368,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
 
   const removeTagFromTask = async (taskId: string, tagId: string): Promise<void> => {
     try {
-      await taskService.removeTagFromTask(taskId, tagId);
+      await tagService.removeTagFromTask(taskId, tagId);
     } catch (error) {
       console.error('Erro ao remover tag da tarefa:', error);
     }
@@ -346,7 +376,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
 
   const getTaskTags = async (taskId: string): Promise<string[]> => {
     try {
-      const tagIds = await taskService.getTaskTags(taskId);
+      const tagIds = await tagService.getTaskTags(taskId);
       return tagIds;
     } catch (error) {
       console.error('Erro ao obter tags da tarefa:', error);

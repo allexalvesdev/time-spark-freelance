@@ -34,9 +34,6 @@ export const projectService = {
 
       let teamProjects = [];
       
-      // Na versão atual da base de dados, os projetos não estão associados a equipes ainda
-      // Este código está preparado para quando implementarmos essa relação
-      /* 
       if (!teamError && teamMembers && teamMembers.length > 0) {
         const teamIds = teamMembers.map(member => member.team_id);
         
@@ -53,7 +50,6 @@ export const projectService = {
           console.error('Erro ao carregar projetos de equipes:', projError);
         }
       }
-      */
       
       // Combinar projetos próprios e de equipes
       const allProjects = [...(ownProjects || []), ...teamProjects];
@@ -83,7 +79,8 @@ export const projectService = {
       .insert([{ 
         name: project.name,
         hourly_rate: project.hourlyRate,
-        user_id: project.userId 
+        user_id: project.userId,
+        team_id: project.teamId || null
       }])
       .select()
       .single();
@@ -105,7 +102,8 @@ export const projectService = {
       .from('projects')
       .update({ 
         name: project.name,
-        hourly_rate: project.hourlyRate 
+        hourly_rate: project.hourlyRate,
+        team_id: project.teamId || null
       })
       .eq('id', project.id);
 

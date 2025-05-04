@@ -61,6 +61,7 @@ export type Database = {
           hourly_rate: number
           id: string
           name: string
+          team_id: string | null
           user_id: string
         }
         Insert: {
@@ -69,6 +70,7 @@ export type Database = {
           hourly_rate?: number
           id?: string
           name: string
+          team_id?: string | null
           user_id: string
         }
         Update: {
@@ -77,9 +79,18 @@ export type Database = {
           hourly_rate?: number
           id?: string
           name?: string
+          team_id?: string | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "projects_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tags: {
         Row: {

@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Trash, Download, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -158,8 +159,7 @@ const TaskImportExport: React.FC<TaskImportExportProps> = ({
         } finally {
           setImporting(false);
           
-          // Reset file input
-          e.target = null as any;
+          // Reset file input without directly modifying the read-only target property
           const fileInput = document.getElementById('task-import-file') as HTMLInputElement;
           if (fileInput) fileInput.value = '';
         }

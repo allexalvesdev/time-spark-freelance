@@ -3,40 +3,47 @@ import { supabase } from '@/integrations/supabase/client';
 import { Tag } from '@/types';
 
 export const tagService = {
-  async loadTags() {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        console.error('No user logged in');
-        return [];
-      }
-      
-      const { data, error } = await supabase
-        .from('tags')
-        .select('*')
-        .eq('user_id', user.id);
-      
-      if (error) {
-        console.error('Error loading tags:', error);
-        return [];
-      }
-      
-      return data.map(tag => ({
-        id: tag.id,
-        name: tag.name,
-        userId: tag.user_id
-      }));
-    } catch (error) {
-      console.error('Unexpected error loading tags:', error);
-      return [];
-    }
-  },
-  
-  async createTag(tag: Omit<Tag, 'id'>) {
+  async loadTags(userId: string) {
     const { data, error } = await supabase
       .from('tags')
-      .insert([{ name: tag.name, user_id: tag.userId }])
+      .select('*')
+      .eq('user_id', userId);
+    
+    if (error) throw error;
+    
+    const tags: Tag[] = data?.map(tag => ({
+      id: tag.id,
+      name: tag.name,
+      userId: tag.user_id,
+    })) || [];
+    
+    return { tags };
+  },
+
+  async createTag(name: string, userId: string) {
+    // Check if tag already exists for this user to avoid duplicates
+    const { data: existingTag, error: checkError } = await supabase
+      .from('tags')
+      .select('*')
+      .eq('name', name)
+      .eq('user_id', userId)
+      .maybeSingle();
+      
+    if (checkError) throw checkError;
+    
+    // Return existing tag if found
+    if (existingTag) {
+      return {
+        id: existingTag.id,
+        name: existingTag.name,
+        userId: existingTag.user_id,
+      };
+    }
+    
+    // Create new tag if it doesn't exist
+    const { data, error } = await supabase
+      .from('tags')
+      .insert([{ name, user_id: userId }])
       .select()
       .single();
     
@@ -45,36 +52,48 @@ export const tagService = {
     return {
       id: data.id,
       name: data.name,
-      userId: data.user_id
+      userId: data.user_id,
     };
   },
-  
-  async deleteTag(tagId: string) {
-    // First, remove all associations with tasks
-    const { error: taskTagError } = await supabase
+
+  async deleteTag(id: string) {
+    // Primeiro remove associações com tarefas
+    const { error: taskTagsError } = await supabase
       .from('task_tags')
       .delete()
-      .eq('tag_id', tagId);
+      .eq('tag_id', id);
     
-    if (taskTagError) throw taskTagError;
+    if (taskTagsError) throw taskTagsError;
     
-    // Then delete the tag itself
+    // Depois remove a tag
     const { error } = await supabase
       .from('tags')
       .delete()
-      .eq('id', tagId);
+      .eq('id', id);
     
     if (error) throw error;
   },
-  
+
   async addTagToTask(taskId: string, tagId: string) {
-    const { error } = await supabase
+    // Check if the association already exists to avoid duplicates
+    const { data: existingData, error: checkError } = await supabase
       .from('task_tags')
-      .insert([{ task_id: taskId, tag_id: tagId }]);
+      .select('*')
+      .eq('task_id', taskId)
+      .eq('tag_id', tagId);
     
-    if (error) throw error;
+    if (checkError) throw checkError;
+    
+    // Only insert if the association doesn't exist
+    if (!existingData || existingData.length === 0) {
+      const { error } = await supabase
+        .from('task_tags')
+        .insert([{ task_id: taskId, tag_id: tagId }]);
+      
+      if (error) throw error;
+    }
   },
-  
+
   async removeTagFromTask(taskId: string, tagId: string) {
     const { error } = await supabase
       .from('task_tags')
@@ -84,7 +103,7 @@ export const tagService = {
     
     if (error) throw error;
   },
-  
+
   async getTaskTags(taskId: string) {
     const { data, error } = await supabase
       .from('task_tags')
@@ -93,6 +112,6 @@ export const tagService = {
     
     if (error) throw error;
     
-    return data ? data.map(item => item.tag_id) : [];
-  }
+    return data.map(item => item.tag_id);
+  },
 };

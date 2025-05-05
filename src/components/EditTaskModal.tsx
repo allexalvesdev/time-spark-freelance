@@ -11,19 +11,11 @@ import {
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { useAppContext } from '@/contexts/AppContext';
-import { usePlan } from '@/contexts/PlanContext';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import PrioritySelect from '@/components/task/PrioritySelect';
 import TagsInput from '@/components/task/TagsInput';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 
 interface EditTaskModalProps {
   task: Task;
@@ -32,22 +24,14 @@ interface EditTaskModalProps {
 }
 
 const EditTaskModal: React.FC<EditTaskModalProps> = ({ task, isOpen, onClose }) => {
-  const { updateTask, getTaskTags, state } = useAppContext();
-  const { currentPlan } = usePlan();
+  const { updateTask, getTaskTags } = useAppContext();
   const { toast } = useToast();
   const [name, setName] = useState(task.name);
   const [description, setDescription] = useState(task.description);
   const [estimatedTime, setEstimatedTime] = useState(task.estimatedTime.toString());
   const [priority, setPriority] = useState<'Baixa' | 'Média' | 'Alta' | 'Urgente'>(task.priority || 'Média');
-  const [assigneeId, setAssigneeId] = useState<string | undefined>(task.assigneeId);
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  
-  // Verificar se o usuário tem plano Enterprise
-  const isEnterpriseUser = currentPlan === 'enterprise';
-  
-  // Get team members for all teams
-  const allTeamMembers = state.teamMembers;
   
   useEffect(() => {
     if (isOpen) {
@@ -56,7 +40,6 @@ const EditTaskModal: React.FC<EditTaskModalProps> = ({ task, isOpen, onClose }) 
       setDescription(task.description);
       setEstimatedTime(task.estimatedTime.toString());
       setPriority(task.priority || 'Média');
-      setAssigneeId(task.assigneeId);
       
       // Fetch tags associated with this task
       const loadTaskTags = async () => {
@@ -83,7 +66,6 @@ const EditTaskModal: React.FC<EditTaskModalProps> = ({ task, isOpen, onClose }) 
         description,
         estimatedTime: parseInt(estimatedTime),
         priority,
-        assigneeId,
       };
       
       await updateTask(updatedTask);
@@ -141,29 +123,6 @@ const EditTaskModal: React.FC<EditTaskModalProps> = ({ task, isOpen, onClose }) 
               onChange={(value) => setPriority(value)}
             />
           </div>
-
-          {/* Opção para atribuir tarefa a um membro da equipe (apenas para plano Enterprise) */}
-          {isEnterpriseUser && allTeamMembers.length > 0 && (
-            <div className="space-y-2">
-              <Label htmlFor="assignee">Responsável</Label>
-              <Select
-                value={assigneeId || ""}
-                onValueChange={(value) => setAssigneeId(value || undefined)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecionar responsável" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">Sem responsável</SelectItem>
-                  {allTeamMembers.map((member) => (
-                    <SelectItem key={member.id} value={member.id}>
-                      {member.name} ({member.role})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )}
 
           <div className="space-y-2">
             <Label>Tags</Label>

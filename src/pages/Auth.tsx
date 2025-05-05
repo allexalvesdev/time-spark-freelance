@@ -73,8 +73,8 @@ const Auth = () => {
       <Card className="w-full max-w-md bg-black/90 border-white/10 text-white">
         <CardHeader>
           <Link to="/" className="flex justify-center mb-6">
-            <h1 className="text-2xl font-bold">
-              Workly<span className="text-primary">.</span>
+            <h1 className="text-2xl font-archivo-black">
+              Focusly<span className="text-primary">.</span>
             </h1>
           </Link>
           <h1 className="text-2xl font-bold text-center">

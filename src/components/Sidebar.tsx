@@ -7,11 +7,9 @@ import {
   Settings, 
   ListTodo, 
   BarChart3, 
-  PlusSquare,
-  Users 
+  PlusSquare 
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { usePlan } from '@/contexts/PlanContext';
 import { 
   SidebarMenu,
   SidebarMenuButton,
@@ -25,16 +23,12 @@ import { ThemeToggle } from './ThemeToggle';
 
 export function Sidebar() {
   const { user, signOut } = useAuth();
-  const { currentPlan } = usePlan();
-  
-  // Verificar se o usuário tem plano Enterprise
-  const isEnterpriseUser = currentPlan === 'enterprise';
   
   return (
     <SidebarComponent className="h-full w-64 border-r border-border bg-background hidden md:block">
       <SidebarHeader className="p-4 flex items-center justify-between">
-        <h2 className="text-xl font-bold">
-          Workly<span className="text-primary">.</span>
+        <h2 className="text-xl font-archivo-black">
+          Focusly<span className="text-primary">.</span>
         </h2>
       </SidebarHeader>
       
@@ -109,23 +103,6 @@ export function Sidebar() {
               </NavLink>
             </SidebarMenuButton>
           </SidebarMenuItem>
-          
-          {/* Mostrar opção de Equipes apenas para usuários Enterprise */}
-          {isEnterpriseUser && (
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild tooltip="Equipes">
-                <NavLink 
-                  to="/equipes" 
-                  className={({isActive}) => 
-                    isActive ? 'bg-sidebar-accent text-sidebar-accent-foreground' : ''
-                  }
-                >
-                  <Users className="h-5 w-5" />
-                  <span>Equipes</span>
-                </NavLink>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          )}
           
           <SidebarMenuItem>
             <SidebarMenuButton asChild tooltip="Configurações">

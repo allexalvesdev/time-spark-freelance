@@ -61,7 +61,6 @@ export type Database = {
           hourly_rate: number
           id: string
           name: string
-          team_id: string | null
           user_id: string
         }
         Insert: {
@@ -70,7 +69,6 @@ export type Database = {
           hourly_rate?: number
           id?: string
           name: string
-          team_id?: string | null
           user_id: string
         }
         Update: {
@@ -79,18 +77,9 @@ export type Database = {
           hourly_rate?: number
           id?: string
           name?: string
-          team_id?: string | null
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "projects_team_id_fkey"
-            columns: ["team_id"]
-            isOneToOne: false
-            referencedRelation: "teams"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       tags: {
         Row: {
@@ -153,7 +142,6 @@ export type Database = {
         Row: {
           actual_end_time: string | null
           actual_start_time: string | null
-          assignee_id: string | null
           completed: boolean
           created_at: string
           description: string | null
@@ -169,7 +157,6 @@ export type Database = {
         Insert: {
           actual_end_time?: string | null
           actual_start_time?: string | null
-          assignee_id?: string | null
           completed?: boolean
           created_at?: string
           description?: string | null
@@ -185,7 +172,6 @@ export type Database = {
         Update: {
           actual_end_time?: string | null
           actual_start_time?: string | null
-          assignee_id?: string | null
           completed?: boolean
           created_at?: string
           description?: string | null
@@ -200,13 +186,6 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "tasks_assignee_id_fkey"
-            columns: ["assignee_id"]
-            isOneToOne: false
-            referencedRelation: "team_members"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "tasks_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
@@ -214,109 +193,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      team_invitations: {
-        Row: {
-          created_at: string
-          email: string
-          expires_at: string
-          id: string
-          team_id: string
-          token: string
-          used: boolean
-        }
-        Insert: {
-          created_at?: string
-          email: string
-          expires_at: string
-          id?: string
-          team_id: string
-          token: string
-          used?: boolean
-        }
-        Update: {
-          created_at?: string
-          email?: string
-          expires_at?: string
-          id?: string
-          team_id?: string
-          token?: string
-          used?: boolean
-        }
-        Relationships: [
-          {
-            foreignKeyName: "team_invitations_team_id_fkey"
-            columns: ["team_id"]
-            isOneToOne: false
-            referencedRelation: "teams"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      team_members: {
-        Row: {
-          created_at: string
-          id: string
-          invitation_status: string
-          name: string
-          role: string
-          team_id: string
-          user_email: string
-          user_id: string | null
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          invitation_status?: string
-          name: string
-          role?: string
-          team_id: string
-          user_email: string
-          user_id?: string | null
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          invitation_status?: string
-          name?: string
-          role?: string
-          team_id?: string
-          user_email?: string
-          user_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "team_members_team_id_fkey"
-            columns: ["team_id"]
-            isOneToOne: false
-            referencedRelation: "teams"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      teams: {
-        Row: {
-          created_at: string
-          description: string | null
-          id: string
-          name: string
-          owner_id: string
-        }
-        Insert: {
-          created_at?: string
-          description?: string | null
-          id?: string
-          name: string
-          owner_id: string
-        }
-        Update: {
-          created_at?: string
-          description?: string | null
-          id?: string
-          name?: string
-          owner_id?: string
-        }
-        Relationships: []
       }
       time_entries: {
         Row: {

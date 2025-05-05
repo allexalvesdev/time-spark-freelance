@@ -1,25 +1,17 @@
 
-import React, {
-  createContext,
-  useState,
-  useEffect,
-  useContext,
-  useCallback,
-} from 'react';
-import { v4 as uuidv4 } from 'uuid';
-import { useAuth } from '@/contexts/AuthContext';
-import { projectService, taskService, timeEntryService, tagService, teamService, invitationService } from '@/services';
+import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 import { AppState, AppContextType } from '@/types/app';
-import { Project, Task, TimeEntry, ReportData, Tag, Team, TeamMember, TeamInvitation } from '@/types';
-import { calculateElapsedTime } from '@/utils/dateUtils';
+import { Project, Task, TimeEntry, ReportData, Tag } from '@/types';
+import { useAuth } from '@/contexts/AuthContext';
+import { useProjects } from '@/hooks/useProjects';
+import { useTasks } from '@/hooks/useTasks';
+import { useTimerManagement } from '@/hooks/useTimerManagement';
+import { useReportGenerator } from '@/hooks/useReportGenerator';
+import { projectService, taskService, timeEntryService, tagService } from '@/services';
+import { useTags } from '@/hooks/useTags';
 
-interface AppProviderProps {
-  children: React.ReactNode;
-}
-
-const AppContext = createContext<AppContextType | undefined>(undefined);
-
-const defaultState: AppState = {
+// Defina o estado inicial
+const initialState: AppState = {
   projects: [],
   tasks: [],
   timeEntries: [],
@@ -27,459 +19,143 @@ const defaultState: AppState = {
   currentProject: null,
   currentTask: null,
   tags: [],
-  teams: [],
-  teamMembers: [],
 };
 
-export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
-  const [state, setState] = useState<AppState>(defaultState);
-  const [isLoading, setIsLoading] = useState(false);
+// Crie o contexto
+export const AppContext = createContext<AppContextType | undefined>(undefined);
+
+export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const { user } = useAuth();
+  const [state, setState] = useState<AppState>(initialState);
+  
+  const userId = user?.id || '';
+  
+  // Use os hooks customizados
+  const { 
+    projects, 
+    setProjects, 
+    addProject, 
+    updateProject, 
+    deleteProject 
+  } = useProjects(userId);
+  
+  const { 
+    tasks, 
+    setTasks, 
+    currentTask, 
+    setCurrentTask, 
+    addTask, 
+    updateTask, 
+    completeTask, 
+    deleteTask 
+  } = useTasks(userId);
+  
+  const { 
+    timeEntries, 
+    setTimeEntries, 
+    activeTimeEntry, 
+    setActiveTimeEntry, 
+    startTimer, 
+    stopTimer 
+  } = useTimerManagement(userId, tasks);
 
+  const {
+    tags,
+    setTags,
+    addTag,
+    deleteTag,
+    addTagToTask,
+    removeTagFromTask,
+    getTaskTags
+  } = useTags(userId);
+  
+  const { generateReport } = useReportGenerator();
+  
+  // Função para obter o nome da tarefa ativa
+  const getActiveTaskName = () => {
+    if (!activeTimeEntry) return null;
+    const task = tasks.find(t => t.id === activeTimeEntry.taskId);
+    return task ? task.name : null;
+  };
+  
+  // Atualizar o estado centralizado quando os sub-estados mudarem
   useEffect(() => {
-    loadData();
-  }, [user]);
-
-  const loadData = async () => {
-    if (!user) return;
+    setState({
+      projects,
+      tasks,
+      timeEntries,
+      activeTimeEntry,
+      currentProject: state.currentProject,
+      currentTask,
+      tags,
+    });
+  }, [projects, tasks, timeEntries, activeTimeEntry, currentTask, tags]);
+  
+  // Listen for task-completed events to update global task list
+  useEffect(() => {
+    const handleTaskCompleted = (event: CustomEvent) => {
+      const { taskId, updatedTask } = event.detail;
+      
+      // Update tasks state with the completed task
+      setTasks(currentTasks => 
+        currentTasks.map(t => t.id === taskId ? updatedTask : t)
+      );
+    };
     
-    try {
-      setIsLoading(true);
-      
-      // Load projects
-      const loadedProjects = await projectService.loadProjects();
-      setState(prev => ({
-        ...prev,
-        projects: loadedProjects || []
-      }));
-      
-      console.log('Projetos carregados:', loadedProjects);
-      
-      // Load tasks
-      const loadedTasks = await taskService.loadTasks();
-      
-      // Ensure the priority is within allowed values
-      const typedTasks = loadedTasks.map(task => ({
-        ...task,
-        priority: (task.priority === 'Baixa' || task.priority === 'Média' || 
-                  task.priority === 'Alta' || task.priority === 'Urgente') 
-          ? task.priority as 'Baixa' | 'Média' | 'Alta' | 'Urgente'
-          : 'Média' as const
-      }));
-      
-      setState(prev => ({
-        ...prev,
-        tasks: typedTasks || []
-      }));
-      
-      console.log('Tarefas carregadas:', typedTasks);
+    window.addEventListener('task-completed', handleTaskCompleted as EventListener);
+    
+    return () => {
+      window.removeEventListener('task-completed', handleTaskCompleted as EventListener);
+    };
+  }, [setTasks]);
+  
+  // Carregar dados quando o usuário mudar
+  useEffect(() => {
+    if (!user) {
+      // Resetar estado se não houver usuário
+      setState(initialState);
+      return;
+    }
+    
+    const loadInitialData = async () => {
+      try {
+        // Carregar projetos
+        const projectsData = await projectService.loadProjects();
+        setProjects(projectsData || []);
+        
+        // Carregar tarefas
+        const { tasks: tasksData } = await taskService.loadTasks();
+        setTasks(tasksData);
+        
+        // Carregar registros de tempo
+        const timeEntriesData = await timeEntryService.loadTimeEntries();
+        
+        setTimeEntries(timeEntriesData || []);
+        setActiveTimeEntry(timeEntriesData.find((entry: TimeEntry) => entry.isRunning) || null);
 
-      // Load time entries
-      const loadedTimeEntries = await timeEntryService.loadTimeEntries();
-      setState(prev => ({
-        ...prev,
-        timeEntries: loadedTimeEntries || []
-      }));
-
-      // Load active time entry
-      const activeEntry = loadedTimeEntries.find(entry => entry.isRunning) || null;
-      setState(prev => ({
-        ...prev,
-        activeTimeEntry: activeEntry
-      }));
-
-      // Load tags
-      const loadedTags = await tagService.loadTags();
-      setState(prev => ({
-        ...prev,
-        tags: loadedTags || []
-      }));
-
-      // Load teams
-      const loadedTeams = await teamService.loadTeams(user.id);
-      
-      // Load team members (separate requests)
-      let allTeamMembers: TeamMember[] = [];
-      if (loadedTeams && loadedTeams.teams) {
-        for (const team of loadedTeams.teams) {
-          const members = await teamService.getTeamMembers(team.id);
-          allTeamMembers = [...allTeamMembers, ...(members || [])];
-        }
+        // Carregar tags
+        const { tags: tagsData } = await tagService.loadTags(user.id);
+        setTags(tagsData);
+      } catch (error) {
+        // Tratar erro de carregamento de dados
       }
-      
-      setState(prev => ({
-        ...prev,
-        teams: loadedTeams?.teams || [],
-        teamMembers: allTeamMembers || [],
-      }));
-      
-    } catch (error) {
-      console.error('Erro ao carregar dados iniciais:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const addProject = async (project: Omit<Project, 'id' | 'createdAt' | 'userId'>): Promise<void> => {
-    if (!user) return;
-    try {
-      const newProject = await projectService.createProject({ ...project, userId: user.id });
-      setState(prev => ({ ...prev, projects: [newProject, ...prev.projects] }));
-    } catch (error) {
-      console.error('Erro ao adicionar projeto:', error);
-    }
-  };
-
-  const updateProject = async (project: Project): Promise<void> => {
-    try {
-      await projectService.updateProject(project);
-      setState(prev => ({
-        ...prev,
-        projects: prev.projects.map(p => (p.id === project.id ? project : p)),
-      }));
-    } catch (error) {
-      console.error('Erro ao atualizar projeto:', error);
-    }
-  };
-
-  const deleteProject = async (projectId: string): Promise<void> => {
-    try {
-      await projectService.deleteProject(projectId);
-      setState(prev => ({
-        ...prev,
-        projects: prev.projects.filter(p => p.id !== projectId),
-        tasks: prev.tasks.filter(task => task.projectId !== projectId),
-        timeEntries: prev.timeEntries.filter(te => te.projectId !== projectId),
-      }));
-    } catch (error) {
-      console.error('Erro ao excluir projeto:', error);
-    }
-  };
-
-  const addTask = async (task: Omit<Task, 'id' | 'completed' | 'actualStartTime' | 'actualEndTime' | 'elapsedTime' | 'userId'>): Promise<Task> => {
-    if (!user) throw new Error('User not authenticated');
-    try {
-      // Ensure completed is included with a default value
-      const taskWithDefaults = {
-        ...task,
-        userId: user.id,
-        completed: false
-      };
-      
-      const newTask = await taskService.createTask(taskWithDefaults);
-      setState(prev => ({ ...prev, tasks: [newTask, ...prev.tasks] }));
-      return newTask;
-    } catch (error) {
-      console.error('Erro ao adicionar tarefa:', error);
-      throw error;
-    }
-  };
-
-  const updateTask = async (task: Task): Promise<void> => {
-    try {
-      await taskService.updateTask(task);
-      setState(prev => ({
-        ...prev,
-        tasks: prev.tasks.map(t => (t.id === task.id ? task : t)),
-      }));
-      
-      // Dispatch a custom event to notify components about the task completion
-      const event = new CustomEvent('task-completed', {
-        detail: {
-          taskId: task.id,
-          updatedTask: task,
-        },
-      });
-      window.dispatchEvent(event);
-    } catch (error) {
-      console.error('Erro ao atualizar tarefa:', error);
-    }
-  };
-
-  const completeTask = async (taskId: string): Promise<void> => {
-    try {
-      const task = state.tasks.find(t => t.id === taskId);
-      if (!task) return;
-
-      const updatedTask = { ...task, completed: true };
-      await taskService.updateTask(updatedTask);
-
-      setState(prev => ({
-        ...prev,
-        tasks: prev.tasks.map(t => (t.id === taskId ? updatedTask : t)),
-      }));
-    } catch (error) {
-      console.error('Erro ao concluir tarefa:', error);
-    }
-  };
-
-  const deleteTask = async (taskId: string): Promise<void> => {
-    try {
-      await taskService.deleteTask(taskId);
-      setState(prev => ({
-        ...prev,
-        tasks: prev.tasks.filter(t => t.id !== taskId),
-        timeEntries: prev.timeEntries.filter(te => te.taskId !== taskId),
-      }));
-    } catch (error) {
-      console.error('Erro ao excluir tarefa:', error);
-    }
-  };
-
-  const startTimer = async (taskId: string, projectId: string): Promise<void> => {
-    if (!user) return;
-    try {
-      // Check if there's an active timer running and stop it
-      if (state.activeTimeEntry) {
-        await stopTimer();
-      }
-
-      const now = new Date();
-      const newTimeEntry: Omit<TimeEntry, 'id' | 'duration'> = {
-        taskId: taskId,
-        projectId: projectId,
-        startTime: now,
-        isRunning: true,
-        userId: user.id,
-      };
-
-      const createdTimeEntry = await timeEntryService.createTimeEntry(newTimeEntry);
-
-      setState(prev => ({
-        ...prev,
-        activeTimeEntry: createdTimeEntry,
-        timeEntries: [...prev.timeEntries, createdTimeEntry],
-      }));
-    } catch (error) {
-      console.error('Erro ao iniciar o timer:', error);
-    }
-  };
-
-  const stopTimer = async (completeTask: boolean = false): Promise<void> => {
-    try {
-      if (!state.activeTimeEntry) return;
-
-      const endTime = new Date();
-      const duration = calculateElapsedTime(state.activeTimeEntry.startTime, endTime);
-
-      const updatedTimeEntry: TimeEntry = {
-        ...state.activeTimeEntry,
-        endTime: endTime,
-        duration: duration,
-        isRunning: false,
-      };
-
-      await timeEntryService.updateTimeEntry(updatedTimeEntry);
-
-      setState(prev => ({
-        ...prev,
-        activeTimeEntry: null,
-        timeEntries: prev.timeEntries.map(te => (te.id === updatedTimeEntry.id ? updatedTimeEntry : te)),
-      }));
-
-      // Fix the error by calling the completeTask method with the correct parameter
-      if (completeTask && state.activeTimeEntry) {
-        await completeTask(state.activeTimeEntry.taskId);
-      }
-    } catch (error) {
-      console.error('Erro ao parar o timer:', error);
-    }
-  };
-
-  const setCurrentProject = (project: Project | null): void => {
+    };
+    
+    loadInitialData();
+  }, [user]);
+  
+  // Função para definir o projeto atual
+  const setCurrentProject = (project: Project | null) => {
     setState(prev => ({ ...prev, currentProject: project }));
   };
 
-  const setCurrentTask = (task: Task | null): void => {
-    setState(prev => ({ ...prev, currentTask: task }));
-  };
-
-  const generateReport = (projectId: string): ReportData | null => {
-    const project = state.projects.find(p => p.id === projectId);
-    if (!project) return null;
-
-    const tasks = state.tasks.filter(t => t.projectId === projectId);
-
-    const reportTasks = tasks.map(task => {
-      const timeEntry = state.timeEntries.find(te => te.taskId === task.id);
-      const timeSpent = timeEntry ? timeEntry.duration || 0 : 0;
-      const earnings = (timeSpent / 3600) * project.hourlyRate; // Convert seconds to hours
-
-      return {
-        id: task.id,
-        name: task.name,
-        description: task.description,
-        timeSpent: timeSpent,
-        earnings: earnings,
-        startTime: task.actualStartTime,
-        endTime: task.actualEndTime,
-      };
-    });
-
-    const totalTime = reportTasks.reduce((sum, task) => sum + task.timeSpent, 0);
-    const totalEarnings = reportTasks.reduce((sum, task) => sum + task.earnings, 0);
-
-    return {
-      projectId: project.id,
-      projectName: project.name,
-      hourlyRate: project.hourlyRate,
-      tasks: reportTasks,
-      totalTime: totalTime,
-      totalEarnings: totalEarnings,
-    };
-  };
-
-  const getActiveTaskName = (): string | null => {
-    if (!state.activeTimeEntry) return null;
-    const task = state.tasks.find(task => task.id === state.activeTimeEntry?.taskId);
-    return task ? task.name : null;
-  };
-
-  const addTag = async (name: string): Promise<Tag> => {
-    if (!user) throw new Error('User not authenticated');
-    try {
-      const newTag: Omit<Tag, 'id'> = { name, userId: user.id };
-      const createdTag = await tagService.createTag(newTag);
-      setState(prev => ({ ...prev, tags: [...prev.tags, createdTag] }));
-      return createdTag;
-    } catch (error) {
-      console.error('Erro ao adicionar tag:', error);
-      throw error;
-    }
-  };
-
-  const deleteTag = async (tagId: string): Promise<void> => {
-    try {
-      await tagService.deleteTag(tagId);
-      setState(prev => ({ ...prev, tags: prev.tags.filter(tag => tag.id !== tagId) }));
-    } catch (error) {
-      console.error('Erro ao excluir tag:', error);
-    }
-  };
-
-  // Define the missing task tag methods
-  const addTagToTask = async (taskId: string, tagId: string): Promise<void> => {
-    try {
-      await tagService.addTagToTask(taskId, tagId);
-    } catch (error) {
-      console.error('Erro ao adicionar tag à tarefa:', error);
-    }
-  };
-
-  const removeTagFromTask = async (taskId: string, tagId: string): Promise<void> => {
-    try {
-      await tagService.removeTagFromTask(taskId, tagId);
-    } catch (error) {
-      console.error('Erro ao remover tag da tarefa:', error);
-    }
-  };
-
-  const getTaskTags = async (taskId: string): Promise<string[]> => {
-    try {
-      const tagIds = await tagService.getTaskTags(taskId);
-      return tagIds;
-    } catch (error) {
-      console.error('Erro ao obter tags da tarefa:', error);
-      return [];
-    }
+  // Função de geração de relatório adaptada para usar o contexto
+  const appGenerateReport = (projectId: string): ReportData | null => {
+    return generateReport(projectId, projects, tasks);
   };
   
-  const createTeam = useCallback(async (team: Omit<Team, 'id' | 'ownerId' | 'createdAt'>): Promise<Team> => {
-    if (!user) throw new Error('User not authenticated');
-    try {
-      const newTeam = await teamService.createTeam({ ...team, ownerId: user.id });
-      setState(prev => ({ ...prev, teams: [newTeam, ...prev.teams] }));
-      return newTeam;
-    } catch (error) {
-      console.error('Erro ao criar equipe:', error);
-      throw error;
-    }
-  }, [user]);
-
-  const updateTeam = useCallback(async (team: Team): Promise<void> => {
-    try {
-      await teamService.updateTeam(team);
-      setState(prev => ({
-        ...prev,
-        teams: prev.teams.map(t => (t.id === team.id ? team : t)),
-      }));
-    } catch (error) {
-      console.error('Erro ao atualizar equipe:', error);
-    }
-  }, []);
-
-  const deleteTeam = useCallback(async (teamId: string): Promise<void> => {
-    try {
-      await teamService.deleteTeam(teamId);
-      setState(prev => ({
-        ...prev,
-        teams: prev.teams.filter(t => t.id !== teamId),
-        teamMembers: prev.teamMembers.filter(member => member.teamId !== teamId),
-      }));
-    } catch (error) {
-      console.error('Erro ao excluir equipe:', error);
-    }
-  }, []);
-
-  const addTeamMember = useCallback(async (member: Omit<TeamMember, 'id' | 'createdAt' | 'userId' | 'invitationStatus'>): Promise<TeamMember> => {
-    try {
-      const newMember = await teamService.addTeamMember(member);
-      setState(prev => ({ ...prev, teamMembers: [newMember, ...prev.teamMembers] }));
-      return newMember;
-    } catch (error) {
-      console.error('Erro ao adicionar membro à equipe:', error);
-      throw error;
-    }
-  }, []);
-
-  const updateTeamMember = useCallback(async (member: TeamMember): Promise<void> => {
-    try {
-      await teamService.updateTeamMember(member);
-      setState(prev => ({
-        ...prev,
-        teamMembers: prev.teamMembers.map(m => (m.id === member.id ? member : m)),
-      }));
-    } catch (error) {
-      console.error('Erro ao atualizar membro da equipe:', error);
-    }
-  }, []);
-
-  const deleteTeamMember = useCallback(async (memberId: string): Promise<void> => {
-    try {
-      await teamService.deleteTeamMember(memberId);
-      setState(prev => ({
-        ...prev,
-        teamMembers: prev.teamMembers.filter(member => member.id !== memberId),
-      }));
-    } catch (error) {
-      console.error('Erro ao excluir membro da equipe:', error);
-    }
-  }, []);
-
-  const getTeamMembers = useCallback((teamId: string): TeamMember[] => {
-    return state.teamMembers.filter(member => member.teamId === teamId);
-  }, [state.teamMembers]);
-
-  const createAndSendInvitation = useCallback(async (teamId: string, email: string): Promise<TeamInvitation> => {
-    try {
-      const invitation = await invitationService.createInvitation(teamId, email);
-      
-      if (!invitation) {
-        throw new Error('Failed to create invitation');
-      }
-      
-      // Aqui você implementaria o envio real de email
-      const inviteLink = `${window.location.origin}/convite?token=${invitation.token}`;
-      console.log(`Convite criado: ${inviteLink}`);
-      
-      return invitation;
-    } catch (error) {
-      console.error('Error creating invitation:', error);
-      throw error;
-    }
-  }, []);
-
-  const value: AppContextType = {
+  // Agrupar valores e funções que serão expostas pelo contexto
+  const contextValue: AppContextType = {
     state,
     addProject,
     updateProject,
@@ -492,31 +168,23 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children }) => {
     stopTimer,
     setCurrentProject,
     setCurrentTask,
-    generateReport,
+    generateReport: appGenerateReport,
     getActiveTaskName,
     addTag,
     deleteTag,
     addTagToTask,
     removeTagFromTask,
     getTaskTags,
-    createTeam,
-    updateTeam,
-    deleteTeam,
-    addTeamMember,
-    updateTeamMember,
-    deleteTeamMember,
-    getTeamMembers,
-    createAndSendInvitation,
   };
-
+  
   return (
-    <AppContext.Provider value={value}>
-      {!isLoading ? children : <div>Loading...</div>}
+    <AppContext.Provider value={contextValue}>
+      {children}
     </AppContext.Provider>
   );
 };
 
-export const useAppContext = (): AppContextType => {
+export const useAppContext = () => {
   const context = useContext(AppContext);
   if (context === undefined) {
     throw new Error('useAppContext must be used within an AppProvider');

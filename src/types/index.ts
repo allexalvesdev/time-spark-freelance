@@ -5,7 +5,6 @@ export interface Project {
   hourlyRate: number;
   createdAt: Date;
   userId: string;
-  teamId?: string | null;
 }
 
 export interface Task {
@@ -21,7 +20,6 @@ export interface Task {
   completed: boolean;
   userId: string;
   priority: 'Baixa' | 'Média' | 'Alta' | 'Urgente';
-  assigneeId?: string; // ID do membro da equipe responsável pela tarefa
 }
 
 export interface TimeEntry {
@@ -57,34 +55,3 @@ export interface Tag {
   name: string;
   userId: string;
 }
-
-export interface Team {
-  id: string;
-  name: string;
-  description?: string;
-  ownerId: string;
-  createdAt: Date;
-}
-
-export interface TeamMember {
-  id: string;
-  teamId: string;
-  userEmail: string;
-  name: string;
-  role: string;
-  createdAt: Date;
-  userId?: string; // ID do usuário Supabase associado
-  invitationStatus: string; // 'pending', 'accepted', 'expired'
-}
-
-export interface TeamInvitation {
-  id: string;
-  teamId: string;
-  email: string;
-  token: string;
-  expiresAt: Date;
-  createdAt: Date;
-  used: boolean;
-  teamName?: string; // Nome da equipe (opcional)
-}
-

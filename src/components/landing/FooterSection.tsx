@@ -17,7 +17,7 @@ const FooterSection: React.FC<FooterSectionProps> = ({
       <div className="container mx-auto px-4">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div>
-            <h3 className="font-bold text-lg mb-4">Workly<span className="text-primary">.</span></h3>
+            <h3 className="font-archivo-black text-lg mb-4">Focusly<span className="text-primary">.</span></h3>
             <p className="text-muted-foreground">
               Sua ferramenta completa para gerenciamento de tempo e produtividade.
             </p>
@@ -50,7 +50,7 @@ const FooterSection: React.FC<FooterSectionProps> = ({
           </div>
         </div>
         <div className="border-t border-white/10 mt-8 pt-8 text-center text-muted-foreground">
-          <p>&copy; {new Date().getFullYear()} Workly. Todos os direitos reservados.</p>
+          <p>&copy; {new Date().getFullYear()} Focusly. Todos os direitos reservados.</p>
         </div>
       </div>
     </footer>

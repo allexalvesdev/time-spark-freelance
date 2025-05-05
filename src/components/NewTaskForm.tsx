@@ -15,17 +15,9 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { useAppContext } from '@/contexts/AppContext';
-import { usePlan } from '@/contexts/PlanContext';
 import { useToast } from '@/hooks/use-toast';
 import PrioritySelect from '@/components/task/PrioritySelect';
 import TagsInput from '@/components/task/TagsInput';
-import { 
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 
 const formSchema = z.object({
   name: z.string().min(3, 'O nome da tarefa deve ter pelo menos 3 caracteres'),
@@ -42,7 +34,6 @@ const formSchema = z.object({
     message: 'Selecione uma data e hora de início',
   }),
   priority: z.enum(['Baixa', 'Média', 'Alta', 'Urgente']).default('Média'),
-  assigneeId: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -53,21 +44,14 @@ interface NewTaskFormProps {
 }
 
 const NewTaskForm: React.FC<NewTaskFormProps> = ({ projectId, onSuccess }) => {
-  const { addTask, addTagToTask, state } = useAppContext();
-  const { currentPlan } = usePlan();
+  const { addTask, addTagToTask } = useAppContext();
   const { toast } = useToast();
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  // Verificar se o usuário tem plano Enterprise
-  const isEnterpriseUser = currentPlan === 'enterprise';
-  
   // Get current date in Brazil timezone
   const now = new Date();
   const brasilDate = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
-  
-  // Get team members for all teams
-  const allTeamMembers = state.teamMembers;
   
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -78,7 +62,6 @@ const NewTaskForm: React.FC<NewTaskFormProps> = ({ projectId, onSuccess }) => {
       estimatedMinutes: 0,
       scheduledStartTime: brasilDate,
       priority: 'Média',
-      assigneeId: undefined,
     },
   });
   
@@ -94,7 +77,6 @@ const NewTaskForm: React.FC<NewTaskFormProps> = ({ projectId, onSuccess }) => {
         estimatedTime: totalMinutes,
         scheduledStartTime: new Date(data.scheduledStartTime),
         priority: data.priority,
-        assigneeId: data.assigneeId,
       });
       
       // Adicionar tags à tarefa
@@ -114,7 +96,6 @@ const NewTaskForm: React.FC<NewTaskFormProps> = ({ projectId, onSuccess }) => {
         estimatedMinutes: 0,
         scheduledStartTime: brasilDate,
         priority: 'Média',
-        assigneeId: undefined,
       });
       
       setSelectedTagIds([]);
@@ -179,38 +160,6 @@ const NewTaskForm: React.FC<NewTaskFormProps> = ({ projectId, onSuccess }) => {
             </FormItem>
           )}
         />
-
-        {/* Opção para atribuir tarefa a um membro da equipe (apenas para plano Enterprise) */}
-        {isEnterpriseUser && allTeamMembers.length > 0 && (
-          <FormField
-            control={form.control}
-            name="assigneeId"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Responsável</FormLabel>
-                <Select
-                  onValueChange={field.onChange}
-                  value={field.value}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecionar responsável" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="">Sem responsável</SelectItem>
-                    {allTeamMembers.map((member) => (
-                      <SelectItem key={member.id} value={member.id}>
-                        {member.name} ({member.role})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        )}
 
         <div className="space-y-2">
           <FormLabel>Tags</FormLabel>

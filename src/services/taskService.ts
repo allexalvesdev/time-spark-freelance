@@ -1,63 +1,34 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { Task } from '@/types';
 
 export const taskService = {
-  async loadTasks(projectId?: string) {
-    try {
-      // Obter o usuário atual
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        console.error('Nenhum usuário logado ao tentar carregar tarefas');
-        return [];
-      }
-      
-      // Iniciar a consulta base
-      let query = supabase
-        .from('tasks')
-        .select('*');
-      
-      // Filtrar por projeto específico, se fornecido
-      if (projectId) {
-        query = query.eq('project_id', projectId);
-      }
-      
-      // Filtrar por usuário atual - ou o usuário é o proprietário ou é um membro de equipe com acesso
-      query = query.eq('user_id', user.id);
-      
-      // Ordenar por data de criação (mais recente primeiro)
-      query = query.order('created_at', { ascending: false });
-      
-      const { data: tasks, error } = await query;
-      
-      if (error) {
-        console.error('Erro ao carregar tarefas:', error);
-        return [];
-      }
-      
-      if (!tasks) {
-        return [];
-      }
-      
-      return tasks.map(task => ({
-        id: task.id,
-        name: task.name,
-        projectId: task.project_id,
-        description: task.description || '',
-        priority: task.priority || 'Média',
-        userId: task.user_id,
-        estimatedTime: task.estimated_time || 0,
-        completed: task.completed || false,
-        scheduledStartTime: task.scheduled_start_time ? new Date(task.scheduled_start_time) : new Date(),
-        actualStartTime: task.actual_start_time ? new Date(task.actual_start_time) : undefined,
-        actualEndTime: task.actual_end_time ? new Date(task.actual_end_time) : undefined,
-        elapsedTime: task.elapsed_time || 0,
-        assigneeId: task.assignee_id || undefined
-      }));
-    } catch (error) {
-      console.error('Erro inesperado ao carregar tarefas:', error);
-      return [];
-    }
+  async loadTasks() {
+    const { data: tasksData, error } = await supabase
+      .from('tasks')
+      .select('*')
+      .order('created_at', { ascending: false });
+    
+    if (error) throw error;
+    
+    const tasks = tasksData?.map(task => ({
+      id: task.id,
+      name: task.name,
+      description: task.description || '',
+      projectId: task.project_id,
+      estimatedTime: task.estimated_time,
+      scheduledStartTime: task.scheduled_start_time ? new Date(task.scheduled_start_time) : undefined,
+      actualStartTime: task.actual_start_time ? new Date(task.actual_start_time) : undefined,
+      actualEndTime: task.actual_end_time ? new Date(task.actual_end_time) : undefined,
+      elapsedTime: task.elapsed_time,
+      completed: task.completed,
+      userId: task.user_id,
+      priority: (task.priority === 'Baixa' || task.priority === 'Média' || task.priority === 'Alta' || task.priority === 'Urgente') 
+        ? task.priority 
+        : 'Média'
+    } as Task)) || [];
+    
+    return { tasks };
   },
 
   async createTask(task: Omit<Task, 'id'>) {
@@ -75,7 +46,6 @@ export const taskService = {
         actual_end_time: task.actualEndTime ? task.actualEndTime.toISOString() : null,
         elapsed_time: task.elapsedTime,
         user_id: task.userId,
-        assignee_id: task.assigneeId || null,
         completed: task.completed || false,
         priority: task.priority || 'Média',
       }])
@@ -98,7 +68,6 @@ export const taskService = {
       elapsedTime: data.elapsed_time,
       completed: data.completed,
       userId: data.user_id,
-      assigneeId: data.assignee_id || undefined,
       priority: (data.priority === 'Baixa' || data.priority === 'Média' || data.priority === 'Alta' || data.priority === 'Urgente') 
         ? data.priority 
         : 'Média'
@@ -118,7 +87,6 @@ export const taskService = {
         actual_end_time: task.actualEndTime ? task.actualEndTime.toISOString() : null,
         elapsed_time: task.elapsedTime,
         completed: task.completed,
-        assignee_id: task.assigneeId || null,
         priority: task.priority || 'Média',
       })
       .eq('id', task.id);

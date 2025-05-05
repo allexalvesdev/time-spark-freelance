@@ -10,7 +10,7 @@ import { useReportGenerator } from '@/hooks/useReportGenerator';
 import { projectService, taskService, timeEntryService, tagService } from '@/services';
 import { useTags } from '@/hooks/useTags';
 
-// Defina o estado inicial
+// Define initial state
 const initialState: AppState = {
   projects: [],
   tasks: [],
@@ -21,7 +21,7 @@ const initialState: AppState = {
   tags: [],
 };
 
-// Crie o contexto
+// Create context
 export const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
@@ -30,7 +30,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   
   const userId = user?.id || '';
   
-  // Use os hooks customizados
+  // Use custom hooks
   const { 
     projects, 
     setProjects, 
@@ -71,14 +71,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   
   const { generateReport } = useReportGenerator();
   
-  // Função para obter o nome da tarefa ativa
+  // Function to get active task name
   const getActiveTaskName = () => {
     if (!activeTimeEntry) return null;
     const task = tasks.find(t => t.id === activeTimeEntry.taskId);
     return task ? task.name : null;
   };
   
-  // Atualizar o estado centralizado quando os sub-estados mudarem
+  // Update centralized state when sub-states change
   useEffect(() => {
     setState({
       projects,
@@ -109,52 +109,53 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     };
   }, [setTasks]);
   
-  // Carregar dados quando o usuário mudar
+  // Load data when user changes
   useEffect(() => {
     if (!user) {
-      // Resetar estado se não houver usuário
+      // Reset state if no user
       setState(initialState);
       return;
     }
     
     const loadInitialData = async () => {
       try {
-        // Carregar projetos
+        // Load projects
         const projectsData = await projectService.loadProjects();
         setProjects(projectsData || []);
         
-        // Carregar tarefas
+        // Load tasks
         const { tasks: tasksData } = await taskService.loadTasks();
         setTasks(tasksData);
         
-        // Carregar registros de tempo
+        // Load time entries
         const timeEntriesData = await timeEntryService.loadTimeEntries();
         
         setTimeEntries(timeEntriesData || []);
         setActiveTimeEntry(timeEntriesData.find((entry: TimeEntry) => entry.isRunning) || null);
 
-        // Carregar tags
+        // Load tags
         const { tags: tagsData } = await tagService.loadTags(user.id);
         setTags(tagsData);
       } catch (error) {
-        // Tratar erro de carregamento de dados
+        // Handle data loading error
+        console.error("Error loading data:", error);
       }
     };
     
     loadInitialData();
   }, [user]);
   
-  // Função para definir o projeto atual
+  // Function to set current project
   const setCurrentProject = (project: Project | null) => {
     setState(prev => ({ ...prev, currentProject: project }));
   };
 
-  // Função de geração de relatório adaptada para usar o contexto
+  // Report generation function adapted to use context
   const appGenerateReport = (projectId: string): ReportData | null => {
     return generateReport(projectId, projects, tasks);
   };
   
-  // Agrupar valores e funções que serão expostas pelo contexto
+  // Group values and functions exposed by context
   const contextValue: AppContextType = {
     state,
     addProject,

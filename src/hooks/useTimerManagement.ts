@@ -67,8 +67,7 @@ export const useTimerManagement = (userId: string, tasks: Task[] = []) => {
       if (completeTask) {
         try {
           const taskId = activeTimeEntry.taskId;
-          const { tasks: currentTasks } = await taskService.loadTasks();
-          const task = currentTasks.find(t => t.id === taskId);
+          const task = tasks.find(t => t.id === taskId);
           
           if (task) {
             // Use scheduledStartTime as fallback if actualStartTime is not available

@@ -17,6 +17,7 @@ export const projectService = {
       hourlyRate: project.hourly_rate,
       createdAt: new Date(project.created_at),
       userId: project.user_id,
+      teamId: project.team_id || undefined,
     })) || [];
   },
 
@@ -26,7 +27,8 @@ export const projectService = {
       .insert([{ 
         name: project.name,
         hourly_rate: project.hourlyRate,
-        user_id: project.userId 
+        user_id: project.userId,
+        team_id: project.teamId // Will be undefined for regular projects
       }])
       .select()
       .single();
@@ -39,6 +41,7 @@ export const projectService = {
       hourlyRate: data.hourly_rate,
       createdAt: new Date(data.created_at),
       userId: data.user_id,
+      teamId: data.team_id,
     };
   },
 
@@ -47,7 +50,8 @@ export const projectService = {
       .from('projects')
       .update({ 
         name: project.name,
-        hourly_rate: project.hourlyRate 
+        hourly_rate: project.hourlyRate,
+        team_id: project.teamId 
       })
       .eq('id', project.id);
 

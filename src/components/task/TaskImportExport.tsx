@@ -1,109 +1,87 @@
 import React, { useState } from 'react';
+import { Trash, Download, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { FileUp, FileDown, Lock, Check, AlertCircle, FileText } from 'lucide-react';
-import { usePlan } from '@/contexts/PlanContext';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import * as XLSX from 'xlsx';
 import { Task, Tag } from '@/types';
-import { taskService, tagService } from '@/services';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
-import { 
-  Dialog,
-  DialogTrigger,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter
-} from '@/components/ui/dialog';
-import { 
-  AlertDialog,
-  AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogDescription,
-  AlertDialogFooter
-} from '@/components/ui/alert-dialog';
-import { Badge } from '@/components/ui/badge';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { generateTaskTemplate, parseTasksFromExcel, mapExcelDataToTasks, extractTagsFromExcel, getTagMappingsFromExcel } from '@/utils/excelUtils';
-import { AppContext } from '@/contexts/AppContext';
+import { read, utils, write } from 'xlsx';
+import { taskService } from '@/services';
+import { formatDate } from '@/utils/dateUtils';
 
 interface TaskImportExportProps {
   projectId: string;
   tasks: Task[];
   userId: string;
   onTasksImported: (tasks: Task[]) => void;
-  tags?: Tag[]; // Making tags optional so we can pass them from parent component
+  tags: Tag[];
 }
 
-interface ImportResult {
-  success: number;
-  failed: number;
-  errors: { row: number; message: string }[];
-}
-
-const isPremiumPlan = (plan: string) => {
-  return plan === 'pro' || plan === 'enterprise';
-};
-
-const TaskImportExport: React.FC<TaskImportExportProps> = ({ 
-  projectId, 
-  tasks, 
-  userId, 
+const TaskImportExport: React.FC<TaskImportExportProps> = ({
+  projectId,
+  tasks,
+  userId,
   onTasksImported,
-  tags = [] // Default value for tags
+  tags
 }) => {
+  const [importing, setImporting] = useState(false);
   const { toast } = useToast();
-  const { currentPlan } = usePlan();
-  // Use the AppContext object with useContext, not the hook itself
-  const appContext = React.useContext(AppContext);
-  // Safely access projects from context or use an empty array as fallback
-  const projects = appContext?.state?.projects || [];
-  
-  const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
-  const [importResult, setImportResult] = useState<ImportResult | null>(null);
-  const [showImportResultDialog, setShowImportResultDialog] = useState(false);
-  
-  const hasPremiumAccess = isPremiumPlan(currentPlan);
 
-  const handleExport = () => {
-    if (!hasPremiumAccess) {
-      setShowUpgradeDialog(true);
-      return;
-    }
-
+  const exportTasks = () => {
     try {
-      const workbook = XLSX.utils.book_new();
-      
-      // Format tasks for Excel
+      // Prepare data for export
       const exportData = tasks.map(task => ({
-        'Nome': task.name,
+        'Nome da Tarefa': task.name,
         'Descrição': task.description || '',
         'Prioridade': task.priority,
-        'Tempo Estimado (min)': task.estimatedTime || 0,
-        'Data Agendada': task.scheduledStartTime 
-          ? format(task.scheduledStartTime, 'PPP', { locale: ptBR }) 
-          : '',
+        'Tempo Estimado (min)': task.estimatedTime,
+        'Data Agendada': task.scheduledStartTime ? formatDate(task.scheduledStartTime) : '',
         'Concluída': task.completed ? 'Sim' : 'Não',
+        'Tags': tags
+          .filter(tag => true) // Placeholder for tag filtering
+          .map(tag => tag.name)
+          .join(', ')
       }));
+
+      // Create workbook and worksheet
+      const wb = utils.book_new();
+      const ws = utils.json_to_sheet(exportData);
       
-      const worksheet = XLSX.utils.json_to_sheet(exportData);
-      XLSX.utils.book_append_sheet(workbook, worksheet, 'Tarefas');
+      // Set column widths
+      const colWidths = [
+        { wch: 30 }, // Nome da Tarefa
+        { wch: 50 }, // Descrição
+        { wch: 15 }, // Prioridade
+        { wch: 20 }, // Tempo Estimado
+        { wch: 20 }, // Data Agendada
+        { wch: 10 }, // Concluída
+        { wch: 30 }, // Tags
+      ];
       
-      // Generate file name with current date
-      const fileName = `tarefas_${format(new Date(), 'yyyy-MM-dd_HH-mm')}.xlsx`;
+      ws['!cols'] = colWidths;
       
-      // Trigger download
-      XLSX.writeFile(workbook, fileName);
+      utils.book_append_sheet(wb, ws, "Tarefas");
+      
+      // Generate file and download
+      const excelBuffer = write(wb, { bookType: 'xlsx', type: 'array' });
+      const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      
+      // Create download link
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `tarefas_${formatDate(new Date())}.xlsx`;
+      link.click();
+      
+      // Clean up
+      URL.revokeObjectURL(url);
       
       toast({
         title: 'Exportação concluída',
-        description: 'Suas tarefas foram exportadas com sucesso.',
+        description: `${exportData.length} tarefas exportadas com sucesso.`,
       });
     } catch (error) {
-      console.error('Erro na exportação:', error);
+      console.error('Erro ao exportar tarefas:', error);
       toast({
         title: 'Erro na exportação',
         description: 'Não foi possível exportar as tarefas.',
@@ -111,365 +89,135 @@ const TaskImportExport: React.FC<TaskImportExportProps> = ({
       });
     }
   };
-  
-  const handleExportTemplate = () => {
-    if (!hasPremiumAccess) {
-      setShowUpgradeDialog(true);
-      return;
-    }
-    
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     try {
-      // Generate template file using the utility
-      const templateBlob = generateTaskTemplate();
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      setImporting(true);
       
-      // Create URL for download
-      const url = URL.createObjectURL(templateBlob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `modelo_tarefas_${format(new Date(), 'yyyy-MM-dd')}.xlsx`;
-      document.body.appendChild(link);
-      link.click();
+      const reader = new FileReader();
       
-      // Clean up
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+      reader.onload = async (e) => {
+        try {
+          const data = e.target?.result;
+          if (!data) throw new Error('Não foi possível ler o arquivo.');
+          
+          const workbook = read(data, { type: 'binary' });
+          const sheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[sheetName];
+          
+          // Convert to array of objects
+          const jsonData = utils.sheet_to_json(worksheet);
+          
+          // Map to task objects
+          const tasksToImport = jsonData.map((row: any) => {
+            const scheduledDate = row['Data Agendada'] ? new Date(row['Data Agendada']) : undefined;
+            
+            return {
+              name: row['Nome da Tarefa'] || 'Tarefa sem nome',
+              description: row['Descrição'] || '',
+              projectId,
+              estimatedTime: parseInt(row['Tempo Estimado (min)']) || 0,
+              scheduledStartTime: scheduledDate || new Date(),
+              completed: row['Concluída'] === 'Sim',
+              priority: row['Prioridade'] || 'Média',
+              userId
+            } as Omit<Task, 'id'>;
+          });
+          
+          // Skip empty tasks
+          const validTasks = tasksToImport.filter(task => task.name && task.name !== 'Tarefa sem nome');
+          
+          if (validTasks.length === 0) {
+            toast({
+              title: 'Atenção',
+              description: 'Nenhuma tarefa válida encontrada no arquivo.',
+              variant: 'default',
+            });
+            return;
+          }
+          
+          // Import tasks via service
+          const importedTasks = await taskService.bulkImportTasks(validTasks);
+          
+          toast({
+            title: 'Importação concluída',
+            description: `${importedTasks.length} tarefas importadas com sucesso.`,
+          });
+          
+          onTasksImported(importedTasks);
+        } catch (error) {
+          console.error('Erro ao processar arquivo:', error);
+          toast({
+            title: 'Erro na importação',
+            description: 'Não foi possível processar o arquivo.',
+            variant: 'destructive',
+          });
+        } finally {
+          setImporting(false);
+          
+          // Reset file input
+          e.target = null as any;
+          const fileInput = document.getElementById('task-import-file') as HTMLInputElement;
+          if (fileInput) fileInput.value = '';
+        }
+      };
       
-      toast({
-        title: 'Modelo exportado',
-        description: 'O modelo de importação foi baixado com sucesso.',
-      });
+      reader.readAsBinaryString(file);
     } catch (error) {
-      console.error('Erro ao exportar modelo:', error);
+      console.error('Erro ao importar tarefas:', error);
       toast({
-        title: 'Erro na exportação do modelo',
-        description: 'Não foi possível gerar o modelo de importação.',
+        title: 'Erro na importação',
+        description: 'Não foi possível importar as tarefas.',
         variant: 'destructive',
       });
+      setImporting(false);
     }
   };
-  
-  // Function to process tags from Excel
-  const processTagsFromExcel = async (data: any[], createdTasks: Task[]) => {
-    try {
-      // Extract unique tag names from Excel
-      const excelTagNames = extractTagsFromExcel(data);
-      console.log('Extracted tags from Excel:', excelTagNames);
-      
-      if (excelTagNames.length === 0) {
-        console.log('No tags found in Excel data');
-        return;
-      }
-      
-      // Map of tag names to their IDs (for both existing and newly created tags)
-      const tagNameToIdMap = new Map<string, string>();
-      
-      // Check which tags already exist in the system
-      for (const tagName of excelTagNames) {
-        try {
-          // Create the tag (the service will check if it exists first)
-          const newTag = await tagService.createTag(tagName, userId);
-          tagNameToIdMap.set(tagName, newTag.id);
-          console.log(`Using tag: ${tagName} with ID: ${newTag.id}`);
-        } catch (error) {
-          console.error(`Failed to create/get tag "${tagName}":`, error);
-        }
-      }
-      
-      // Get tag mappings for each Excel row
-      const tagMappings = getTagMappingsFromExcel(data);
-      console.log('Tag mappings:', tagMappings);
-      
-      // Associate tags with created tasks
-      for (let i = 0; i < createdTasks.length; i++) {
-        const task = createdTasks[i];
-        const mapping = tagMappings[i];
-        
-        if (mapping && mapping.tags.length > 0) {
-          console.log(`Processing tags for task: ${task.name}`);
-          
-          for (const tagName of mapping.tags) {
-            const tagId = tagNameToIdMap.get(tagName);
-            
-            if (tagId) {
-              try {
-                await tagService.addTagToTask(task.id, tagId);
-                console.log(`Added tag "${tagName}" (ID: ${tagId}) to task "${task.name}" (ID: ${task.id})`);
-              } catch (error) {
-                console.error(`Failed to add tag "${tagName}" to task "${task.name}":`, error);
-              }
-            }
-          }
-        }
-      }
-      
-      console.log('Finished processing tags');
-    } catch (error) {
-      console.error('Error processing tags:', error);
-    }
-  };
-  
-  const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (!hasPremiumAccess) {
-      setShowUpgradeDialog(true);
-      event.target.value = '';
-      return;
-    }
-    
-    const file = event.target.files?.[0];
-    if (!file) return;
-    
-    try {
-      // Parse the uploaded Excel file
-      const { data, errors: parseErrors } = await parseTasksFromExcel(file);
-      
-      // If there are parse errors, show them
-      if (parseErrors.length > 0) {
-        setImportResult({
-          success: 0,
-          failed: parseErrors.length,
-          errors: parseErrors
-        });
-        setShowImportResultDialog(true);
-        event.target.value = '';
-        return;
-      }
-      
-      // Map Excel data to tasks using available projects
-      const { tasks: mappedTasks, errors: mappingErrors } = mapExcelDataToTasks(
-        data,
-        projects, // Use the projects from props or context
-        userId
-      );
-      
-      // If there are mapping errors, show them
-      if (mappingErrors.length > 0) {
-        setImportResult({
-          success: 0,
-          failed: mappingErrors.length,
-          errors: mappingErrors
-        });
-        setShowImportResultDialog(true);
-        event.target.value = '';
-        return;
-      }
-      
-      // Save tasks if there are no errors
-      if (mappedTasks.length > 0) {
-        const savedTasks = await taskService.bulkImportTasks(mappedTasks);
-        
-        // Process tags after tasks are created
-        await processTagsFromExcel(data, savedTasks);
-        
-        // Update parent component
-        onTasksImported(savedTasks);
-        
-        // Show success result
-        setImportResult({
-          success: savedTasks.length,
-          failed: 0,
-          errors: []
-        });
-        setShowImportResultDialog(true);
-      } else {
-        // No tasks found in file
-        setImportResult({
-          success: 0,
-          failed: 0,
-          errors: [{ row: 0, message: 'Nenhuma tarefa encontrada no arquivo' }]
-        });
-        setShowImportResultDialog(true);
-      }
-    } catch (error) {
-      console.error('Erro na importação:', error);
-      setImportResult({
-        success: 0,
-        failed: 1,
-        errors: [{ row: 0, message: 'Erro ao processar o arquivo: formato inválido ou corrompido' }]
-      });
-      setShowImportResultDialog(true);
-    }
-    
-    // Reset input field
-    event.target.value = '';
-  };
-  
-  // Group errors by row number for better display
-  const groupedErrors = importResult?.errors.reduce<Record<number, string[]>>((acc, error) => {
-    if (!acc[error.row]) {
-      acc[error.row] = [];
-    }
-    acc[error.row].push(error.message);
-    return acc;
-  }, {}) || {};
-  
+
   return (
-    <>
-      <div className="flex items-center gap-2 flex-wrap">
-        <Button
-          variant="outline"
-          size="sm"
-          className="flex gap-1 items-center"
-          onClick={handleExport}
-        >
-          {hasPremiumAccess ? (
-            <FileDown className="h-4 w-4" />
-          ) : (
-            <Lock className="h-4 w-4" />
-          )}
-          <span>Exportar</span>
-        </Button>
-        
-        <Button
-          variant="outline"
-          size="sm"
-          className="flex gap-1 items-center"
-          onClick={handleExportTemplate}
-        >
-          {hasPremiumAccess ? (
-            <FileText className="h-4 w-4" />
-          ) : (
-            <Lock className="h-4 w-4" />
-          )}
-          <span>Exportar Modelo</span>
-        </Button>
-        
-        <div className="relative">
-          <Button
-            variant="outline"
-            size="sm"
-            className="flex gap-1 items-center"
-            onClick={() => {
-              if (!hasPremiumAccess) {
-                setShowUpgradeDialog(true);
-              } else {
-                document.getElementById('file-upload')?.click();
-              }
-            }}
-          >
-            {hasPremiumAccess ? (
-              <FileUp className="h-4 w-4" />
-            ) : (
-              <Lock className="h-4 w-4" />
-            )}
-            <span>Importar</span>
-          </Button>
-          <input
-            id="file-upload"
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div>
+        <Label htmlFor="task-import-file" className="mb-2 block">
+          Importar Tarefas do Excel
+        </Label>
+        <div className="flex items-center gap-2">
+          <Input
+            id="task-import-file"
             type="file"
             accept=".xlsx,.xls"
-            onChange={handleImport}
-            className="hidden"
-            disabled={!hasPremiumAccess}
+            onChange={handleFileUpload}
+            disabled={importing}
+            className="flex-1"
           />
+          <Button variant="outline" size="icon" disabled>
+            <Upload size={16} />
+          </Button>
         </div>
       </div>
       
-      {/* Premium Feature Dialog */}
-      <Dialog open={showUpgradeDialog} onOpenChange={setShowUpgradeDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Recurso Premium</DialogTitle>
-            <DialogDescription>
-              A importação e exportação de tarefas são recursos disponíveis apenas para os planos Profissional e Enterprise.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="py-4">
-            <p className="text-sm text-muted-foreground">
-              Faça upgrade do seu plano para acessar recursos avançados como:
-            </p>
-            <ul className="mt-2 space-y-1">
-              <li className="flex items-center text-sm gap-2">
-                <Check className="h-4 w-4 text-primary" />
-                <span>Importação e exportação de tarefas</span>
-              </li>
-              <li className="flex items-center text-sm gap-2">
-                <Check className="h-4 w-4 text-primary" />
-                <span>Relatórios avançados</span>
-              </li>
-              <li className="flex items-center text-sm gap-2">
-                <Check className="h-4 w-4 text-primary" />
-                <span>Mais projetos</span>
-              </li>
-            </ul>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowUpgradeDialog(false)}>
-              Depois
-            </Button>
-            <Button onClick={() => {
-              setShowUpgradeDialog(false);
-              window.location.href = '/configuracoes';
-            }}>
-              Ver planos
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      
-      {/* Import Results Dialog */}
-      <AlertDialog open={showImportResultDialog} onOpenChange={setShowImportResultDialog}>
-        <AlertDialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2">
-              {importResult && importResult.failed === 0 ? (
-                <Check className="h-5 w-5 text-green-500" />
-              ) : (
-                <AlertCircle className="h-5 w-5 text-red-500" />
-              )}
-              Resultado da importação
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              {importResult && (
-                <div className="flex gap-4 mt-2">
-                  <Badge variant={importResult.success > 0 ? "default" : "outline"} className="text-sm">
-                    {importResult.success} tarefas importadas com sucesso
-                  </Badge>
-                  <Badge variant={importResult.failed > 0 ? "destructive" : "outline"} className="text-sm">
-                    {importResult.failed} linhas com falhas
-                  </Badge>
-                </div>
-              )}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          
-          {importResult && importResult.errors.length > 0 && (
-            <div className="py-4">
-              <h4 className="text-sm font-medium mb-3">Detalhes dos erros encontrados:</h4>
-              <div className="border rounded-md overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-20">Linha</TableHead>
-                      <TableHead>Descrição do erro</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {Object.entries(groupedErrors).map(([row, messages]) => (
-                      <TableRow key={row}>
-                        <TableCell className="font-medium">{row === "0" ? "-" : row}</TableCell>
-                        <TableCell>
-                          <ul className="list-disc list-inside space-y-1 text-sm">
-                            {messages.map((message, index) => (
-                              <li key={index}>{message}</li>
-                            ))}
-                          </ul>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            </div>
-          )}
-          
-          <AlertDialogFooter className="mt-4">
-            <Button onClick={() => setShowImportResultDialog(false)}>
-              Fechar
-            </Button>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </>
+      <div>
+        <Label className="mb-2 block">
+          Exportar Tarefas para Excel
+        </Label>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            onClick={exportTasks}
+            disabled={tasks.length === 0}
+            className="flex-1"
+          >
+            <Download size={16} className="mr-2" />
+            Exportar {tasks.length} tarefas
+          </Button>
+          <Button variant="outline" size="icon" disabled>
+            <Trash size={16} />
+          </Button>
+        </div>
+      </div>
+    </div>
   );
 };
 

@@ -5,6 +5,7 @@ export interface Project {
   hourlyRate: number;
   createdAt: Date;
   userId: string;
+  teamId?: string; // Added to match database schema
 }
 
 export interface Task {

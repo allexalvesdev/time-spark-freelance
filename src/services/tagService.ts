@@ -4,46 +4,28 @@ import { Tag } from '@/types';
 
 export const tagService = {
   async loadTags(userId: string) {
-    const { data, error } = await supabase
+    const { data: tags, error } = await supabase
       .from('tags')
       .select('*')
-      .eq('user_id', userId);
+      .eq('user_id', userId)
+      .order('name');
     
     if (error) throw error;
     
-    const tags: Tag[] = data?.map(tag => ({
+    return { tags: tags?.map(tag => ({
       id: tag.id,
       name: tag.name,
       userId: tag.user_id,
-    })) || [];
-    
-    return { tags };
+    })) || [] };
   },
 
   async createTag(name: string, userId: string) {
-    // Check if tag already exists for this user to avoid duplicates
-    const { data: existingTag, error: checkError } = await supabase
-      .from('tags')
-      .select('*')
-      .eq('name', name)
-      .eq('user_id', userId)
-      .maybeSingle();
-      
-    if (checkError) throw checkError;
-    
-    // Return existing tag if found
-    if (existingTag) {
-      return {
-        id: existingTag.id,
-        name: existingTag.name,
-        userId: existingTag.user_id,
-      };
-    }
-    
-    // Create new tag if it doesn't exist
     const { data, error } = await supabase
       .from('tags')
-      .insert([{ name, user_id: userId }])
+      .insert([{
+        name,
+        user_id: userId,
+      }])
       .select()
       .single();
     
@@ -56,44 +38,35 @@ export const tagService = {
     };
   },
 
-  async deleteTag(id: string) {
-    // Primeiro remove associações com tarefas
-    const { error: taskTagsError } = await supabase
+  async deleteTag(tagId: string) {
+    // First delete all task-tag relationships
+    const { error: taskTagError } = await supabase
       .from('task_tags')
       .delete()
-      .eq('tag_id', id);
+      .eq('tag_id', tagId);
     
-    if (taskTagsError) throw taskTagsError;
+    if (taskTagError) throw taskTagError;
     
-    // Depois remove a tag
+    // Then delete the tag itself
     const { error } = await supabase
       .from('tags')
       .delete()
-      .eq('id', id);
+      .eq('id', tagId);
     
     if (error) throw error;
   },
-
+  
   async addTagToTask(taskId: string, tagId: string) {
-    // Check if the association already exists to avoid duplicates
-    const { data: existingData, error: checkError } = await supabase
+    const { error } = await supabase
       .from('task_tags')
-      .select('*')
-      .eq('task_id', taskId)
-      .eq('tag_id', tagId);
+      .insert([{
+        task_id: taskId,
+        tag_id: tagId,
+      }]);
     
-    if (checkError) throw checkError;
-    
-    // Only insert if the association doesn't exist
-    if (!existingData || existingData.length === 0) {
-      const { error } = await supabase
-        .from('task_tags')
-        .insert([{ task_id: taskId, tag_id: tagId }]);
-      
-      if (error) throw error;
-    }
+    if (error) throw error;
   },
-
+  
   async removeTagFromTask(taskId: string, tagId: string) {
     const { error } = await supabase
       .from('task_tags')
@@ -103,8 +76,8 @@ export const tagService = {
     
     if (error) throw error;
   },
-
-  async getTaskTags(taskId: string) {
+  
+  async getTaskTags(taskId: string): Promise<string[]> {
     const { data, error } = await supabase
       .from('task_tags')
       .select('tag_id')
@@ -112,6 +85,6 @@ export const tagService = {
     
     if (error) throw error;
     
-    return data.map(item => item.tag_id);
-  },
+    return data?.map(relation => relation.tag_id) || [];
+  }
 };

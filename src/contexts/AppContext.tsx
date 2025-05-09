@@ -16,6 +16,7 @@ import { useTimeEntries } from '@/hooks/useTimeEntries';
 import { useReportGenerator } from '@/hooks/useReportGenerator';
 import { useTags } from '@/hooks/useTags';
 import { useAuth } from './AuthContext';
+import { useToast } from '@/hooks/use-toast';
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
@@ -25,6 +26,7 @@ interface Props {
 
 export const AppProvider: React.FC<Props> = ({ children }) => {
   const { user } = useAuth();
+  const { toast } = useToast();
   const userId = user?.id as string;
 
   const {
@@ -66,6 +68,48 @@ export const AppProvider: React.FC<Props> = ({ children }) => {
     currentTask: null,
     tags: [],
   });
+
+  // Carregar dados quando o componente for montado ou quando o usuário mudar
+  useEffect(() => {
+    if (!userId) return;
+    
+    const loadData = async () => {
+      try {
+        // Carregar projetos
+        const loadedProjects = await projectService.loadProjects();
+        setProjects(loadedProjects);
+        
+        // Carregar tarefas
+        const { tasks: loadedTasks } = await taskService.loadTasks();
+        setTasks(loadedTasks);
+        
+        // Carregar entradas de tempo
+        const { timeEntries: loadedTimeEntries } = await timeEntryService.loadTimeEntries();
+        setTimeEntries(loadedTimeEntries);
+        
+        // Verificar se há uma entrada de tempo ativa
+        const activeEntry = loadedTimeEntries.find(entry => entry.isRunning);
+        if (activeEntry) {
+          setActiveTimeEntry(activeEntry);
+        }
+        
+        // Carregar tags
+        if (tagService.loadTags) {
+          const loadedTags = await tagService.loadTags();
+          setTags(loadedTags);
+        }
+      } catch (error) {
+        console.error("Erro ao carregar dados:", error);
+        toast({
+          title: "Erro",
+          description: "Não foi possível carregar seus dados. Tente novamente.",
+          variant: "destructive"
+        });
+      }
+    };
+    
+    loadData();
+  }, [userId, setProjects, setTasks, setTimeEntries, setTags, toast]);
 
   useEffect(() => {
     setState(prevState => ({

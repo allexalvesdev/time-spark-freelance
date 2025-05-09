@@ -16,8 +16,8 @@ export const useTimeEntries = (userId: string) => {
         await stopTimer(false);
       }
 
+      // Create a new time entry without explicitly providing the id
       const newTimeEntry = await timeEntryService.createTimeEntry({
-        id: uuidv4(),
         taskId,
         projectId,
         userId,

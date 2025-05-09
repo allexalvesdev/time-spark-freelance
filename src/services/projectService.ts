@@ -13,8 +13,13 @@ export const projectService = {
 
       if (error) throw error;
 
+      // Properly map database fields to our Project type
       return data.map(project => ({
-        ...project,
+        id: project.id,
+        name: project.name,
+        hourlyRate: project.hourly_rate,
+        userId: project.user_id,
+        teamId: project.team_id,
         createdAt: new Date(project.created_at),
       })) as Project[];
     } catch (error: any) {
@@ -33,8 +38,13 @@ export const projectService = {
 
       if (error) throw error;
       
+      // Properly map database fields to our Project type
       return {
-        ...data,
+        id: data.id,
+        name: data.name,
+        hourlyRate: data.hourly_rate,
+        userId: data.user_id,
+        teamId: data.team_id,
         createdAt: new Date(data.created_at),
       } as Project;
     } catch (error: any) {
@@ -65,6 +75,7 @@ export const projectService = {
 
       if (error) throw error;
 
+      // Return properly mapped Project object
       return {
         id: data.id,
         name: data.name,
@@ -94,6 +105,7 @@ export const projectService = {
 
       if (error) throw error;
 
+      // Return properly mapped Project object
       return {
         id: data.id,
         name: data.name,

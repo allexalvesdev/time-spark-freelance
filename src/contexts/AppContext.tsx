@@ -1,3 +1,4 @@
+
 import React, {
   createContext,
   useState,
@@ -22,7 +23,7 @@ interface Props {
   children: React.ReactNode;
 }
 
-export const AppContextProvider: React.FC<Props> = ({ children }) => {
+export const AppProvider: React.FC<Props> = ({ children }) => {
   const { user } = useAuth();
   const userId = user?.id as string;
 
@@ -124,16 +125,14 @@ export const AppContextProvider: React.FC<Props> = ({ children }) => {
   };
 
   const generateReport = useCallback((projectIdOrIds: string | string[]) => {
-    const { generateReport, generateMultiProjectReport } = useReportGenerator();
-    
     if (Array.isArray(projectIdOrIds)) {
       // Se for um array de IDs, gerar relatório de múltiplos projetos
       return generateMultiProjectReport(projectIdOrIds, state.projects, state.tasks);
     } else {
       // Se for um único ID, gerar relatório de único projeto
-      return generateReport(projectIdOrIds, state.projects, state.tasks);
+      return generateReportBase(projectIdOrIds, state.projects, state.tasks);
     }
-  }, [state.projects, state.tasks]);
+  }, [state.projects, state.tasks, generateMultiProjectReport, generateReportBase]);
 
   return (
     <AppContext.Provider
@@ -163,6 +162,9 @@ export const AppContextProvider: React.FC<Props> = ({ children }) => {
     </AppContext.Provider>
   );
 };
+
+// For backward compatibility
+export const AppContextProvider = AppProvider;
 
 export const useAppContext = () => {
   const context = useContext(AppContext);

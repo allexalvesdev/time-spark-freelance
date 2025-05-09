@@ -64,7 +64,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { calculateElapsedTime, formatDuration } from '@/utils/dateUtils';
-import { Timer } from "@/components/Timer";
+import Timer from "@/components/Timer";
 import { GlobalTimer } from "@/components/GlobalTimer";
 import { TagSelector } from "@/components/TagSelector";
 
@@ -304,7 +304,7 @@ export const ProjectDetails = () => {
   };
 
   const handleGlobalTimerStart = (taskId: string) => {
-    setGlobalTimerRunning(true);
+    setIsGlobalTimerRunning(true);
     setGlobalTimerTaskId(taskId);
     setGlobalTimerStartTime(Date.now());
     setGlobalTimerElapsedTime(0);
@@ -316,7 +316,7 @@ export const ProjectDetails = () => {
   };
 
   const handleGlobalTimerStop = (taskId: string) => {
-    setGlobalTimerRunning(false);
+    setIsGlobalTimerRunning(false);
     setGlobalTimerTaskId(null);
     setGlobalTimerStartTime(null);
 
@@ -532,3 +532,5 @@ export const ProjectDetails = () => {
     </>
   );
 };
+
+export default ProjectDetails;

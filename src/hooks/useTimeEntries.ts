@@ -1,8 +1,9 @@
 
 import { useState } from 'react';
-import { TimeEntry, Task } from '@/types';
+import { TimeEntry } from '@/types';
 import { timeEntryService } from '@/services';
 import { useToast } from '@/hooks/use-toast';
+import { v4 as uuidv4 } from 'uuid';
 
 export const useTimeEntries = (userId: string) => {
   const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([]);
@@ -16,6 +17,7 @@ export const useTimeEntries = (userId: string) => {
       }
 
       const newTimeEntry = await timeEntryService.createTimeEntry({
+        id: uuidv4(),
         taskId,
         projectId,
         userId,

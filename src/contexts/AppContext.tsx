@@ -1,185 +1,164 @@
-
-import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
+import React, {
+  createContext,
+  useState,
+  useEffect,
+  useContext,
+  useCallback,
+} from 'react';
+import { v4 as uuidv4 } from 'uuid';
 import { AppState, AppContextType } from '@/types/app';
-import { Project, Task, TimeEntry, ReportData, Tag } from '@/types';
-import { useAuth } from '@/contexts/AuthContext';
+import { Project, Task, TimeEntry, Tag, ReportData } from '@/types';
+import { projectService, taskService, timeEntryService, tagService } from '@/services';
 import { useProjects } from '@/hooks/useProjects';
 import { useTasks } from '@/hooks/useTasks';
-import { useTimerManagement } from '@/hooks/useTimerManagement';
+import { useTimeEntries } from '@/hooks/useTimeEntries';
 import { useReportGenerator } from '@/hooks/useReportGenerator';
-import { projectService, taskService, timeEntryService, tagService } from '@/services';
 import { useTags } from '@/hooks/useTags';
+import { useAuth } from './AuthContext';
 
-// Define initial state
-const initialState: AppState = {
-  projects: [],
-  tasks: [],
-  timeEntries: [],
-  activeTimeEntry: null,
-  currentProject: null,
-  currentTask: null,
-  tags: [],
-};
+const AppContext = createContext<AppContextType | undefined>(undefined);
 
-// Create context
-export const AppContext = createContext<AppContextType | undefined>(undefined);
+interface Props {
+  children: React.ReactNode;
+}
 
-export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+export const AppContextProvider: React.FC<Props> = ({ children }) => {
   const { user } = useAuth();
-  const [state, setState] = useState<AppState>(initialState);
-  
-  const userId = user?.id || '';
-  
-  // Use custom hooks
-  const { 
-    projects, 
-    setProjects, 
-    addProject, 
-    updateProject, 
-    deleteProject 
-  } = useProjects(userId);
-  
-  const { 
-    tasks, 
-    setTasks, 
-    currentTask, 
-    setCurrentTask, 
-    addTask, 
-    updateTask, 
-    completeTask, 
-    deleteTask 
-  } = useTasks(userId);
-  
-  const { 
-    timeEntries, 
-    setTimeEntries, 
-    activeTimeEntry, 
-    setActiveTimeEntry, 
-    startTimer, 
-    stopTimer 
-  } = useTimerManagement(userId, tasks);
+  const userId = user?.id as string;
 
   const {
-    tags,
-    setTags,
-    addTag,
-    deleteTag,
-    addTagToTask,
-    removeTagFromTask,
-    getTaskTags
-  } = useTags(userId);
-  
-  const { generateReport } = useReportGenerator();
-  
-  // Function to get active task name
-  const getActiveTaskName = () => {
-    if (!activeTimeEntry) return null;
-    const task = tasks.find(t => t.id === activeTimeEntry.taskId);
-    return task ? task.name : null;
-  };
-  
-  // Update centralized state when sub-states change
-  useEffect(() => {
-    setState({
-      projects,
-      tasks,
-      timeEntries,
-      activeTimeEntry,
-      currentProject: state.currentProject,
-      currentTask,
-      tags,
-    });
-  }, [projects, tasks, timeEntries, activeTimeEntry, currentTask, tags]);
-  
-  // Listen for task-completed events to update global task list
-  useEffect(() => {
-    const handleTaskCompleted = (event: CustomEvent) => {
-      const { taskId, updatedTask } = event.detail;
-      
-      // Update tasks state with the completed task
-      setTasks(currentTasks => 
-        currentTasks.map(t => t.id === taskId ? updatedTask : t)
-      );
-    };
-    
-    window.addEventListener('task-completed', handleTaskCompleted as EventListener);
-    
-    return () => {
-      window.removeEventListener('task-completed', handleTaskCompleted as EventListener);
-    };
-  }, [setTasks]);
-  
-  // Load data when user changes
-  useEffect(() => {
-    if (!user) {
-      // Reset state if no user
-      setState(initialState);
-      return;
-    }
-    
-    const loadInitialData = async () => {
-      try {
-        // Load projects
-        const projectsData = await projectService.loadProjects();
-        setProjects(projectsData || []);
-        
-        // Load tasks
-        const { tasks: tasksData } = await taskService.loadTasks();
-        setTasks(tasksData);
-        
-        // Load time entries
-        const timeEntriesData = await timeEntryService.loadTimeEntries();
-        
-        setTimeEntries(timeEntriesData || []);
-        setActiveTimeEntry(timeEntriesData.find((entry: TimeEntry) => entry.isRunning) || null);
-
-        // Load tags
-        const { tags: tagsData } = await tagService.loadTags(user.id);
-        setTags(tagsData);
-      } catch (error) {
-        // Handle data loading error
-        console.error("Error loading data:", error);
-      }
-    };
-    
-    loadInitialData();
-  }, [user]);
-  
-  // Function to set current project
-  const setCurrentProject = (project: Project | null) => {
-    setState(prev => ({ ...prev, currentProject: project }));
-  };
-
-  // Report generation function adapted to use context
-  const appGenerateReport = (projectId: string): ReportData | null => {
-    return generateReport(projectId, projects, tasks);
-  };
-  
-  // Group values and functions exposed by context
-  const contextValue: AppContextType = {
-    state,
+    projects,
+    setProjects,
+    currentProject,
+    setCurrentProject: setCurrentProjectState,
     addProject,
     updateProject,
     deleteProject,
+  } = useProjects(userId);
+  const {
+    tasks,
+    setTasks,
+    currentTask,
+    setCurrentTask: setCurrentTaskState,
     addTask,
     updateTask,
     completeTask,
     deleteTask,
-    startTimer,
-    stopTimer,
-    setCurrentProject,
-    setCurrentTask,
-    generateReport: appGenerateReport,
-    getActiveTaskName,
-    addTag,
-    deleteTag,
-    addTagToTask,
-    removeTagFromTask,
-    getTaskTags,
+  } = useTasks(userId);
+  const {
+    timeEntries,
+    setTimeEntries,
+    activeTimeEntry,
+    setActiveTimeEntry,
+    startTimer: startTimerState,
+    stopTimer: stopTimerState,
+  } = useTimeEntries(userId);
+  const { generateReport: generateReportBase, generateMultiProjectReport } = useReportGenerator();
+  const { tags, setTags, addTag: addTagState, deleteTag: deleteTagState, addTagToTask: addTagToTaskState, removeTagFromTask: removeTagFromTaskState, getTaskTags: getTaskTagsState } = useTags(userId);
+
+  const [state, setState] = useState<AppState>({
+    projects: [],
+    tasks: [],
+    timeEntries: [],
+    activeTimeEntry: null,
+    currentProject: null,
+    currentTask: null,
+    tags: [],
+  });
+
+  useEffect(() => {
+    setState(prevState => ({
+      ...prevState,
+      projects: projects,
+      tasks: tasks,
+      timeEntries: timeEntries,
+      activeTimeEntry: activeTimeEntry,
+      currentProject: currentProject,
+      currentTask: currentTask,
+      tags: tags,
+    }));
+  }, [projects, tasks, timeEntries, activeTimeEntry, currentProject, currentTask, tags]);
+
+  const setCurrentProject = (project: Project | null) => {
+    setCurrentProjectState(project);
   };
-  
+
+  const setCurrentTask = (task: Task | null) => {
+    setCurrentTaskState(task);
+  };
+
+  const startTimer = async (taskId: string, projectId: string) => {
+    await startTimerState(taskId, projectId);
+  };
+
+  const stopTimer = async (completeTask?: boolean) => {
+    await stopTimerState(completeTask);
+  };
+
+  const getActiveTaskName = (): string | null => {
+    if (state.activeTimeEntry) {
+      const task = state.tasks.find(task => task.id === state.activeTimeEntry?.taskId);
+      return task ? task.name : null;
+    }
+    return null;
+  };
+
+  const addTag = async (name: string): Promise<Tag> => {
+    return await addTagState(name);
+  };
+
+  const deleteTag = async (tagId: string): Promise<void> => {
+    await deleteTagState(tagId);
+  };
+
+  const addTagToTask = async (taskId: string, tagId: string): Promise<void> => {
+    await addTagToTaskState(taskId, tagId);
+  };
+
+  const removeTagFromTask = async (taskId: string, tagId: string): Promise<void> => {
+    await removeTagFromTaskState(taskId, tagId);
+  };
+
+  const getTaskTags = async (taskId: string): Promise<string[]> => {
+    return await getTaskTagsState(taskId);
+  };
+
+  const generateReport = useCallback((projectIdOrIds: string | string[]) => {
+    const { generateReport, generateMultiProjectReport } = useReportGenerator();
+    
+    if (Array.isArray(projectIdOrIds)) {
+      // Se for um array de IDs, gerar relatório de múltiplos projetos
+      return generateMultiProjectReport(projectIdOrIds, state.projects, state.tasks);
+    } else {
+      // Se for um único ID, gerar relatório de único projeto
+      return generateReport(projectIdOrIds, state.projects, state.tasks);
+    }
+  }, [state.projects, state.tasks]);
+
   return (
-    <AppContext.Provider value={contextValue}>
+    <AppContext.Provider
+      value={{
+        state,
+        addProject,
+        updateProject,
+        deleteProject,
+        addTask,
+        updateTask,
+        completeTask,
+        deleteTask,
+        startTimer,
+        stopTimer,
+        setCurrentProject,
+        setCurrentTask,
+        generateReport,
+        getActiveTaskName,
+        addTag,
+        deleteTag,
+        addTagToTask,
+        removeTagFromTask,
+        getTaskTags,
+      }}
+    >
       {children}
     </AppContext.Provider>
   );
@@ -188,7 +167,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 export const useAppContext = () => {
   const context = useContext(AppContext);
   if (context === undefined) {
-    throw new Error('useAppContext must be used within an AppProvider');
+    throw new Error('useAppContext must be used within a AppContextProvider');
   }
   return context;
 };

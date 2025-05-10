@@ -47,5 +47,31 @@ export const useReportGenerator = () => {
     };
   };
 
-  return { generateReport };
+  // Nova função para gerar relatórios de múltiplos projetos
+  const generateMultipleProjectsReport = (
+    projectIds: string[], 
+    projects: Project[], 
+    tasks: Task[]
+  ): { reports: ReportData[], totalTime: number, totalEarnings: number } | null => {
+    if (!projectIds.length) return null;
+
+    // Gerar relatórios individuais para cada projeto
+    const reports = projectIds
+      .map(id => generateReport(id, projects, tasks))
+      .filter((report): report is ReportData => report !== null);
+    
+    if (reports.length === 0) return null;
+    
+    // Calcular totais gerais
+    const totalTime = reports.reduce((sum, report) => sum + report.totalTime, 0);
+    const totalEarnings = reports.reduce((sum, report) => sum + report.totalEarnings, 0);
+    
+    return {
+      reports,
+      totalTime,
+      totalEarnings
+    };
+  };
+
+  return { generateReport, generateMultipleProjectsReport };
 };

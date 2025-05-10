@@ -13,7 +13,7 @@ import Layout from "@/components/Layout";
 import Dashboard from "@/pages/Dashboard";
 import Auth from "@/pages/Auth";
 import NewProject from "@/pages/NewProject";
-import { ProjectDetails } from "@/pages/ProjectDetails";
+import ProjectDetails from "@/pages/ProjectDetails";
 import Agenda from "@/pages/Agenda";
 import Tasks from "@/pages/Tasks";
 import Reports from "@/pages/Reports";

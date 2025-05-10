@@ -1,136 +1,114 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { Project } from '@/types';
-import { v4 as uuidv4 } from 'uuid';
 
 export const projectService = {
-  loadProjects: async (): Promise<Project[]> => {
-    try {
-      const { data, error } = await supabase
-        .from('projects')
-        .select('*')
-        .order('created_at', { ascending: false });
+  async loadProjects() {
+    const { data: projects, error } = await supabase
+      .from('projects')
+      .select('*')
+      .order('created_at', { ascending: false });
+    
+    if (error) throw error;
+    
+    return projects?.map(project => ({
+      id: project.id,
+      name: project.name,
+      hourlyRate: project.hourly_rate,
+      createdAt: new Date(project.created_at),
+      userId: project.user_id,
+      teamId: project.team_id || undefined,
+    })) || [];
+  },
 
-      if (error) throw error;
-
-      // Properly map database fields to our Project type
-      return data.map(project => ({
-        id: project.id,
+  async createProject(project: Omit<Project, 'id' | 'createdAt'>) {
+    const { data, error } = await supabase
+      .from('projects')
+      .insert([{ 
         name: project.name,
-        hourlyRate: project.hourly_rate,
-        userId: project.user_id,
-        teamId: project.team_id,
-        createdAt: new Date(project.created_at),
-      })) as Project[];
-    } catch (error: any) {
-      console.error('Error loading projects:', error.message);
-      throw error;
-    }
+        hourly_rate: project.hourlyRate,
+        user_id: project.userId,
+        team_id: project.teamId // Will be undefined for regular projects
+      }])
+      .select()
+      .single();
+    
+    if (error) throw error;
+    
+    return {
+      id: data.id,
+      name: data.name,
+      hourlyRate: data.hourly_rate,
+      createdAt: new Date(data.created_at),
+      userId: data.user_id,
+      teamId: data.team_id,
+    };
   },
 
-  getProject: async (projectId: string): Promise<Project> => {
-    try {
-      const { data, error } = await supabase
-        .from('projects')
-        .select('*')
-        .eq('id', projectId)
-        .single();
+  async updateProject(project: Project) {
+    const { error } = await supabase
+      .from('projects')
+      .update({ 
+        name: project.name,
+        hourly_rate: project.hourlyRate,
+        team_id: project.teamId 
+      })
+      .eq('id', project.id);
 
-      if (error) throw error;
+    if (error) throw error;
+  },
+
+  async deleteProject(projectId: string) {
+    // First, delete all task tags associated with tasks in this project
+    const { data: projectTasks, error: tasksError } = await supabase
+      .from('tasks')
+      .select('id')
+      .eq('project_id', projectId);
+    
+    if (tasksError) throw tasksError;
+    
+    if (projectTasks && projectTasks.length > 0) {
+      const taskIds = projectTasks.map(task => task.id);
       
-      // Properly map database fields to our Project type
-      return {
-        id: data.id,
-        name: data.name,
-        hourlyRate: data.hourly_rate,
-        userId: data.user_id,
-        teamId: data.team_id,
-        createdAt: new Date(data.created_at),
-      } as Project;
-    } catch (error: any) {
-      console.error(`Error loading project ${projectId}:`, error.message);
-      throw error;
-    }
-  },
-
-  createProject: async (project: Omit<Project, 'id' | 'createdAt'>): Promise<Project> => {
-    try {
-      const newProject = {
-        id: uuidv4(),
-        ...project,
-        created_at: new Date().toISOString(),
-      };
-
-      const { data, error } = await supabase
-        .from('projects')
-        .insert([{
-          id: newProject.id,
-          name: project.name,
-          hourly_rate: project.hourlyRate,
-          user_id: project.userId,
-          team_id: project.teamId,
-        }])
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      // Return properly mapped Project object
-      return {
-        id: data.id,
-        name: data.name,
-        hourlyRate: data.hourly_rate,
-        userId: data.user_id,
-        teamId: data.team_id,
-        createdAt: new Date(data.created_at),
-      } as Project;
-    } catch (error: any) {
-      console.error('Error creating project:', error.message);
-      throw error;
-    }
-  },
-
-  updateProject: async (project: Project): Promise<Project> => {
-    try {
-      const { data, error } = await supabase
-        .from('projects')
-        .update({
-          name: project.name,
-          hourly_rate: project.hourlyRate,
-          team_id: project.teamId,
-        })
-        .eq('id', project.id)
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      // Return properly mapped Project object
-      return {
-        id: data.id,
-        name: data.name,
-        hourlyRate: data.hourly_rate,
-        userId: data.user_id,
-        teamId: data.team_id,
-        createdAt: new Date(data.created_at),
-      } as Project;
-    } catch (error: any) {
-      console.error(`Error updating project ${project.id}:`, error.message);
-      throw error;
-    }
-  },
-
-  deleteProject: async (projectId: string): Promise<void> => {
-    try {
-      const { error } = await supabase
-        .from('projects')
+      // Delete all task tags
+      const { error: taskTagsError } = await supabase
+        .from('task_tags')
         .delete()
-        .eq('id', projectId);
-
-      if (error) throw error;
-    } catch (error: any) {
-      console.error(`Error deleting project ${projectId}:`, error.message);
-      throw error;
+        .in('task_id', taskIds);
+      
+      if (taskTagsError) throw taskTagsError;
+      
+      // Delete all time entries related to the tasks
+      const { error: timeEntriesError } = await supabase
+        .from('time_entries')
+        .delete()
+        .in('task_id', taskIds);
+      
+      if (timeEntriesError) throw timeEntriesError;
     }
+    
+    // Delete all tasks associated with this project
+    const { error: deleteTasksError } = await supabase
+      .from('tasks')
+      .delete()
+      .eq('project_id', projectId);
+
+    if (deleteTasksError) throw deleteTasksError;
+    
+    // Delete all time entries directly associated with the project
+    const { error: deleteProjectTimeEntriesError } = await supabase
+      .from('time_entries')
+      .delete()
+      .eq('project_id', projectId);
+
+    if (deleteProjectTimeEntriesError) throw deleteProjectTimeEntriesError;
+    
+    // Finally delete the project itself
+    const { error } = await supabase
+      .from('projects')
+      .delete()
+      .eq('id', projectId);
+
+    if (error) throw error;
   },
 };

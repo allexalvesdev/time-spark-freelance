@@ -34,7 +34,7 @@ export interface TimeEntry {
   userId: string;
 }
 
-export interface ProjectReportData {
+export interface ReportData {
   projectId: string;
   projectName: string;
   hourlyRate: number;
@@ -47,12 +47,6 @@ export interface ProjectReportData {
     startTime?: Date;
     endTime?: Date;
   }[];
-  totalTime: number; // em segundos
-  totalEarnings: number; // em reais
-}
-
-export interface ReportData {
-  projects: ProjectReportData[];
   totalTime: number; // em segundos
   totalEarnings: number; // em reais
 }

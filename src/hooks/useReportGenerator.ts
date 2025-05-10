@@ -1,10 +1,9 @@
 
-import { Project, Task, ReportData, ProjectReportData } from '@/types';
+import { Project, Task, ReportData } from '@/types';
 import { calculateElapsedTime, calculateEarnings } from '@/utils/dateUtils';
 
 export const useReportGenerator = () => {
-  // Função auxiliar para gerar relatório de um único projeto
-  const generateProjectReport = (projectId: string, projects: Project[], tasks: Task[]): ProjectReportData | null => {
+  const generateReport = (projectId: string, projects: Project[], tasks: Task[]): ReportData | null => {
     const project = projects.find(p => p.id === projectId);
     if (!project) return null;
     
@@ -30,7 +29,7 @@ export const useReportGenerator = () => {
         description: task.description,
         timeSpent,
         earnings,
-        startTime,
+        startTime, // Ensuring we're using the fallback here as well
         endTime
       };
     });
@@ -48,42 +47,5 @@ export const useReportGenerator = () => {
     };
   };
 
-  // Função para gerar relatório de múltiplos projetos
-  const generateMultiProjectReport = (projectIds: string[], projects: Project[], tasks: Task[]): ReportData | null => {
-    const projectReports: ProjectReportData[] = [];
-    
-    // Gerar relatório para cada projeto selecionado
-    for (const projectId of projectIds) {
-      const projectReport = generateProjectReport(projectId, projects, tasks);
-      if (projectReport) {
-        projectReports.push(projectReport);
-      }
-    }
-    
-    if (projectReports.length === 0) return null;
-    
-    // Calcular totais gerais de tempo e ganhos
-    const totalTime = projectReports.reduce((sum, report) => sum + report.totalTime, 0);
-    const totalEarnings = projectReports.reduce((sum, report) => sum + report.totalEarnings, 0);
-    
-    return {
-      projects: projectReports,
-      totalTime,
-      totalEarnings
-    };
-  };
-
-  // Função para gerar relatório de um único projeto (mantida para compatibilidade)
-  const generateReport = (projectId: string, projects: Project[], tasks: Task[]): ReportData | null => {
-    const projectReport = generateProjectReport(projectId, projects, tasks);
-    if (!projectReport) return null;
-    
-    return {
-      projects: [projectReport],
-      totalTime: projectReport.totalTime,
-      totalEarnings: projectReport.totalEarnings
-    };
-  };
-
-  return { generateReport, generateMultiProjectReport };
+  return { generateReport };
 };

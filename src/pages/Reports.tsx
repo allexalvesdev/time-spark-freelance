@@ -1,7 +1,6 @@
-
 import React, { useState } from 'react';
 import { useAppContext } from '@/contexts/AppContext';
-import { BarChart2, FileText, Download, Check } from 'lucide-react';
+import { BarChart2, FileText, Download, Check, X } from 'lucide-react';
 import { PDFDownloadLink } from '@react-pdf/renderer';
 import { ReportPDF } from '@/components/ReportPDF';
 import { useReportGenerator } from '@/hooks/useReportGenerator';
@@ -18,6 +17,7 @@ import {
   CommandGroup,
   CommandInput,
   CommandItem,
+  CommandList,
 } from "@/components/ui/command";
 import {
   Popover,
@@ -137,26 +137,28 @@ const Reports: React.FC = () => {
                 <PopoverContent className="w-full sm:w-80 p-0">
                   <Command>
                     <CommandInput placeholder="Buscar projeto..." />
-                    <CommandEmpty>Nenhum projeto encontrado.</CommandEmpty>
-                    <CommandGroup className="max-h-64 overflow-y-auto">
-                      {projects.map(project => (
-                        <CommandItem
-                          key={project.id}
-                          value={project.name}
-                          onSelect={() => handleSelectProject(project.id)}
-                        >
-                          <Check
-                            className={cn(
-                              "mr-2 h-4 w-4",
-                              selectedProjectIds.includes(project.id) 
-                                ? "opacity-100" 
-                                : "opacity-0"
-                            )}
-                          />
-                          {project.name}
-                        </CommandItem>
-                      ))}
-                    </CommandGroup>
+                    <CommandList>
+                      <CommandEmpty>Nenhum projeto encontrado.</CommandEmpty>
+                      <CommandGroup className="max-h-64 overflow-y-auto">
+                        {projects && projects.map(project => (
+                          <CommandItem
+                            key={project.id}
+                            value={project.name}
+                            onSelect={() => handleSelectProject(project.id)}
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4",
+                                selectedProjectIds.includes(project.id) 
+                                  ? "opacity-100" 
+                                  : "opacity-0"
+                              )}
+                            />
+                            {project.name}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
                   </Command>
                 </PopoverContent>
               </Popover>
@@ -189,7 +191,7 @@ const Reports: React.FC = () => {
                       onClick={() => removeProject(id)}
                       className="ml-1 rounded-full hover:bg-muted p-0.5"
                     >
-                      <Check className="h-3 w-3" />
+                      <X className="h-3 w-3" />
                     </button>
                   </Badge>
                 );

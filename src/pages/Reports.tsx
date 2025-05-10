@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useAppContext } from '@/contexts/AppContext';
 import { BarChart2, FileText, Download, Check, X } from 'lucide-react';
 import { PDFDownloadLink } from '@react-pdf/renderer';
-import { ReportPDF } from '@/components/ReportPDF';
+import { ReportPDF, ConsolidatedReportPDF } from '@/components/ReportPDF';
 import { useReportGenerator } from '@/hooks/useReportGenerator';
 import {
   Select,
@@ -276,7 +276,13 @@ const Reports: React.FC = () => {
             {/* Botão para exportar PDF do relatório consolidado */}
             <div className="mt-6 flex justify-end">
               <PDFDownloadLink
-                document={<ReportPDF data={reportData[0]} />}
+                document={
+                  <ConsolidatedReportPDF 
+                    reports={reportData} 
+                    totalTime={totalTime} 
+                    totalEarnings={totalEarnings} 
+                  />
+                }
                 fileName={`relatorio-consolidado.pdf`}
                 className="inline-block"
               >

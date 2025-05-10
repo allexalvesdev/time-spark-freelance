@@ -4,6 +4,7 @@ import { useAppContext } from '@/contexts/AppContext';
 import { BarChart2, FileText, Download, Check } from 'lucide-react';
 import { PDFDownloadLink } from '@react-pdf/renderer';
 import { ReportPDF } from '@/components/ReportPDF';
+import { useReportGenerator } from '@/hooks/useReportGenerator';
 import {
   Select,
   SelectContent,

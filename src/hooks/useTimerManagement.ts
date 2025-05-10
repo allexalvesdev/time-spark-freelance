@@ -22,6 +22,8 @@ export const useTimerManagement = (userId: string, tasks: Task[] = []) => {
         userId,
         startTime: new Date(),
         isRunning: true,
+        isPaused: false,
+        pausedTime: 0,
       });
 
       setTimeEntries(prev => Array.isArray(prev) ? [newTimeEntry, ...prev] : [newTimeEntry]);
@@ -31,10 +33,114 @@ export const useTimerManagement = (userId: string, tasks: Task[] = []) => {
       localStorage.setItem('activeTimeEntryId', newTimeEntry.id);
       localStorage.setItem('activeTaskId', taskId);
       localStorage.setItem('timerStartTime', new Date().getTime().toString());
+      localStorage.setItem('timerIsPaused', 'false');
+      localStorage.setItem('timerPausedTime', '0');
     } catch (error: any) {
       toast({
         title: 'Erro',
         description: 'Não foi possível iniciar o cronômetro. Tente novamente.',
+        variant: 'destructive',
+      });
+      throw error;
+    }
+  };
+
+  const pauseTimer = async () => {
+    try {
+      if (!activeTimeEntry) return;
+      
+      const currentTime = new Date();
+      const startTime = new Date(activeTimeEntry.startTime);
+      const pausedTimeSeconds = (activeTimeEntry.pausedTime || 0);
+      
+      // Calculate time elapsed until now, not counting already paused time
+      const elapsedUntilNow = Math.floor((currentTime.getTime() - startTime.getTime()) / 1000) - pausedTimeSeconds;
+      
+      const updatedTimeEntry: TimeEntry = {
+        ...activeTimeEntry,
+        isPaused: true,
+        isRunning: true, // Timer is still considered running, just paused
+        pausedTime: pausedTimeSeconds,  // Keep existing paused time, will be updated in useTimerState
+      };
+      
+      await timeEntryService.pauseTimeEntry(activeTimeEntry.id, pausedTimeSeconds);
+      
+      setTimeEntries(prev => Array.isArray(prev) 
+        ? prev.map(entry => entry.id === activeTimeEntry.id ? updatedTimeEntry : entry)
+        : [updatedTimeEntry]
+      );
+      
+      setActiveTimeEntry(updatedTimeEntry);
+      
+      // Update localStorage
+      localStorage.setItem('timerIsPaused', 'true');
+      localStorage.setItem('timerPausedAt', new Date().getTime().toString());
+      
+      // Update timer state of the specific task
+      const taskId = activeTimeEntry.taskId;
+      localStorage.setItem(`timerIsPaused-global-timer-${taskId}`, 'true');
+      localStorage.setItem(`timerPausedAt-global-timer-${taskId}`, new Date().getTime().toString());
+      
+      toast({
+        title: 'Timer pausado',
+        description: 'O cronômetro foi pausado. Você pode retomá-lo quando quiser.',
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível pausar o cronômetro. Tente novamente.',
+        variant: 'destructive',
+      });
+      throw error;
+    }
+  };
+  
+  const resumeTimer = async () => {
+    try {
+      if (!activeTimeEntry || !activeTimeEntry.isPaused) return;
+      
+      // Calculate the additional paused time that needs to be added
+      const pausedAt = parseInt(localStorage.getItem(`timerPausedAt-global-timer-${activeTimeEntry.taskId}`) || '0', 10);
+      const now = new Date().getTime();
+      const additionalPausedTime = Math.floor((now - pausedAt) / 1000);
+      
+      // Add this to the existing paused time
+      const totalPausedTime = (activeTimeEntry.pausedTime || 0) + additionalPausedTime;
+      
+      const updatedTimeEntry: TimeEntry = {
+        ...activeTimeEntry,
+        isPaused: false,
+        isRunning: true,
+        pausedTime: totalPausedTime,
+      };
+      
+      await timeEntryService.resumeTimeEntry(activeTimeEntry.id, totalPausedTime);
+      
+      setTimeEntries(prev => Array.isArray(prev) 
+        ? prev.map(entry => entry.id === activeTimeEntry.id ? updatedTimeEntry : entry)
+        : [updatedTimeEntry]
+      );
+      
+      setActiveTimeEntry(updatedTimeEntry);
+      
+      // Update localStorage
+      localStorage.setItem('timerIsPaused', 'false');
+      localStorage.removeItem('timerPausedAt');
+      
+      // Update timer state of the specific task
+      const taskId = activeTimeEntry.taskId;
+      localStorage.setItem(`timerIsPaused-global-timer-${taskId}`, 'false');
+      localStorage.setItem(`timerPausedTime-global-timer-${taskId}`, totalPausedTime.toString());
+      localStorage.removeItem(`timerPausedAt-global-timer-${taskId}`);
+      
+      toast({
+        title: 'Timer retomado',
+        description: 'O cronômetro foi retomado e está contando normalmente.',
+      });
+    } catch (error: any) {
+      toast({
+        title: 'Erro',
+        description: 'Não foi possível retomar o cronômetro. Tente novamente.',
         variant: 'destructive',
       });
       throw error;
@@ -47,13 +153,28 @@ export const useTimerManagement = (userId: string, tasks: Task[] = []) => {
 
       const endTime = new Date();
       const startTime = new Date(activeTimeEntry.startTime);
-      const duration = Math.floor((endTime.getTime() - startTime.getTime()) / 1000);
+      let duration = Math.floor((endTime.getTime() - startTime.getTime()) / 1000);
+      
+      // Subtract paused time from the total duration
+      if (activeTimeEntry.pausedTime) {
+        duration -= activeTimeEntry.pausedTime;
+      }
+      
+      // If currently paused, calculate additional paused time
+      if (activeTimeEntry.isPaused) {
+        const pausedAt = parseInt(localStorage.getItem(`timerPausedAt-global-timer-${activeTimeEntry.taskId}`) || '0', 10);
+        if (pausedAt > 0) {
+          const additionalPausedTime = Math.floor((endTime.getTime() - pausedAt) / 1000);
+          duration -= additionalPausedTime;
+        }
+      }
 
       const updatedTimeEntry: TimeEntry = {
         ...activeTimeEntry,
         endTime,
         duration,
         isRunning: false,
+        isPaused: false,
       };
 
       await timeEntryService.updateTimeEntry(updatedTimeEntry);
@@ -111,11 +232,17 @@ export const useTimerManagement = (userId: string, tasks: Task[] = []) => {
       localStorage.removeItem('activeTimeEntryId');
       localStorage.removeItem('activeTaskId');
       localStorage.removeItem('timerStartTime');
+      localStorage.removeItem('timerIsPaused');
+      localStorage.removeItem('timerPausedTime');
+      localStorage.removeItem('timerPausedAt');
       
       const taskId = activeTimeEntry.taskId;
       localStorage.removeItem(`timerIsRunning-global-timer-${taskId}`);
       localStorage.removeItem(`timerStartTime-global-timer-${taskId}`);
       localStorage.removeItem(`timerElapsedTime-global-timer-${taskId}`);
+      localStorage.removeItem(`timerIsPaused-global-timer-${taskId}`);
+      localStorage.removeItem(`timerPausedTime-global-timer-${taskId}`);
+      localStorage.removeItem(`timerPausedAt-global-timer-${taskId}`);
     } catch (error: any) {
       toast({
         title: 'Erro',
@@ -141,6 +268,8 @@ export const useTimerManagement = (userId: string, tasks: Task[] = []) => {
     activeTimeEntry,
     setActiveTimeEntry,
     startTimer,
+    pauseTimer,
+    resumeTimer,
     stopTimer,
     getActiveTaskName,
   };

@@ -56,6 +56,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     activeTimeEntry, 
     setActiveTimeEntry, 
     startTimer, 
+    pauseTimer,
+    resumeTimer,
     stopTimer 
   } = useTimerManagement(userId, tasks);
 
@@ -166,6 +168,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     completeTask,
     deleteTask,
     startTimer,
+    pauseTimer,
+    resumeTimer,
     stopTimer,
     setCurrentProject,
     setCurrentTask,

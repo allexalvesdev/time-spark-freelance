@@ -2,7 +2,7 @@
 import React from 'react';
 import { Task } from '@/types';
 import { Button } from '@/components/ui/button';
-import { Edit, Trash2, Check, Play, Square } from 'lucide-react';
+import { Edit, Trash2, Check, Play, Pause, Square } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,20 +19,26 @@ import { useIsMobile } from '@/hooks/use-mobile';
 interface TaskActionsProps {
   task: Task;
   isTimerRunning: boolean;
+  isTimerPaused?: boolean;
   onEdit: () => void;
   onDelete: () => void;
   onComplete: () => void;
   onStartTimer: () => void;
+  onPauseTimer: () => void;
+  onResumeTimer: () => void;
   onStopTimer: () => void;
 }
 
 const TaskActions: React.FC<TaskActionsProps> = ({
   task,
   isTimerRunning,
+  isTimerPaused = false,
   onEdit,
   onDelete,
   onComplete,
   onStartTimer,
+  onPauseTimer,
+  onResumeTimer,
   onStopTimer,
 }) => {
   const isMobile = useIsMobile();
@@ -86,14 +92,37 @@ const TaskActions: React.FC<TaskActionsProps> = ({
             </Button>
             
             {isTimerRunning ? (
-              <Button 
-                variant="destructive" 
-                size={isMobile ? "icon" : "sm"} 
-                onClick={onStopTimer}
-              >
-                <Square size={16} />
-                {!isMobile && <span className="ml-2">Parar</span>}
-              </Button>
+              <>
+                {isTimerPaused ? (
+                  <Button 
+                    variant="default" 
+                    size={isMobile ? "icon" : "sm"} 
+                    onClick={onResumeTimer}
+                    className="bg-green-500 hover:bg-green-600"
+                  >
+                    <Play size={16} />
+                    {!isMobile && <span className="ml-2">Retomar</span>}
+                  </Button>
+                ) : (
+                  <Button 
+                    variant="default" 
+                    size={isMobile ? "icon" : "sm"} 
+                    onClick={onPauseTimer}
+                    className="bg-yellow-500 hover:bg-yellow-600"
+                  >
+                    <Pause size={16} />
+                    {!isMobile && <span className="ml-2">Pausar</span>}
+                  </Button>
+                )}
+                <Button 
+                  variant="destructive" 
+                  size={isMobile ? "icon" : "sm"} 
+                  onClick={onStopTimer}
+                >
+                  <Square size={16} />
+                  {!isMobile && <span className="ml-2">Parar</span>}
+                </Button>
+              </>
             ) : (
               <Button 
                 variant="default" 

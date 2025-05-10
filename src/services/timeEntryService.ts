@@ -19,6 +19,8 @@ export const timeEntryService = {
       endTime: entry.end_time ? new Date(entry.end_time) : undefined,
       duration: entry.duration,
       isRunning: entry.is_running,
+      isPaused: entry.is_paused || false,
+      pausedTime: entry.paused_time || 0,
       userId: entry.user_id,
     })) || [];
     
@@ -33,6 +35,8 @@ export const timeEntryService = {
         project_id: entry.projectId,
         start_time: entry.startTime.toISOString(),
         is_running: entry.isRunning,
+        is_paused: entry.isPaused || false,
+        paused_time: entry.pausedTime || 0,
         user_id: entry.userId,
       }])
       .select()
@@ -48,6 +52,8 @@ export const timeEntryService = {
       endTime: data.end_time ? new Date(data.end_time) : undefined,
       duration: data.duration,
       isRunning: data.is_running,
+      isPaused: data.is_paused || false,
+      pausedTime: data.paused_time || 0,
       userId: data.user_id,
     };
   },
@@ -59,8 +65,36 @@ export const timeEntryService = {
         end_time: entry.endTime ? entry.endTime.toISOString() : null,
         duration: entry.duration,
         is_running: entry.isRunning,
+        is_paused: entry.isPaused,
+        paused_time: entry.pausedTime,
       })
       .eq('id', entry.id);
+
+    if (error) throw error;
+  },
+
+  async pauseTimeEntry(entryId: string, pausedTime: number) {
+    const { error } = await supabase
+      .from('time_entries')
+      .update({
+        is_paused: true,
+        is_running: true, // Still considered running, just paused
+        paused_time: pausedTime,
+      })
+      .eq('id', entryId);
+
+    if (error) throw error;
+  },
+
+  async resumeTimeEntry(entryId: string, pausedTime: number) {
+    const { error } = await supabase
+      .from('time_entries')
+      .update({
+        is_paused: false,
+        is_running: true,
+        paused_time: pausedTime,
+      })
+      .eq('id', entryId);
 
     if (error) throw error;
   },

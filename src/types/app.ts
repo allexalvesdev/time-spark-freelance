@@ -21,6 +21,8 @@ export interface AppContextType {
   completeTask: (taskId: string) => Promise<void>;
   deleteTask: (taskId: string) => Promise<void>;
   startTimer: (taskId: string, projectId: string) => Promise<void>;
+  pauseTimer: () => Promise<void>;
+  resumeTimer: () => Promise<void>;
   stopTimer: (completeTask?: boolean) => Promise<void>;
   setCurrentProject: (project: Project | null) => void;
   setCurrentTask: (task: Task | null) => void;

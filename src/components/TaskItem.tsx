@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Task, Project } from '@/types';
 import { useAppContext } from '@/contexts/AppContext';
@@ -16,7 +17,7 @@ interface TaskItemProps {
 }
 
 const TaskItem: React.FC<TaskItemProps> = ({ task, project }) => {
-  const { state, startTimer, stopTimer, deleteTask, getTaskTags } = useAppContext();
+  const { state, startTimer, pauseTimer, resumeTimer, stopTimer, deleteTask, getTaskTags } = useAppContext();
   const { activeTimeEntry, tags } = state;
   const [showEditModal, setShowEditModal] = useState(false);
   const [showCompleteModal, setShowCompleteModal] = useState(false);
@@ -24,14 +25,18 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, project }) => {
   const [taskTags, setTaskTags] = useState<string[]>([]);
   
   const isTimerRunning = activeTimeEntry?.taskId === task.id;
+  const isTimerPaused = activeTimeEntry?.isPaused && isTimerRunning;
   
   // Use global timer key for persistence
   const timerKey = `global-timer-${task.id}`;
   
   const { 
     isRunning, 
+    isPaused,
     elapsedTime,
     start,
+    pause,
+    resume,
     stop,
     reset,
     getFormattedTime 
@@ -86,11 +91,29 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, project }) => {
       stop();
       reset();
     }
-  }, [isTimerRunning, isRunning, start, stop, reset]);
+    
+    // Sync pause state
+    if (isTimerRunning && isTimerPaused && !isPaused) {
+      pause();
+    }
+    else if (isTimerRunning && !isTimerPaused && isPaused) {
+      resume();
+    }
+  }, [isTimerRunning, isTimerPaused, isRunning, isPaused, start, stop, pause, resume, reset]);
   
   const handleStartTimer = () => {
     startTimer(task.id, project.id);
     start();
+  };
+  
+  const handlePauseTimer = () => {
+    pauseTimer();
+    pause();
+  };
+  
+  const handleResumeTimer = () => {
+    resumeTimer();
+    resume();
   };
   
   const handleStopTimer = () => {
@@ -120,6 +143,7 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, project }) => {
       <TaskTimer 
         elapsedTime={currentTask.elapsedTime || 0}
         isRunning={isTimerRunning}
+        isPaused={isTimerPaused}
         currentEarnings={currentEarnings}
         formattedTime={getFormattedTime()}
         taskId={currentTask.id}
@@ -127,10 +151,13 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, project }) => {
       <TaskActions 
         task={currentTask}
         isTimerRunning={isTimerRunning}
+        isTimerPaused={isTimerPaused}
         onEdit={() => setShowEditModal(true)}
         onDelete={handleDeleteTask}
         onComplete={() => setShowCompleteModal(true)}
         onStartTimer={handleStartTimer}
+        onPauseTimer={handlePauseTimer}
+        onResumeTimer={handleResumeTimer}
         onStopTimer={handleStopTimer}
       />
       

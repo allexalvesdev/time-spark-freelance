@@ -6,6 +6,7 @@ import useTimerState from '@/hooks/useTimerState';
 interface TaskTimerProps {
   elapsedTime: number;
   isRunning: boolean;
+  isPaused?: boolean; 
   currentEarnings: number;
   formattedTime: string;
   taskId?: string;
@@ -14,6 +15,7 @@ interface TaskTimerProps {
 const TaskTimer: React.FC<TaskTimerProps> = ({
   elapsedTime,
   isRunning,
+  isPaused = false,
   currentEarnings,
   formattedTime,
   taskId
@@ -34,8 +36,9 @@ const TaskTimer: React.FC<TaskTimerProps> = ({
     <div className="flex items-center justify-between p-2 bg-muted rounded mb-4">
       <div className="text-sm">
         <span className="text-muted-foreground">Tempo: </span>
-        <span className="font-medium">
+        <span className={`font-medium ${isPaused ? 'text-yellow-500' : ''}`}>
           {isRunning && taskId ? getFormattedTime() : formatDuration(elapsedTime)}
+          {isPaused && <span className="ml-1">(Pausado)</span>}
         </span>
       </div>
       <div className="text-sm">

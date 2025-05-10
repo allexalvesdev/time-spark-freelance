@@ -206,7 +206,9 @@ export type Database = {
           duration: number | null
           end_time: string | null
           id: string
+          is_paused: boolean | null
           is_running: boolean
+          paused_time: number | null
           project_id: string
           start_time: string
           task_id: string
@@ -217,7 +219,9 @@ export type Database = {
           duration?: number | null
           end_time?: string | null
           id?: string
+          is_paused?: boolean | null
           is_running?: boolean
+          paused_time?: number | null
           project_id: string
           start_time: string
           task_id: string
@@ -228,7 +232,9 @@ export type Database = {
           duration?: number | null
           end_time?: string | null
           id?: string
+          is_paused?: boolean | null
           is_running?: boolean
+          paused_time?: number | null
           project_id?: string
           start_time?: string
           task_id?: string

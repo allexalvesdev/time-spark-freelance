@@ -3,7 +3,7 @@ import React, { useEffect } from 'react';
 import { useAppContext } from '@/contexts/AppContext';
 import useTimerState from '@/hooks/useTimerState';
 import { Button } from '@/components/ui/button';
-import { Play, Square } from 'lucide-react';
+import { Play, Square, Pause } from 'lucide-react';
 import { formatDuration, calculateEarnings } from '@/utils/dateUtils';
 import { useIsMobile } from '@/hooks/use-mobile';
 
@@ -14,20 +14,24 @@ interface TimerProps {
 }
 
 const Timer: React.FC<TimerProps> = ({ taskId, projectId, hourlyRate }) => {
-  const { state, startTimer, stopTimer } = useAppContext();
+  const { state, startTimer, pauseTimer, resumeTimer, stopTimer } = useAppContext();
   const { activeTimeEntry } = state;
   const isMobile = useIsMobile();
   
   const isActive = activeTimeEntry?.taskId === taskId;
+  const isPaused = activeTimeEntry?.isPaused && isActive;
   
   // Use a global timer key for better persistence across tabs
   const timerKey = `global-timer-${taskId}`;
   
   const { 
     isRunning, 
+    isPaused: localIsPaused,
     elapsedTime, 
     start, 
     stop, 
+    pause,
+    resume,
     reset,
     getFormattedTime 
   } = useTimerState({
@@ -45,13 +49,40 @@ const Timer: React.FC<TimerProps> = ({ taskId, projectId, hourlyRate }) => {
     else if (!isActive && isRunning) {
       stop();
     }
-  }, [isActive, isRunning, taskId, start, stop]);
+    // Sync pause state
+    if (isActive && isPaused && !localIsPaused) {
+      pause();
+    }
+    else if (isActive && !isPaused && localIsPaused) {
+      resume();
+    }
+  }, [isActive, isRunning, isPaused, localIsPaused, taskId, start, stop, pause, resume]);
   
   // Handler to start the global and local timer
   const handleStartTimer = async () => {
     try {
       await startTimer(taskId, projectId);
       start();
+    } catch (error) {
+      // Silently handle errors
+    }
+  };
+  
+  // Handler to pause the global and local timer
+  const handlePauseTimer = async () => {
+    try {
+      await pauseTimer();
+      pause();
+    } catch (error) {
+      // Silently handle errors
+    }
+  };
+  
+  // Handler to resume the global and local timer
+  const handleResumeTimer = async () => {
+    try {
+      await resumeTimer();
+      resume();
     } catch (error) {
       // Silently handle errors
     }
@@ -75,7 +106,8 @@ const Timer: React.FC<TimerProps> = ({ taskId, projectId, hourlyRate }) => {
     <div className="p-4 border rounded-lg bg-card">
       <div className="text-center mb-4 md:mb-6">
         <div className="text-2xl md:text-3xl font-mono font-semibold mb-2" data-testid={`timer-${taskId}`}>
-          {getFormattedTime()}
+          <span className={isPaused ? "opacity-60" : ""}>{getFormattedTime()}</span>
+          {isPaused && <span className="text-sm font-normal text-yellow-500 ml-2">(Pausado)</span>}
         </div>
         <div className="text-sm text-muted-foreground">
           {new Intl.NumberFormat('pt-BR', {
@@ -85,14 +117,32 @@ const Timer: React.FC<TimerProps> = ({ taskId, projectId, hourlyRate }) => {
         </div>
       </div>
       
-      <div className="flex justify-center">
+      <div className="flex justify-center gap-3">
         {isRunning ? (
-          <Button 
-            className="timer-button timer-button-stop h-12 w-12 md:h-14 md:w-14 rounded-full"
-            onClick={handleStopTimer}
-          >
-            <Square size={isMobile ? 20 : 24} />
-          </Button>
+          <>
+            {isPaused ? (
+              <Button 
+                className="timer-button timer-button-resume h-12 w-12 md:h-14 md:w-14 rounded-full bg-green-500 hover:bg-green-600"
+                onClick={handleResumeTimer}
+              >
+                <Play size={isMobile ? 20 : 24} />
+              </Button>
+            ) : (
+              <Button 
+                className="timer-button timer-button-pause h-12 w-12 md:h-14 md:w-14 rounded-full bg-yellow-500 hover:bg-yellow-600"
+                onClick={handlePauseTimer}
+              >
+                <Pause size={isMobile ? 20 : 24} />
+              </Button>
+            )}
+            <Button 
+              className="timer-button timer-button-stop h-12 w-12 md:h-14 md:w-14 rounded-full"
+              onClick={handleStopTimer}
+              variant="destructive"
+            >
+              <Square size={isMobile ? 20 : 24} />
+            </Button>
+          </>
         ) : (
           <Button 
             className="timer-button timer-button-start h-12 w-12 md:h-14 md:w-14 rounded-full"

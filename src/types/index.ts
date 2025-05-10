@@ -31,6 +31,8 @@ export interface TimeEntry {
   endTime?: Date;
   duration?: number; // em segundos
   isRunning: boolean;
+  isPaused?: boolean;
+  pausedTime?: number; // em segundos
   userId: string;
 }
 

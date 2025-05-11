@@ -2,6 +2,9 @@
 import { supabase } from '@/integrations/supabase/client';
 import { TimeEntry } from '@/types';
 
+// PostgreSQL integer max value
+const PG_INTEGER_MAX = 2147483647;
+
 export const timeEntryService = {
   async loadTimeEntries() {
     const { data: timeEntries, error } = await supabase
@@ -36,7 +39,7 @@ export const timeEntryService = {
         start_time: entry.startTime.toISOString(),
         is_running: entry.isRunning,
         is_paused: entry.isPaused || false,
-        paused_time: entry.pausedTime || 0,
+        paused_time: Math.min(entry.pausedTime || 0, PG_INTEGER_MAX),
         user_id: entry.userId,
       }])
       .select()
@@ -59,11 +62,11 @@ export const timeEntryService = {
   },
 
   async updateTimeEntry(entry: TimeEntry) {
-    // Ensure pausedTime and duration are within PostgreSQL integer limits (max 2147483647)
+    // Ensure pausedTime and duration are within PostgreSQL integer limits
     const safeEntry = {
       ...entry,
-      pausedTime: Math.min(entry.pausedTime || 0, 2147483647),
-      duration: Math.min(entry.duration || 0, 2147483647)
+      pausedTime: Math.min(entry.pausedTime || 0, PG_INTEGER_MAX),
+      duration: Math.min(entry.duration || 0, PG_INTEGER_MAX)
     };
 
     const { error } = await supabase
@@ -82,7 +85,7 @@ export const timeEntryService = {
 
   async pauseTimeEntry(entryId: string, pausedTime: number) {
     // Ensure pausedTime is within PostgreSQL integer limits
-    const safePausedTime = Math.min(pausedTime, 2147483647);
+    const safePausedTime = Math.min(pausedTime, PG_INTEGER_MAX);
     
     const { error } = await supabase
       .from('time_entries')
@@ -98,7 +101,7 @@ export const timeEntryService = {
 
   async resumeTimeEntry(entryId: string, pausedTime: number) {
     // Ensure pausedTime is within PostgreSQL integer limits
-    const safePausedTime = Math.min(pausedTime, 2147483647);
+    const safePausedTime = Math.min(pausedTime, PG_INTEGER_MAX);
     
     const { error } = await supabase
       .from('time_entries')

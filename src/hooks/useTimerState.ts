@@ -1,5 +1,8 @@
-
 import { useState, useEffect, useRef } from 'react';
+import { getSafeInteger } from '@/utils/timer/safeInteger';
+import { getPersistedTimerState, persistTimerState, clearPersistedTimerState } from '@/utils/timer/timerStorage';
+import { startTimerAction, pauseTimerAction, resumeTimerAction, stopTimerAction, formatTimerDisplay } from '@/utils/timer/timerActions';
+import { useTimerSync } from './timer/useTimerSync';
 
 interface UseTimerOptions {
   autoStart?: boolean;
@@ -18,76 +21,40 @@ const useTimerState = (options: UseTimerOptions = {}) => {
   const pausedAtRef = useRef<number | null>(null);
   const lastSyncTimeRef = useRef<number>(Date.now());
   const initialSetupDoneRef = useRef<boolean>(false);
-
-  // PostgreSQL integer limit (max value: 2147483647)
-  const PG_INTEGER_MAX = 2147483647;
-
+  
   // Global storage key for the active timer (shared across all components)
   const globalActiveTaskId = localStorage.getItem('activeTaskId');
   const isActiveTask = persistKey?.includes(globalActiveTaskId || '');
+
+  // Use the timer sync hook to handle synchronization with global state
+  useTimerSync({
+    persistKey,
+    isActiveTask,
+    isRunning,
+    isPaused,
+    globalActiveTaskId,
+    setIsPaused,
+    setIsRunning,
+    setElapsedTime,
+    setPausedTime,
+    startTimeRef,
+    pausedAtRef
+  });
   
-  // Function to safely calculate time values within PostgreSQL integer limits
-  const getSafeValue = (value: number): number => {
-    return Math.min(value, PG_INTEGER_MAX);
-  };
-
-  // Function to save timer state in localStorage with a more robust approach
-  const persistTimerState = (running: boolean, paused: boolean, elapsed: number, pausedTimeValue: number, startTime: number | null, pausedAt: number | null) => {
-    if (!persistKey) return;
-    
-    try {
-      // Store all timer state atomically to prevent partial updates
-      const timerState = JSON.stringify({
-        running,
-        paused,
-        elapsed: getSafeValue(elapsed),
-        pausedTime: getSafeValue(pausedTimeValue),
-        startTime,
-        pausedAt,
-        lastUpdate: Date.now()
-      });
-      
-      localStorage.setItem(`timerState-${persistKey}`, timerState);
-      
-      // Also store individual values for backward compatibility
-      localStorage.setItem(`timerIsRunning-${persistKey}`, running ? 'true' : 'false');
-      localStorage.setItem(`timerIsPaused-${persistKey}`, paused ? 'true' : 'false');
-      localStorage.setItem(`timerElapsedTime-${persistKey}`, getSafeValue(elapsed).toString());
-      localStorage.setItem(`timerPausedTime-${persistKey}`, getSafeValue(pausedTimeValue).toString());
-      
-      if (running && startTime) {
-        localStorage.setItem(`timerStartTime-${persistKey}`, startTime.toString());
-      } else if (!running) {
-        localStorage.removeItem(`timerStartTime-${persistKey}`);
-      }
-      
-      if (paused && pausedAt) {
-        localStorage.setItem(`timerPausedAt-${persistKey}`, pausedAt.toString());
-      } else if (!paused) {
-        localStorage.removeItem(`timerPausedAt-${persistKey}`);
-      }
-    } catch (e) {
-      // Silently handle errors
-    }
-  };
-
   // Load persisted data from localStorage when the component mounts
   useEffect(() => {
     if (!persistKey || initialSetupDoneRef.current) return;
     
     try {
-      // First try to load the full timer state object (more robust)
-      const timerStateJSON = localStorage.getItem(`timerState-${persistKey}`);
+      const timerState = getPersistedTimerState(persistKey);
       
-      if (timerStateJSON) {
-        const timerState = JSON.parse(timerStateJSON);
-        
+      if (timerState) {
         // Handle paused state
         if (timerState.running && timerState.paused && timerState.pausedAt) {
           setIsRunning(true);
           setIsPaused(true);
-          setPausedTime(getSafeValue(timerState.pausedTime || 0));
-          setElapsedTime(getSafeValue(timerState.elapsed));
+          setPausedTime(timerState.pausedTime);
+          setElapsedTime(timerState.elapsed);
           startTimeRef.current = timerState.startTime;
           pausedAtRef.current = timerState.pausedAt;
         }
@@ -95,63 +62,19 @@ const useTimerState = (options: UseTimerOptions = {}) => {
         else if (timerState.running && !timerState.paused && timerState.startTime) {
           const startTimeMs = timerState.startTime;
           // Calculate time elapsed since timer started, accounting for paused time
-          const currentElapsed = getSafeValue(Math.floor((Date.now() - startTimeMs) / 1000) - (timerState.pausedTime || 0));
+          const currentElapsed = getSafeInteger(Math.floor((Date.now() - startTimeMs) / 1000) - timerState.pausedTime);
           
           setElapsedTime(currentElapsed);
-          setPausedTime(getSafeValue(timerState.pausedTime || 0));
+          setPausedTime(timerState.pausedTime);
           setIsRunning(true);
           setIsPaused(false);
           startTimeRef.current = startTimeMs;
           pausedAtRef.current = null;
         } 
-        // If timer was paused, just load the elapsed time
+        // If timer was not running, just load the elapsed time
         else if (!timerState.running) {
-          setElapsedTime(getSafeValue(timerState.elapsed));
-          setPausedTime(getSafeValue(timerState.pausedTime || 0));
-          setIsRunning(false);
-          setIsPaused(false);
-          startTimeRef.current = null;
-          pausedAtRef.current = null;
-        }
-      }
-      // Fall back to loading individual values
-      else {
-        const savedIsRunning = localStorage.getItem(`timerIsRunning-${persistKey}`);
-        const savedIsPaused = localStorage.getItem(`timerIsPaused-${persistKey}`);
-        const savedStartTime = localStorage.getItem(`timerStartTime-${persistKey}`);
-        const savedPausedAt = localStorage.getItem(`timerPausedAt-${persistKey}`);
-        const savedElapsedTime = localStorage.getItem(`timerElapsedTime-${persistKey}`);
-        const savedPausedTime = localStorage.getItem(`timerPausedTime-${persistKey}`);
-        
-        // Handle paused state
-        if (savedIsRunning === 'true' && savedIsPaused === 'true' && savedPausedAt) {
-          setIsRunning(true);
-          setIsPaused(true);
-          setPausedTime(getSafeValue(parseInt(savedPausedTime || '0', 10)));
-          setElapsedTime(getSafeValue(parseInt(savedElapsedTime || '0', 10)));
-          startTimeRef.current = savedStartTime ? parseInt(savedStartTime, 10) : null;
-          pausedAtRef.current = parseInt(savedPausedAt, 10);
-        }
-        // If timer was running when user left/reloaded the page
-        else if (savedIsRunning === 'true' && savedStartTime) {
-          const startTimeMs = parseInt(savedStartTime, 10);
-          const pausedTimeValue = getSafeValue(parseInt(savedPausedTime || '0', 10));
-          const currentElapsed = getSafeValue(Math.floor((Date.now() - startTimeMs) / 1000) - pausedTimeValue);
-          
-          setElapsedTime(currentElapsed);
-          setPausedTime(pausedTimeValue);
-          setIsRunning(true);
-          setIsPaused(false);
-          startTimeRef.current = startTimeMs;
-          pausedAtRef.current = null;
-        } 
-        // If timer was stopped, just restore the elapsed time
-        else if (savedElapsedTime && savedIsRunning === 'false') {
-          const elapsed = getSafeValue(parseInt(savedElapsedTime, 10));
-          const pausedTimeValue = getSafeValue(parseInt(savedPausedTime || '0', 10));
-          
-          setElapsedTime(elapsed);
-          setPausedTime(pausedTimeValue);
+          setElapsedTime(timerState.elapsed);
+          setPausedTime(timerState.pausedTime);
           setIsRunning(false);
           setIsPaused(false);
           startTimeRef.current = null;
@@ -162,43 +85,17 @@ const useTimerState = (options: UseTimerOptions = {}) => {
       initialSetupDoneRef.current = true;
     } catch (e) {
       // Silently handle errors
+      console.error('Error loading timer state:', e);
     }
   }, [persistKey]);
 
-  // Handle the active task global timer synchronization
-  useEffect(() => {
-    if (!persistKey) return;
-    
-    // If this is the active task's timer and we have a global active timer state
-    if (isActiveTask && globalActiveTaskId) {
-      const globalStartTimeStr = localStorage.getItem('timerStartTime');
-      const globalIsPaused = localStorage.getItem('timerIsPaused') === 'true';
-      const globalPausedAt = localStorage.getItem('timerPausedAt');
-      const globalPausedTime = localStorage.getItem('timerPausedTime');
-      
-      if (globalIsPaused && !isPaused) {
-        // Global timer is paused but local timer is not
-        setIsPaused(true);
-        pausedAtRef.current = globalPausedAt ? parseInt(globalPausedAt, 10) : Date.now();
-        setPausedTime(getSafeValue(globalPausedTime ? parseInt(globalPausedTime, 10) : 0));
-      }
-      else if (globalStartTimeStr && !isRunning) {
-        // Global timer is running but local timer is not
-        const globalStartTime = parseInt(globalStartTimeStr, 10);
-        const pausedTimeValue = getSafeValue(globalPausedTime ? parseInt(globalPausedTime, 10) : 0);
-        const currentElapsed = getSafeValue(Math.floor((Date.now() - globalStartTime) / 1000) - pausedTimeValue);
-        
-        startTimeRef.current = globalStartTime;
-        setElapsedTime(currentElapsed);
-        setIsPaused(globalIsPaused);
-        setIsRunning(true);
-        
-        if (globalIsPaused && globalPausedAt) {
-          pausedAtRef.current = parseInt(globalPausedAt, 10);
-        }
-      }
+  // Function to clear interval safely
+  const clearIntervalSafely = () => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
     }
-  }, [persistKey, isActiveTask, globalActiveTaskId, isRunning, isPaused]);
+  };
 
   // This effect handles starting/stopping the interval
   useEffect(() => {
@@ -212,13 +109,14 @@ const useTimerState = (options: UseTimerOptions = {}) => {
         
         const now = Date.now();
         // Calculate current elapsed time accounting for total paused time
-        const currentElapsed = getSafeValue(Math.floor((now - startTimeRef.current) / 1000) - pausedTime);
+        const currentElapsed = getSafeInteger(Math.floor((now - startTimeRef.current) / 1000) - pausedTime);
         
         setElapsedTime(currentElapsed);
         
         // Sync state every 2 seconds to ensure persistence
         if (now - lastSyncTimeRef.current > 2000) {
           persistTimerState(
+            persistKey,
             true,
             isPaused, 
             currentElapsed, 
@@ -236,13 +134,11 @@ const useTimerState = (options: UseTimerOptions = {}) => {
       // If just starting now, initialize start time
       if (startTimeRef.current === null) {
         startTimeRef.current = Date.now() - (elapsedTime + pausedTime) * 1000;
-        persistTimerState(true, false, elapsedTime, pausedTime, startTimeRef.current, null);
+        persistTimerState(persistKey, true, false, elapsedTime, pausedTime, startTimeRef.current, null);
       }
       
       // Clear any existing interval to avoid duplications
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
+      clearIntervalSafely();
       
       // Update elapsed time every second
       intervalRef.current = setInterval(updateElapsedTime, 1000);
@@ -250,10 +146,7 @@ const useTimerState = (options: UseTimerOptions = {}) => {
     // If paused, keep running state but stop the interval
     else if (isRunning && isPaused) {
       // Clear interval when paused
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
+      clearIntervalSafely();
       
       // Set the paused time reference if not set
       if (pausedAtRef.current === null) {
@@ -263,6 +156,7 @@ const useTimerState = (options: UseTimerOptions = {}) => {
       // Save paused state
       if (persistKey) {
         persistTimerState(
+          persistKey,
           true, 
           true, 
           elapsedTime, 
@@ -275,23 +169,17 @@ const useTimerState = (options: UseTimerOptions = {}) => {
     // If stopped, clear interval
     else {
       // Clear interval when stopped
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
+      clearIntervalSafely();
       
       // Save stopped state and elapsed time
       if (persistKey) {
-        persistTimerState(false, false, elapsedTime, pausedTime, null, null);
+        persistTimerState(persistKey, false, false, elapsedTime, pausedTime, null, null);
       }
     }
 
     return () => {
       // Cleanup interval when component unmounts
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
+      clearIntervalSafely();
     };
   }, [isRunning, isPaused, persistKey, elapsedTime, pausedTime]);
 
@@ -301,6 +189,7 @@ const useTimerState = (options: UseTimerOptions = {}) => {
       // Save current time before unmounting if running
       if (isRunning && persistKey) {
         persistTimerState(
+          persistKey,
           isRunning, 
           isPaused, 
           elapsedTime, 
@@ -312,101 +201,73 @@ const useTimerState = (options: UseTimerOptions = {}) => {
     };
   }, [isRunning, isPaused, elapsedTime, pausedTime, persistKey]);
 
+  // Timer control methods
   const start = () => {
-    if (!isRunning) {
-      // Set startTimeRef to consider already elapsed time
-      startTimeRef.current = Date.now() - (elapsedTime + pausedTime) * 1000;
-      setIsRunning(true);
-      setIsPaused(false);
-      
-      // Clear pausedAt reference
-      pausedAtRef.current = null;
-      
-      // Persist immediately when starting
-      if (persistKey) {
-        persistTimerState(true, false, elapsedTime, pausedTime, startTimeRef.current, null);
-        
-        // Also update global timer state if this is the active task
-        if (isActiveTask) {
-          localStorage.setItem('timerStartTime', startTimeRef.current.toString());
-          localStorage.setItem('timerIsPaused', 'false');
-          localStorage.removeItem('timerPausedAt');
-        }
-      }
-    }
+    startTimerAction({
+      persistKey,
+      isRunning,
+      isPaused,
+      elapsedTime,
+      pausedTime,
+      startTimeRef,
+      pausedAtRef,
+      setIsRunning,
+      setIsPaused,
+      setPausedTime,
+      clearInterval: clearIntervalSafely,
+      isActiveTask
+    });
   };
 
   const pause = () => {
-    if (isRunning && !isPaused) {
-      setIsPaused(true);
-      pausedAtRef.current = Date.now();
-      
-      if (persistKey) {
-        persistTimerState(
-          true, 
-          true, 
-          elapsedTime, 
-          pausedTime, 
-          startTimeRef.current, 
-          pausedAtRef.current
-        );
-        
-        if (isActiveTask) {
-          localStorage.setItem('timerIsPaused', 'true');
-          localStorage.setItem('timerPausedAt', pausedAtRef.current.toString());
-        }
-      }
-    }
+    pauseTimerAction({
+      persistKey,
+      isRunning,
+      isPaused,
+      elapsedTime,
+      pausedTime,
+      startTimeRef,
+      pausedAtRef,
+      setIsRunning,
+      setIsPaused,
+      setPausedTime,
+      clearInterval: clearIntervalSafely,
+      isActiveTask
+    });
   };
 
   const resume = () => {
-    if (isRunning && isPaused) {
-      // Calculate additional paused time
-      const additionalPausedTime = pausedAtRef.current 
-        ? getSafeValue(Math.floor((Date.now() - pausedAtRef.current) / 1000))
-        : 0;
-      
-      // Add the additional paused time to the total
-      const newPausedTime = getSafeValue(pausedTime + additionalPausedTime);
-      setPausedTime(newPausedTime);
-      
-      // Resume running
-      setIsPaused(false);
-      pausedAtRef.current = null;
-      
-      if (persistKey) {
-        persistTimerState(
-          true, 
-          false, 
-          elapsedTime, 
-          newPausedTime, 
-          startTimeRef.current, 
-          null
-        );
-        
-        if (isActiveTask) {
-          localStorage.setItem('timerIsPaused', 'false');
-          localStorage.setItem('timerPausedTime', newPausedTime.toString());
-          localStorage.removeItem('timerPausedAt');
-        }
-      }
-    }
+    resumeTimerAction({
+      persistKey,
+      isRunning,
+      isPaused,
+      elapsedTime,
+      pausedTime,
+      startTimeRef,
+      pausedAtRef,
+      setIsRunning,
+      setIsPaused,
+      setPausedTime,
+      clearInterval: clearIntervalSafely,
+      isActiveTask
+    });
   };
 
   const stop = () => {
-    if (isRunning) {
-      setIsRunning(false);
-      setIsPaused(false);
-      
-      // Save last elapsed time when stopping
-      if (persistKey) {
-        persistTimerState(false, false, elapsedTime, pausedTime, null, null);
-      }
-      
-      // Clear startTimeRef and pausedAtRef when stopping
-      startTimeRef.current = null;
-      pausedAtRef.current = null;
-    }
+    stopTimerAction({
+      persistKey,
+      isRunning,
+      isPaused,
+      elapsedTime,
+      pausedTime,
+      startTimeRef,
+      pausedAtRef,
+      setIsRunning,
+      setIsPaused,
+      setPausedTime,
+      clearInterval: clearIntervalSafely,
+      isActiveTask
+    });
   };
 
   const reset = () => {
@@ -417,27 +278,11 @@ const useTimerState = (options: UseTimerOptions = {}) => {
     setIsPaused(false);
     
     if (persistKey) {
-      localStorage.removeItem(`timerState-${persistKey}`);
-      localStorage.removeItem(`timerStartTime-${persistKey}`);
-      localStorage.removeItem(`timerIsRunning-${persistKey}`);
-      localStorage.removeItem(`timerIsPaused-${persistKey}`);
-      localStorage.removeItem(`timerElapsedTime-${persistKey}`);
-      localStorage.removeItem(`timerPausedTime-${persistKey}`);
-      localStorage.removeItem(`timerPausedAt-${persistKey}`);
+      clearPersistedTimerState(persistKey);
     }
   };
 
-  const getFormattedTime = () => {
-    const hours = Math.floor(elapsedTime / 3600);
-    const minutes = Math.floor((elapsedTime % 3600) / 60);
-    const seconds = elapsedTime % 60;
-
-    return [
-      hours.toString().padStart(2, '0'),
-      minutes.toString().padStart(2, '0'),
-      seconds.toString().padStart(2, '0'),
-    ].join(':');
-  };
+  const getFormattedTime = () => formatTimerDisplay(elapsedTime);
 
   return {
     isRunning,

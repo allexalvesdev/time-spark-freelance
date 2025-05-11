@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useAppContext } from '@/contexts/AppContext';
 import useTimerState from '@/hooks/useTimerState';
 import { Button } from '@/components/ui/button';
@@ -23,6 +23,7 @@ const Timer: React.FC<TimerProps> = ({ taskId, projectId, hourlyRate }) => {
   
   // Use a global timer key for better persistence across tabs
   const timerKey = `global-timer-${taskId}`;
+  const syncTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   const { 
     isRunning, 
@@ -38,6 +39,58 @@ const Timer: React.FC<TimerProps> = ({ taskId, projectId, hourlyRate }) => {
     autoStart: isActive, // Start automatically if this is the active task
     persistKey: timerKey
   });
+
+  // Force sync when component mounts
+  useEffect(() => {
+    if (isActive) {
+      const syncState = () => {
+        if (isPaused && !localIsPaused) {
+          pause();
+        } else if (!isPaused && localIsPaused) {
+          resume();
+        }
+      };
+      
+      // Initial sync
+      syncState();
+      
+      // Set up sync interval
+      const syncInterval = setInterval(syncState, 1000);
+      return () => clearInterval(syncInterval);
+    }
+  }, [isActive, isPaused, localIsPaused, pause, resume]);
+  
+  // Listen for timer events
+  useEffect(() => {
+    const handleTimerPaused = (e: CustomEvent) => {
+      if (e.detail.taskId === taskId && isRunning && !localIsPaused) {
+        pause();
+      }
+    };
+    
+    const handleTimerResumed = (e: CustomEvent) => {
+      if (e.detail.taskId === taskId && isRunning && localIsPaused) {
+        resume();
+      }
+    };
+    
+    const handleTimerStopped = (e: CustomEvent) => {
+      if (e.detail.taskId === taskId && isRunning) {
+        stop();
+        reset();
+      }
+    };
+    
+    window.addEventListener('timer-paused', handleTimerPaused as EventListener);
+    window.addEventListener('timer-resumed', handleTimerResumed as EventListener);
+    window.addEventListener('timer-stopped', handleTimerStopped as EventListener);
+    
+    return () => {
+      window.removeEventListener('timer-paused', handleTimerPaused as EventListener);
+      window.removeEventListener('timer-resumed', handleTimerResumed as EventListener);
+      window.removeEventListener('timer-stopped', handleTimerStopped as EventListener);
+    };
+  }, [taskId, isRunning, localIsPaused, pause, resume, stop, reset]);
   
   // This effect handles syncing between local timer state and global state
   useEffect(() => {
@@ -48,15 +101,30 @@ const Timer: React.FC<TimerProps> = ({ taskId, projectId, hourlyRate }) => {
     // If time entry is no longer active in global context but still running locally
     else if (!isActive && isRunning) {
       stop();
+      reset();
     }
-    // Sync pause state
-    if (isActive && isPaused && !localIsPaused) {
-      pause();
+    
+    // Sync pause state with some debounce to avoid flickering
+    if (isActive && isPaused !== localIsPaused) {
+      if (syncTimeoutRef.current) {
+        clearTimeout(syncTimeoutRef.current);
+      }
+      
+      syncTimeoutRef.current = setTimeout(() => {
+        if (isPaused && !localIsPaused) {
+          pause();
+        } else if (!isPaused && localIsPaused) {
+          resume();
+        }
+      }, 100);
     }
-    else if (isActive && !isPaused && localIsPaused) {
-      resume();
-    }
-  }, [isActive, isRunning, isPaused, localIsPaused, taskId, start, stop, pause, resume]);
+    
+    return () => {
+      if (syncTimeoutRef.current) {
+        clearTimeout(syncTimeoutRef.current);
+      }
+    };
+  }, [isActive, isRunning, isPaused, localIsPaused, taskId, start, stop, pause, resume, reset]);
   
   // Handler to start the global and local timer
   const handleStartTimer = async () => {
@@ -64,7 +132,6 @@ const Timer: React.FC<TimerProps> = ({ taskId, projectId, hourlyRate }) => {
       await startTimer(taskId, projectId);
       start();
     } catch (error) {
-      // Silently handle errors
       console.error("Error starting timer:", error);
     }
   };
@@ -75,7 +142,6 @@ const Timer: React.FC<TimerProps> = ({ taskId, projectId, hourlyRate }) => {
       await pauseTimer();
       pause();
     } catch (error) {
-      // Silently handle errors
       console.error("Error pausing timer:", error);
     }
   };
@@ -86,7 +152,6 @@ const Timer: React.FC<TimerProps> = ({ taskId, projectId, hourlyRate }) => {
       await resumeTimer();
       resume();
     } catch (error) {
-      // Silently handle errors
       console.error("Error resuming timer:", error);
     }
   };
@@ -97,8 +162,8 @@ const Timer: React.FC<TimerProps> = ({ taskId, projectId, hourlyRate }) => {
       // Pass true to complete the task automatically
       await stopTimer(true);
       stop();
+      reset();
     } catch (error) {
-      // Silently handle errors
       console.error("Error stopping timer:", error);
     }
   };

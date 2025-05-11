@@ -1,149 +1,89 @@
+/**
+ * Utility functions for date and time formatting and calculations
+ */
 
-export const calculateElapsedTime = (startTime: Date, endTime: Date): number => {
-  console.log(`Calculating elapsed time from ${startTime} to ${endTime}`);
-  const elapsedSeconds = Math.floor((endTime.getTime() - startTime.getTime()) / 1000);
-  console.log(`Elapsed seconds: ${elapsedSeconds}`);
-  return elapsedSeconds;
+/**
+ * Formats a date object to a user-friendly string
+ * @param date The date to format
+ * @returns Formatted date string (e.g., January 1, 2023)
+ */
+export const formatDate = (date: Date): string => {
+  const options: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric' };
+  return date.toLocaleDateString(undefined, options);
 };
 
-export const calculateEarnings = (timeInSeconds: number, hourlyRate: number): number => {
-  const hoursWorked = timeInSeconds / 3600;
-  return hoursWorked * hourlyRate;
-};
-
-export const formatTime = (date: Date): string => {
-  return date.toLocaleDateString('pt-BR', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit'
-  });
-};
-
-export const formatDuration = (seconds: number): string => {
-  const hours = Math.floor(seconds / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-  const remainingSeconds = seconds % 60;
-
-  return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
-};
-
+/**
+ * Formats a currency value to a user-friendly string
+ * @param value The currency value to format
+ * @returns Formatted currency string (e.g., $1,234.56)
+ */
 export const formatCurrency = (value: number): string => {
   return new Intl.NumberFormat('pt-BR', {
     style: 'currency',
-    currency: 'BRL',
-    minimumFractionDigits: 2
+    currency: 'BRL'
   }).format(value);
 };
 
-export const formatDate = (date: Date, format?: string): string => {
-  if (format === 'dd/MM/yyyy HH:mm') {
-    const day = date.getDate().toString().padStart(2, '0');
-    const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    const year = date.getFullYear();
-    const hours = date.getHours().toString().padStart(2, '0');
-    const minutes = date.getMinutes().toString().padStart(2, '0');
-    
-    return `${day}/${month}/${year} ${hours}:${minutes}`;
+/**
+ * Formats duration in seconds to a human-readable format
+ * @param seconds Duration in seconds
+ * @returns Formatted duration string (HH:MM:SS)
+ */
+export const formatDuration = (seconds: number | null | undefined): string => {
+  if (seconds === null || seconds === undefined || isNaN(seconds)) {
+    return '00:00:00';
   }
   
-  if (format === 'dd-MM-yyyy HH:mm') {
-    const day = date.getDate().toString().padStart(2, '0');
-    const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    const year = date.getFullYear();
-    const hours = date.getHours().toString().padStart(2, '0');
-    const minutes = date.getMinutes().toString().padStart(2, '0');
-    
-    return `${day}-${month}-${year} ${hours}:${minutes}`;
+  // Prevent negative values
+  if (seconds < 0) {
+    seconds = 0;
   }
   
-  if (format === 'yyyy-MM-dd HH:mm') {
-    const year = date.getFullYear();
-    const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    const day = date.getDate().toString().padStart(2, '0');
-    const hours = date.getHours().toString().padStart(2, '0');
-    const minutes = date.getMinutes().toString().padStart(2, '0');
+  // Handle potential integer overflow
+  try {
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = Math.floor(seconds % 60);
     
-    return `${year}-${month}-${day} ${hours}:${minutes}`;
+    // Check for reasonable values to prevent display errors
+    if (hours > 99999) {
+      return "99:99:99"; // Show a capped value for extreme cases
+    }
+    
+    return [
+      hours.toString().padStart(2, '0'),
+      minutes.toString().padStart(2, '0'),
+      secs.toString().padStart(2, '0')
+    ].join(':');
+  } catch (e) {
+    console.error("Error formatting duration:", e, "seconds:", seconds);
+    return '00:00:00';
   }
-  
-  return date.toLocaleDateString('pt-BR', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit'
-  });
 };
 
-export const parseDate = (dateStr: string, format: 'dd/MM/yyyy HH:mm' | 'yyyy-MM-dd HH:mm' | 'dd-MM-yyyy HH:mm'): Date => {
+/**
+ * Calculates earnings based on time and hourly rate
+ * @param seconds Time in seconds
+ * @param hourlyRate Hourly rate in currency units
+ * @returns Calculated earnings
+ */
+export const calculateEarnings = (seconds: number, hourlyRate: number): number => {
+  if (seconds <= 0 || hourlyRate <= 0) {
+    return 0;
+  }
+  
   try {
-    console.log(`Parsing date string: "${dateStr}" with format: "${format}"`);
+    // Convert seconds to hours and calculate earnings
+    const hours = seconds / 3600;
     
-    // Verificar se a data está no formato parentizado (01/01/0001 00:00)
-    if (dateStr.includes('(') && dateStr.includes(')')) {
-      dateStr = dateStr.replace(/[\(\)]/g, '').trim();
+    // Cap extreme values to prevent display errors
+    if (hours > 9999) {
+      return 9999 * hourlyRate;
     }
     
-    if (format === 'dd/MM/yyyy HH:mm') {
-      const [datePart, timePart] = dateStr.split(' ');
-      
-      if (!datePart || !timePart) {
-        throw new Error(`Invalid date format: ${dateStr}. Expected format: dd/MM/yyyy HH:mm`);
-      }
-      
-      const [day, month, year] = datePart.split('/').map(Number);
-      const [hours, minutes] = timePart.split(':').map(Number);
-      
-      if (isNaN(day) || isNaN(month) || isNaN(year) || isNaN(hours) || isNaN(minutes)) {
-        throw new Error(`Invalid date components in: ${dateStr}`);
-      }
-      
-      const date = new Date(year, month - 1, day, hours, minutes);
-      console.log(`Parsed date: ${date.toISOString()}`);
-      return date;
-    }
-    
-    if (format === 'dd-MM-yyyy HH:mm') {
-      const [datePart, timePart] = dateStr.split(' ');
-      
-      if (!datePart || !timePart) {
-        throw new Error(`Invalid date format: ${dateStr}. Expected format: dd-MM-yyyy HH:mm`);
-      }
-      
-      const [day, month, year] = datePart.split('-').map(Number);
-      const [hours, minutes] = timePart.split(':').map(Number);
-      
-      if (isNaN(day) || isNaN(month) || isNaN(year) || isNaN(hours) || isNaN(minutes)) {
-        throw new Error(`Invalid date components in: ${dateStr}`);
-      }
-      
-      const date = new Date(year, month - 1, day, hours, minutes);
-      console.log(`Parsed date: ${date.toISOString()}`);
-      return date;
-    }
-    
-    if (format === 'yyyy-MM-dd HH:mm') {
-      const [datePart, timePart] = dateStr.split(' ');
-      
-      if (!datePart || !timePart) {
-        throw new Error(`Invalid date format: ${dateStr}. Expected format: yyyy-MM-dd HH:mm`);
-      }
-      
-      const [year, month, day] = datePart.split('-').map(Number);
-      const [hours, minutes] = timePart.split(':').map(Number);
-      
-      if (isNaN(day) || isNaN(month) || isNaN(year) || isNaN(hours) || isNaN(minutes)) {
-        throw new Error(`Invalid date components in: ${dateStr}`);
-      }
-      
-      const date = new Date(year, month - 1, day, hours, minutes);
-      console.log(`Parsed date: ${date.toISOString()}`);
-      return date;
-    }
-    
-    throw new Error(`Unsupported date format: ${format}`);
-  } catch (error) {
-    console.error(`Error parsing date '${dateStr}' with format '${format}':`, error);
-    throw new Error(`Data inválida: ${dateStr}`);
+    return hours * hourlyRate;
+  } catch (e) {
+    console.error("Error calculating earnings:", e);
+    return 0;
   }
 };

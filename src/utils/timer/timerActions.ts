@@ -74,11 +74,18 @@ export const pauseTimerAction = (options: TimerActionOptions): void => {
   } = options;
   
   if (isRunning && !isPaused) {
+    // Set pause state first to ensure UI immediately reflects change
     setIsPaused(true);
     pausedAtRef.current = Date.now();
     
     // Clear interval when paused
     clearInterval();
+    
+    // Force a custom event to notify other components about the change
+    const pauseEvent = new CustomEvent('timer-paused', {
+      detail: { taskId: persistKey?.split('-').pop(), pausedAt: pausedAtRef.current }
+    });
+    window.dispatchEvent(pauseEvent);
     
     if (persistKey) {
       persistTimerState(
@@ -130,6 +137,12 @@ export const resumeTimerAction = (options: TimerActionOptions): void => {
     setIsPaused(false);
     pausedAtRef.current = null;
     
+    // Force a custom event to notify other components about the change
+    const resumeEvent = new CustomEvent('timer-resumed', {
+      detail: { taskId: persistKey?.split('-').pop(), newPausedTime }
+    });
+    window.dispatchEvent(resumeEvent);
+    
     if (persistKey) {
       persistTimerState(
         persistKey, 
@@ -157,14 +170,26 @@ export const stopTimerAction = (options: TimerActionOptions): void => {
   const {
     persistKey,
     isRunning,
+    isPaused,
     elapsedTime,
     pausedTime,
+    pausedAtRef,
     setIsRunning,
     setIsPaused,
     clearInterval
   } = options;
   
   if (isRunning) {
+    // Calculate final elapsed time if currently paused
+    let finalElapsedTime = elapsedTime;
+    let finalPausedTime = pausedTime;
+    
+    if (isPaused && pausedAtRef.current) {
+      // Add any additional paused time since last pause
+      const additionalPausedTime = getSafeInteger(Math.floor((Date.now() - pausedAtRef.current) / 1000));
+      finalPausedTime = getSafeInteger(pausedTime + additionalPausedTime);
+    }
+    
     setIsRunning(false);
     setIsPaused(false);
     
@@ -173,8 +198,14 @@ export const stopTimerAction = (options: TimerActionOptions): void => {
     
     // Save last elapsed time when stopping
     if (persistKey) {
-      persistTimerState(persistKey, false, false, elapsedTime, pausedTime, null, null);
+      persistTimerState(persistKey, false, false, finalElapsedTime, finalPausedTime, null, null);
     }
+    
+    // Force a custom event to notify other components about the change
+    const stopEvent = new CustomEvent('timer-stopped', {
+      detail: { taskId: persistKey?.split('-').pop(), elapsedTime: finalElapsedTime, pausedTime: finalPausedTime }
+    });
+    window.dispatchEvent(stopEvent);
   }
 };
 
@@ -184,6 +215,8 @@ export const stopTimerAction = (options: TimerActionOptions): void => {
  * @returns Formatted time string (HH:MM:SS)
  */
 export const formatTimerDisplay = (elapsedTime: number): string => {
+  if (elapsedTime < 0) elapsedTime = 0;
+  
   const hours = Math.floor(elapsedTime / 3600);
   const minutes = Math.floor((elapsedTime % 3600) / 60);
   const seconds = elapsedTime % 60;

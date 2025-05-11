@@ -3,7 +3,7 @@ import { TimeEntry, Task } from '@/types';
 import { timeEntryService, taskService } from '@/services';
 import { useToast } from '@/hooks/use-toast';
 import { getSafeInteger } from '@/utils/timer/safeInteger';
-import { calculateDuration, calculateAdditionalPausedTime } from '@/utils/timer/durationCalculator';
+import { calculateDuration } from '@/utils/timer/durationCalculator';
 import { clearTimerStorage } from '@/utils/timer/localStorage';
 import { formatDuration } from '@/utils/dateUtils';
 
@@ -30,19 +30,31 @@ export const useTimerStop = ({
 
       const endTime = new Date();
       const startTime = new Date(activeTimeEntry.startTime);
-      let duration = getSafeInteger(Math.floor((endTime.getTime() - startTime.getTime()) / 1000));
+      
+      // Calculate duration properly, accounting for potential errors
+      let rawDuration = Math.floor((endTime.getTime() - startTime.getTime()) / 1000);
+      if (rawDuration < 0) rawDuration = 0;
+      
+      let duration = getSafeInteger(rawDuration);
       
       // Subtract paused time from the total duration
-      if (activeTimeEntry.pausedTime) {
+      if (activeTimeEntry.pausedTime && activeTimeEntry.pausedTime > 0) {
         duration = getSafeInteger(duration - activeTimeEntry.pausedTime);
+        if (duration < 0) duration = 0; // Ensure we don't have negative duration
       }
       
       // If currently paused, calculate additional paused time
       if (activeTimeEntry.isPaused) {
-        const pausedAt = parseInt(localStorage.getItem(`timerPausedAt-global-timer-${activeTimeEntry.taskId}`) || '0', 10);
-        if (pausedAt > 0) {
-          const additionalPausedTime = calculateAdditionalPausedTime(pausedAt);
-          duration = getSafeInteger(duration - additionalPausedTime);
+        const pausedAtStr = localStorage.getItem(`timerPausedAt-global-timer-${activeTimeEntry.taskId}`);
+        if (pausedAtStr) {
+          const pausedAt = parseInt(pausedAtStr, 10);
+          if (pausedAt > 0) {
+            const additionalPausedTime = Math.floor((Date.now() - pausedAt) / 1000);
+            if (additionalPausedTime > 0) {
+              duration = getSafeInteger(duration - additionalPausedTime);
+              if (duration < 0) duration = 0; // Safeguard against negative duration
+            }
+          }
         }
       }
 
@@ -90,13 +102,17 @@ export const useTimerStop = ({
         // Use scheduledStartTime as fallback if actualStartTime is not available
         const taskStartTime = task.actualStartTime || task.scheduledStartTime;
         
-        // Update the task with completed status - ensure elapsed time is safe
+        // Calculate safe elapsed time value
+        let totalElapsedTime = getSafeInteger((task.elapsedTime || 0) + duration);
+        if (totalElapsedTime < 0) totalElapsedTime = duration > 0 ? duration : 0;
+        
+        // Update the task with completed status
         const updatedTask: Task = {
           ...task,
           completed: true,
           actualEndTime: endTime,
           actualStartTime: taskStartTime, // Use the determined start time
-          elapsedTime: getSafeInteger((task.elapsedTime || 0) + duration),
+          elapsedTime: totalElapsedTime,
         };
         
         // Update the server first

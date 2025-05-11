@@ -1,10 +1,8 @@
 
-import { useState } from 'react';
 import { TimeEntry } from '@/types';
 import { timeEntryService } from '@/services';
 import { useToast } from '@/hooks/use-toast';
 import { getSafeInteger } from '@/utils/timer/safeInteger';
-import { updatePauseStateStorage } from '@/utils/timer/localStorage';
 
 interface UseTimerPauseOptions {
   timeEntries: TimeEntry[];
@@ -36,7 +34,7 @@ export const useTimerPause = ({
         ...activeTimeEntry,
         isPaused: true,
         isRunning: true, // Timer is still considered running, just paused
-        pausedTime: pausedTimeSeconds,  // Keep existing paused time, will be updated in useTimerState
+        pausedTime: pausedTimeSeconds,  // Keep existing paused time, will be updated when resuming
       };
       
       await timeEntryService.pauseTimeEntry(activeTimeEntry.id, pausedTimeSeconds);
@@ -48,8 +46,11 @@ export const useTimerPause = ({
       
       setActiveTimeEntry(updatedTimeEntry);
       
-      // Update localStorage
-      updatePauseStateStorage(activeTimeEntry.taskId, true, pausedTimeSeconds);
+      // Store the pause state in localStorage for global access
+      localStorage.setItem('timerIsPaused', 'true');
+      localStorage.setItem('timerPausedAt', currentTime.getTime().toString());
+      localStorage.setItem(`timerPausedAt-global-timer-${activeTimeEntry.taskId}`, currentTime.getTime().toString());
+      localStorage.setItem(`timerIsPaused-global-timer-${activeTimeEntry.taskId}`, 'true');
       
       toast({
         title: 'Timer pausado',

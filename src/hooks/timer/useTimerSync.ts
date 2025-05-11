@@ -32,6 +32,44 @@ export const useTimerSync = ({
   startTimeRef,
   pausedAtRef
 }: UseTimerSyncOptions) => {
+  // Handle global storage changes using event listeners
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (!persistKey || !isActiveTask || !globalActiveTaskId) return;
+
+      // Only handle changes to timer-related keys
+      const isTimerKey = e.key && (
+        e.key.includes('timer') || 
+        e.key.includes('activeTask') || 
+        e.key.includes('activeTimeEntry')
+      );
+
+      if (!isTimerKey) return;
+
+      // Re-read all relevant timer state from localStorage
+      const globalStartTimeStr = localStorage.getItem('timerStartTime');
+      const globalIsPaused = localStorage.getItem('timerIsPaused') === 'true';
+      const globalPausedAt = localStorage.getItem('timerPausedAt');
+      const globalPausedTime = localStorage.getItem('timerPausedTime');
+
+      // Synchronize pause state across tabs
+      if (globalIsPaused && !isPaused) {
+        setIsPaused(true);
+        pausedAtRef.current = globalPausedAt ? parseInt(globalPausedAt, 10) : Date.now();
+        setPausedTime(getSafeInteger(globalPausedTime ? parseInt(globalPausedTime, 10) : 0));
+      } 
+      else if (!globalIsPaused && isPaused) {
+        setIsPaused(false);
+        const pausedTimeValue = getSafeInteger(globalPausedTime ? parseInt(globalPausedTime, 10) : 0);
+        setPausedTime(pausedTimeValue);
+        pausedAtRef.current = null;
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, [persistKey, isActiveTask, globalActiveTaskId, isRunning, isPaused, setIsPaused, setIsRunning, setElapsedTime, setPausedTime]);
+
   // Handle the active task global timer synchronization
   useEffect(() => {
     if (!persistKey) return;
@@ -48,6 +86,13 @@ export const useTimerSync = ({
         setIsPaused(true);
         pausedAtRef.current = globalPausedAt ? parseInt(globalPausedAt, 10) : Date.now();
         setPausedTime(getSafeInteger(globalPausedTime ? parseInt(globalPausedTime, 10) : 0));
+      }
+      else if (!globalIsPaused && isPaused) {
+        // Global timer is running but local timer is paused
+        setIsPaused(false);
+        const pausedTimeValue = getSafeInteger(globalPausedTime ? parseInt(globalPausedTime, 10) : 0);
+        setPausedTime(pausedTimeValue);
+        pausedAtRef.current = null;
       }
       else if (globalStartTimeStr && !isRunning) {
         // Global timer is running but local timer is not

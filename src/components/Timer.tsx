@@ -65,6 +65,7 @@ const Timer: React.FC<TimerProps> = ({ taskId, projectId, hourlyRate }) => {
       start();
     } catch (error) {
       // Silently handle errors
+      console.error("Error starting timer:", error);
     }
   };
   
@@ -75,6 +76,7 @@ const Timer: React.FC<TimerProps> = ({ taskId, projectId, hourlyRate }) => {
       pause();
     } catch (error) {
       // Silently handle errors
+      console.error("Error pausing timer:", error);
     }
   };
   
@@ -85,6 +87,7 @@ const Timer: React.FC<TimerProps> = ({ taskId, projectId, hourlyRate }) => {
       resume();
     } catch (error) {
       // Silently handle errors
+      console.error("Error resuming timer:", error);
     }
   };
   
@@ -96,6 +99,7 @@ const Timer: React.FC<TimerProps> = ({ taskId, projectId, hourlyRate }) => {
       stop();
     } catch (error) {
       // Silently handle errors
+      console.error("Error stopping timer:", error);
     }
   };
   

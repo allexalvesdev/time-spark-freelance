@@ -5,10 +5,18 @@ import { timeEntryService, taskService } from '@/services';
 import { useToast } from '@/hooks/use-toast';
 import { formatDuration, calculateEarnings } from '@/utils/dateUtils';
 
+// PostgreSQL integer max value
+const PG_INTEGER_MAX = 2147483647;
+
 export const useTimerManagement = (userId: string, tasks: Task[] = []) => {
   const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([]);
   const [activeTimeEntry, setActiveTimeEntry] = useState<TimeEntry | null>(null);
   const { toast } = useToast();
+
+  // Helper function to ensure values are within PostgreSQL integer limits
+  const getSafeInteger = (value: number): number => {
+    return Math.min(value, PG_INTEGER_MAX);
+  };
 
   const startTimer = async (taskId: string, projectId: string) => {
     try {
@@ -51,10 +59,10 @@ export const useTimerManagement = (userId: string, tasks: Task[] = []) => {
       
       const currentTime = new Date();
       const startTime = new Date(activeTimeEntry.startTime);
-      const pausedTimeSeconds = (activeTimeEntry.pausedTime || 0);
+      const pausedTimeSeconds = getSafeInteger(activeTimeEntry.pausedTime || 0);
       
       // Calculate time elapsed until now, not counting already paused time
-      const elapsedUntilNow = Math.floor((currentTime.getTime() - startTime.getTime()) / 1000) - pausedTimeSeconds;
+      const elapsedUntilNow = getSafeInteger(Math.floor((currentTime.getTime() - startTime.getTime()) / 1000) - pausedTimeSeconds);
       
       const updatedTimeEntry: TimeEntry = {
         ...activeTimeEntry,
@@ -102,10 +110,10 @@ export const useTimerManagement = (userId: string, tasks: Task[] = []) => {
       // Calculate the additional paused time that needs to be added
       const pausedAt = parseInt(localStorage.getItem(`timerPausedAt-global-timer-${activeTimeEntry.taskId}`) || '0', 10);
       const now = new Date().getTime();
-      const additionalPausedTime = Math.floor((now - pausedAt) / 1000);
+      const additionalPausedTime = getSafeInteger(Math.floor((now - pausedAt) / 1000));
       
       // Add this to the existing paused time
-      const totalPausedTime = (activeTimeEntry.pausedTime || 0) + additionalPausedTime;
+      const totalPausedTime = getSafeInteger((activeTimeEntry.pausedTime || 0) + additionalPausedTime);
       
       const updatedTimeEntry: TimeEntry = {
         ...activeTimeEntry,
@@ -153,19 +161,19 @@ export const useTimerManagement = (userId: string, tasks: Task[] = []) => {
 
       const endTime = new Date();
       const startTime = new Date(activeTimeEntry.startTime);
-      let duration = Math.floor((endTime.getTime() - startTime.getTime()) / 1000);
+      let duration = getSafeInteger(Math.floor((endTime.getTime() - startTime.getTime()) / 1000));
       
       // Subtract paused time from the total duration
       if (activeTimeEntry.pausedTime) {
-        duration -= activeTimeEntry.pausedTime;
+        duration = getSafeInteger(duration - activeTimeEntry.pausedTime);
       }
       
       // If currently paused, calculate additional paused time
       if (activeTimeEntry.isPaused) {
         const pausedAt = parseInt(localStorage.getItem(`timerPausedAt-global-timer-${activeTimeEntry.taskId}`) || '0', 10);
         if (pausedAt > 0) {
-          const additionalPausedTime = Math.floor((endTime.getTime() - pausedAt) / 1000);
-          duration -= additionalPausedTime;
+          const additionalPausedTime = getSafeInteger(Math.floor((endTime.getTime() - pausedAt) / 1000));
+          duration = getSafeInteger(duration - additionalPausedTime);
         }
       }
 
@@ -194,13 +202,13 @@ export const useTimerManagement = (userId: string, tasks: Task[] = []) => {
             // Use scheduledStartTime as fallback if actualStartTime is not available
             const taskStartTime = task.actualStartTime || task.scheduledStartTime;
             
-            // Update the task with completed status
+            // Update the task with completed status - ensure elapsed time is safe
             const updatedTask: Task = {
               ...task,
               completed: true,
               actualEndTime: endTime,
               actualStartTime: taskStartTime, // Use the determined start time
-              elapsedTime: (task.elapsedTime || 0) + duration,
+              elapsedTime: getSafeInteger((task.elapsedTime || 0) + duration),
             };
             
             // Update the server first
@@ -218,6 +226,7 @@ export const useTimerManagement = (userId: string, tasks: Task[] = []) => {
             });
           }
         } catch (taskError) {
+          console.error('Error completing task:', taskError);
           toast({
             title: 'Aviso',
             description: 'O timer foi parado mas não foi possível finalizar a tarefa automaticamente.',
@@ -244,6 +253,7 @@ export const useTimerManagement = (userId: string, tasks: Task[] = []) => {
       localStorage.removeItem(`timerPausedTime-global-timer-${taskId}`);
       localStorage.removeItem(`timerPausedAt-global-timer-${taskId}`);
     } catch (error: any) {
+      console.error('Error stopping timer:', error);
       toast({
         title: 'Erro',
         description: 'Não foi possível parar o cronômetro. Tente novamente.',

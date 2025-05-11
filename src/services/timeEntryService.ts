@@ -59,14 +59,21 @@ export const timeEntryService = {
   },
 
   async updateTimeEntry(entry: TimeEntry) {
+    // Ensure pausedTime and duration are within PostgreSQL integer limits (max 2147483647)
+    const safeEntry = {
+      ...entry,
+      pausedTime: Math.min(entry.pausedTime || 0, 2147483647),
+      duration: Math.min(entry.duration || 0, 2147483647)
+    };
+
     const { error } = await supabase
       .from('time_entries')
       .update({
-        end_time: entry.endTime ? entry.endTime.toISOString() : null,
-        duration: entry.duration,
-        is_running: entry.isRunning,
-        is_paused: entry.isPaused,
-        paused_time: entry.pausedTime,
+        end_time: safeEntry.endTime ? safeEntry.endTime.toISOString() : null,
+        duration: safeEntry.duration,
+        is_running: safeEntry.isRunning,
+        is_paused: safeEntry.isPaused,
+        paused_time: safeEntry.pausedTime,
       })
       .eq('id', entry.id);
 
@@ -74,12 +81,15 @@ export const timeEntryService = {
   },
 
   async pauseTimeEntry(entryId: string, pausedTime: number) {
+    // Ensure pausedTime is within PostgreSQL integer limits
+    const safePausedTime = Math.min(pausedTime, 2147483647);
+    
     const { error } = await supabase
       .from('time_entries')
       .update({
         is_paused: true,
         is_running: true, // Still considered running, just paused
-        paused_time: pausedTime,
+        paused_time: safePausedTime,
       })
       .eq('id', entryId);
 
@@ -87,12 +97,15 @@ export const timeEntryService = {
   },
 
   async resumeTimeEntry(entryId: string, pausedTime: number) {
+    // Ensure pausedTime is within PostgreSQL integer limits
+    const safePausedTime = Math.min(pausedTime, 2147483647);
+    
     const { error } = await supabase
       .from('time_entries')
       .update({
         is_paused: false,
         is_running: true,
-        paused_time: pausedTime,
+        paused_time: safePausedTime,
       })
       .eq('id', entryId);
 

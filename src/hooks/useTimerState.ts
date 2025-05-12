@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { getSafeInteger } from '@/utils/timer/safeInteger';
 import { getPersistedTimerState, persistTimerState, clearPersistedTimerState } from '@/utils/timer/timerStorage';
@@ -145,7 +146,7 @@ const useTimerState = (options: UseTimerOptions = {}) => {
     } 
     // If paused, keep running state but stop the interval
     else if (isRunning && isPaused) {
-      // Clear interval when paused
+      // Clear interval when paused - this is crucial to stop the timer
       clearIntervalSafely();
       
       // Set the paused time reference if not set

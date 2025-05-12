@@ -3,7 +3,6 @@ import { TimeEntry } from '@/types';
 import { timeEntryService } from '@/services';
 import { useToast } from '@/hooks/use-toast';
 import { getSafeInteger } from '@/utils/timer/safeInteger';
-import { calculateAdditionalPausedTime } from '@/utils/timer/durationCalculator';
 
 interface UseTimerResumeOptions {
   timeEntries: TimeEntry[];
@@ -26,14 +25,12 @@ export const useTimerResume = ({
       
       // Calculate the additional paused time that needs to be added
       const pausedAtStr = localStorage.getItem(`timerPausedAt-global-timer-${activeTimeEntry.taskId}`);
-      const pausedAt = pausedAtStr ? parseInt(pausedAtStr, 10) : 0;
+      const pausedAt = pausedAtStr ? parseInt(pausedAtStr, 10) : null;
       
-      // Validate paused time to avoid calculation errors
+      // Handle case when pausedAt is missing or invalid
       if (!pausedAt || pausedAt <= 0) {
-        console.error('Invalid pausedAt value:', pausedAt);
-        // Default to a short pause to avoid calculation errors
-        const additionalPausedTime = 1;
-        const totalPausedTime = getSafeInteger((activeTimeEntry.pausedTime || 0) + additionalPausedTime);
+        // Use current pausedTime as fallback and just resume without adding time
+        const totalPausedTime = getSafeInteger(activeTimeEntry.pausedTime || 0);
         
         const updatedTimeEntry: TimeEntry = {
           ...activeTimeEntry,
@@ -58,6 +55,12 @@ export const useTimerResume = ({
         localStorage.setItem(`timerIsPaused-global-timer-${activeTimeEntry.taskId}`, 'false');
         localStorage.removeItem(`timerPausedAt-global-timer-${activeTimeEntry.taskId}`);
         localStorage.setItem(`timerPausedTime-global-timer-${activeTimeEntry.taskId}`, totalPausedTime.toString());
+        
+        // Dispatch a custom event to ensure all timer instances are notified
+        const resumeEvent = new CustomEvent('timer-resumed', {
+          detail: { taskId: activeTimeEntry.taskId, newPausedTime: totalPausedTime }
+        });
+        window.dispatchEvent(resumeEvent);
         
         toast({
           title: 'Timer retomado',
@@ -95,6 +98,12 @@ export const useTimerResume = ({
       localStorage.setItem(`timerIsPaused-global-timer-${activeTimeEntry.taskId}`, 'false');
       localStorage.removeItem(`timerPausedAt-global-timer-${activeTimeEntry.taskId}`);
       localStorage.setItem(`timerPausedTime-global-timer-${activeTimeEntry.taskId}`, totalPausedTime.toString());
+      
+      // Dispatch a custom event to ensure all timer instances are notified
+      const resumeEvent = new CustomEvent('timer-resumed', {
+        detail: { taskId: activeTimeEntry.taskId, newPausedTime: totalPausedTime }
+      });
+      window.dispatchEvent(resumeEvent);
       
       toast({
         title: 'Timer retomado',

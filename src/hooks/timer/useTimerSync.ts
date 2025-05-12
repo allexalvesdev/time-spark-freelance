@@ -32,6 +32,32 @@ export const useTimerSync = ({
   startTimeRef,
   pausedAtRef
 }: UseTimerSyncOptions) => {
+  // Listen for global pause/resume events
+  useEffect(() => {
+    const handleTimerPaused = (e: CustomEvent) => {
+      if (persistKey?.includes(e.detail.taskId) && isRunning && !isPaused) {
+        setIsPaused(true);
+        pausedAtRef.current = e.detail.pausedAt || Date.now();
+      }
+    };
+    
+    const handleTimerResumed = (e: CustomEvent) => {
+      if (persistKey?.includes(e.detail.taskId) && isRunning && isPaused) {
+        setIsPaused(false);
+        setPausedTime(e.detail.newPausedTime || 0);
+        pausedAtRef.current = null;
+      }
+    };
+    
+    window.addEventListener('timer-paused', handleTimerPaused as EventListener);
+    window.addEventListener('timer-resumed', handleTimerResumed as EventListener);
+    
+    return () => {
+      window.removeEventListener('timer-paused', handleTimerPaused as EventListener);
+      window.removeEventListener('timer-resumed', handleTimerResumed as EventListener);
+    };
+  }, [persistKey, isRunning, isPaused, setIsPaused, setPausedTime, pausedAtRef]);
+
   // Handle global storage changes using event listeners
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {

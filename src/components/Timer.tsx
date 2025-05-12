@@ -40,14 +40,16 @@ const Timer: React.FC<TimerProps> = ({ taskId, projectId, hourlyRate }) => {
     persistKey: timerKey
   });
 
-  // Force sync when component mounts
+  // Force sync when component mounts and when active state changes
   useEffect(() => {
     if (isActive) {
       const syncState = () => {
-        if (isPaused && !localIsPaused) {
-          pause();
-        } else if (!isPaused && localIsPaused) {
-          resume();
+        if (isPaused !== localIsPaused) {
+          if (isPaused) {
+            pause();
+          } else {
+            resume();
+          }
         }
       };
       

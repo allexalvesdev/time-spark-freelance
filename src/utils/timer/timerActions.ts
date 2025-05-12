@@ -78,7 +78,7 @@ export const pauseTimerAction = (options: TimerActionOptions): void => {
     setIsPaused(true);
     pausedAtRef.current = Date.now();
     
-    // Clear interval when paused
+    // Clear interval when paused - this is crucial to stop the timer
     clearInterval();
     
     // Force a custom event to notify other components about the change

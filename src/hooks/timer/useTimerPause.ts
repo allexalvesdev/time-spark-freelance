@@ -52,6 +52,12 @@ export const useTimerPause = ({
       localStorage.setItem(`timerPausedAt-global-timer-${activeTimeEntry.taskId}`, currentTime.getTime().toString());
       localStorage.setItem(`timerIsPaused-global-timer-${activeTimeEntry.taskId}`, 'true');
       
+      // Dispatch a custom event to ensure all timer instances are notified of pause
+      const pauseEvent = new CustomEvent('timer-paused', {
+        detail: { taskId: activeTimeEntry.taskId, pausedAt: currentTime.getTime() }
+      });
+      window.dispatchEvent(pauseEvent);
+      
       toast({
         title: 'Timer pausado',
         description: 'O cronômetro foi pausado. Você pode retomá-lo quando quiser.',

@@ -30,7 +30,7 @@ export function Header() {
   };
   
   return (
-    <header className="border-b border-border bg-background px-4 h-14 flex items-center justify-between">
+    <header className="border-b border-border bg-background px-4 h-14 flex items-center justify-between relative z-20">
       <div className="flex items-center gap-2">
         <SidebarTrigger className="md:hidden" />
         <h1 className="text-lg font-medium">{getPageTitle()}</h1>
@@ -43,12 +43,12 @@ export function Header() {
           </div>
         )}
         
-        <Button variant="ghost" size="icon">
+        <Button variant="ghost" size="icon" className="relative z-20">
           <Bell className="h-5 w-5" />
         </Button>
         
         {user && (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 relative z-20">
             <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-medium">
               {user.email?.charAt(0).toUpperCase()}
             </div>

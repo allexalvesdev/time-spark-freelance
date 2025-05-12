@@ -53,7 +53,7 @@ const MobileNavigation: React.FC = () => {
   return (
     <>
       {activeTimeEntry && (
-        <div className="fixed bottom-14 left-0 right-0 bg-background border-t z-50 px-3 py-2 flex items-center justify-between">
+        <div className="fixed bottom-14 left-0 right-0 bg-background border-t z-30 px-3 py-2 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="flex flex-col">
               <div className="text-sm font-mono font-medium">{getFormattedTime()}</div>
@@ -74,7 +74,7 @@ const MobileNavigation: React.FC = () => {
         </div>
       )}
       
-      <div className="fixed bottom-0 left-0 right-0 bg-background border-t z-50 flex justify-around items-center py-2">
+      <div className="fixed bottom-0 left-0 right-0 bg-background border-t z-20 flex justify-around items-center py-2">
         {navItems.map((item) => (
           <Link 
             key={item.path}

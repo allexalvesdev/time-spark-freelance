@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Trash, Download, Upload, FileExcel } from 'lucide-react';
+import { Trash, Download, Upload, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -226,7 +226,7 @@ const TaskImportExport: React.FC<TaskImportExportProps> = ({
             onClick={downloadTemplate}
             className="w-full md:w-auto flex items-center gap-2"
           >
-            <FileExcel size={16} />
+            <FileText size={16} />
             Baixar Modelo
           </Button>
         </div>

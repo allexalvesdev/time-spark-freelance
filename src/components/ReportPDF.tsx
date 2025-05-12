@@ -11,17 +11,21 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 24,
-    marginBottom: 10
+    marginBottom: 10,
+    color: '#333333'
   },
   subtitle: {
     fontSize: 18,
-    marginBottom: 10,
-    color: '#666'
+    marginBottom: 20,
+    color: '#555555'
   },
   projectName: {
     fontSize: 18,
-    marginBottom: 10,
-    fontWeight: 'bold'
+    marginBottom: 15,
+    fontWeight: 'bold',
+    color: '#444444',
+    borderBottom: '1px solid #dddddd',
+    paddingBottom: 5
   },
   table: {
     display: 'flex',
@@ -53,7 +57,8 @@ const styles = StyleSheet.create({
   timeCell: {
     width: '15%',
     padding: 8,
-    fontSize: 10
+    fontSize: 10,
+    textAlign: 'right'
   },
   dateCell: {
     width: '20%',
@@ -63,7 +68,8 @@ const styles = StyleSheet.create({
   valueCell: {
     width: '15%',
     padding: 8,
-    fontSize: 10
+    fontSize: 10,
+    textAlign: 'right'
   },
   descriptionCell: {
     width: '25%',
@@ -71,9 +77,24 @@ const styles = StyleSheet.create({
     fontSize: 10
   },
   summary: {
-    marginTop: 20,
+    marginTop: 15,
     padding: 10,
-    backgroundColor: '#f9f9f9'
+    backgroundColor: '#f9f9f9',
+    borderRadius: 4
+  },
+  summaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 5
+  },
+  summaryLabel: {
+    fontSize: 10,
+    color: '#555',
+    fontWeight: 'bold'
+  },
+  summaryValue: {
+    fontSize: 10,
+    textAlign: 'right'
   },
   description: {
     fontSize: 10,
@@ -90,18 +111,46 @@ const styles = StyleSheet.create({
     borderBottomStyle: 'dashed'
   },
   consolidatedSummary: {
-    marginTop: 30,
+    marginTop: 20,
+    marginBottom: 25,
     padding: 15,
     backgroundColor: '#f0f0f0',
-    borderRadius: 5,
+    borderRadius: 4,
     borderWidth: 1,
-    borderColor: '#cccccc',
+    borderColor: '#dddddd',
     borderStyle: 'solid'
   },
   summaryTitle: {
     fontSize: 16,
     fontWeight: 'bold',
-    marginBottom: 10
+    marginBottom: 10,
+    color: '#333333'
+  },
+  summaryItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 6
+  },
+  summaryItemLabel: {
+    fontSize: 12,
+    color: '#555555'
+  },
+  summaryItemValue: {
+    fontSize: 12,
+    fontWeight: 'bold'
+  },
+  footer: {
+    position: 'absolute',
+    bottom: 30,
+    left: 30,
+    right: 30,
+    textAlign: 'center',
+    fontSize: 9,
+    color: '#777777',
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#dddddd',
+    borderTopStyle: 'solid'
   }
 });
 
@@ -128,6 +177,15 @@ const formatDateForPDF = (date: Date | undefined): string => {
   return format(date, "dd/MM/yyyy HH:mm", { locale: ptBR });
 };
 
+const formatCurrencyForPDF = (value: number): string => {
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(value);
+};
+
 // Componente para um projeto individual
 const SingleProjectReport = ({ data }: SingleReportPDFProps) => (
   <>
@@ -145,21 +203,33 @@ const SingleProjectReport = ({ data }: SingleReportPDFProps) => (
         <View key={task.id} style={styles.tableRow}>
           <View style={styles.nameCell}>
             <Text>{task.name}</Text>
-            <Text style={styles.description}>{task.description || "Sem descrição"}</Text>
+            {task.description && <Text style={styles.description}>{task.description}</Text>}
           </View>
           <Text style={styles.dateCell}>{formatDateForPDF(task.startTime)}</Text>
           <Text style={styles.dateCell}>{formatDateForPDF(task.endTime)}</Text>
           <Text style={styles.timeCell}>{formatTimeForPDF(task.timeSpent)}</Text>
-          <Text style={styles.valueCell}>R$ {task.earnings.toFixed(2)}</Text>
+          <Text style={styles.valueCell}>{formatCurrencyForPDF(task.earnings)}</Text>
         </View>
       ))}
     </View>
 
     <View style={styles.summary}>
-      <Text>Projeto: {data.projectName}</Text>
-      <Text>Total de Tarefas: {data.tasks.length}</Text>
-      <Text>Tempo Total: {formatTimeForPDF(data.totalTime)}</Text>
-      <Text>Ganhos Totais: R$ {data.totalEarnings.toFixed(2)}</Text>
+      <View style={styles.summaryRow}>
+        <Text style={styles.summaryLabel}>Projeto:</Text>
+        <Text style={styles.summaryValue}>{data.projectName}</Text>
+      </View>
+      <View style={styles.summaryRow}>
+        <Text style={styles.summaryLabel}>Total de Tarefas:</Text>
+        <Text style={styles.summaryValue}>{data.tasks.length}</Text>
+      </View>
+      <View style={styles.summaryRow}>
+        <Text style={styles.summaryLabel}>Tempo Total:</Text>
+        <Text style={styles.summaryValue}>{formatTimeForPDF(data.totalTime)}</Text>
+      </View>
+      <View style={styles.summaryRow}>
+        <Text style={styles.summaryLabel}>Ganhos Totais:</Text>
+        <Text style={styles.summaryValue}>{formatCurrencyForPDF(data.totalEarnings)}</Text>
+      </View>
     </View>
   </>
 );
@@ -169,12 +239,17 @@ export const ReportPDF = ({ data }: SingleReportPDFProps) => (
   <Document>
     <Page size="A4" style={styles.page}>
       <Text style={styles.title}>Relatório de Projeto</Text>
+      <Text style={styles.subtitle}>{data.projectName}</Text>
       <SingleProjectReport data={data} />
+      
+      <View style={styles.footer}>
+        <Text>Relatório gerado em {format(new Date(), "dd/MM/yyyy HH:mm:ss", { locale: ptBR })}</Text>
+      </View>
     </Page>
   </Document>
 );
 
-// Novo componente para o relatório consolidado de múltiplos projetos
+// Componente para o relatório consolidado de múltiplos projetos
 export const ConsolidatedReportPDF = ({ reports, totalTime, totalEarnings }: ConsolidatedReportPDFProps) => (
   <Document>
     <Page size="A4" style={styles.page}>
@@ -184,10 +259,28 @@ export const ConsolidatedReportPDF = ({ reports, totalTime, totalEarnings }: Con
       {/* Resumo geral no topo */}
       <View style={styles.consolidatedSummary}>
         <Text style={styles.summaryTitle}>Resumo Geral</Text>
-        <Text>Total de Projetos: {reports.length}</Text>
-        <Text>Total de Tarefas: {reports.reduce((sum, report) => sum + report.tasks.length, 0)}</Text>
-        <Text>Tempo Total: {formatTimeForPDF(totalTime)}</Text>
-        <Text>Ganhos Totais: R$ {totalEarnings.toFixed(2)}</Text>
+        
+        <View style={styles.summaryItem}>
+          <Text style={styles.summaryItemLabel}>Total de Projetos:</Text>
+          <Text style={styles.summaryItemValue}>{reports.length}</Text>
+        </View>
+        
+        <View style={styles.summaryItem}>
+          <Text style={styles.summaryItemLabel}>Total de Tarefas:</Text>
+          <Text style={styles.summaryItemValue}>
+            {reports.reduce((sum, report) => sum + report.tasks.length, 0)}
+          </Text>
+        </View>
+        
+        <View style={styles.summaryItem}>
+          <Text style={styles.summaryItemLabel}>Tempo Total:</Text>
+          <Text style={styles.summaryItemValue}>{formatTimeForPDF(totalTime)}</Text>
+        </View>
+        
+        <View style={styles.summaryItem}>
+          <Text style={styles.summaryItemLabel}>Ganhos Totais:</Text>
+          <Text style={styles.summaryItemValue}>{formatCurrencyForPDF(totalEarnings)}</Text>
+        </View>
       </View>
       
       {/* Detalhes de cada projeto */}
@@ -197,6 +290,10 @@ export const ConsolidatedReportPDF = ({ reports, totalTime, totalEarnings }: Con
           <SingleProjectReport data={report} />
         </View>
       ))}
+      
+      <View style={styles.footer}>
+        <Text>Relatório gerado em {format(new Date(), "dd/MM/yyyy HH:mm:ss", { locale: ptBR })}</Text>
+      </View>
     </Page>
   </Document>
 );

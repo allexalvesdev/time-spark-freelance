@@ -38,22 +38,24 @@ export function Header() {
       
       <div className="flex items-center gap-4">
         {activeTimeEntry && (
-          <div className="hidden sm:block max-w-[250px]">
+          <div className="hidden sm:block max-w-[250px] relative z-10">
             <ActiveTimerDisplay />
           </div>
         )}
         
-        <Button variant="ghost" size="icon" className="relative z-20">
-          <Bell className="h-5 w-5" />
-        </Button>
-        
-        {user && (
-          <div className="flex items-center gap-2 relative z-20">
-            <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-medium">
-              {user.email?.charAt(0).toUpperCase()}
+        <div className="flex items-center gap-3 relative z-30">
+          <Button variant="ghost" size="icon" className="relative z-30">
+            <Bell className="h-5 w-5" />
+          </Button>
+          
+          {user && (
+            <div className="flex items-center gap-2 relative z-30">
+              <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-medium">
+                {user.email?.charAt(0).toUpperCase()}
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </header>
   );

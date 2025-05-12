@@ -87,7 +87,7 @@ const ActiveTimerDisplay: React.FC = () => {
   }
   
   return (
-    <div className="flex items-center justify-between w-full gap-4">
+    <div className="flex items-center justify-between bg-background w-full gap-4 z-10">
       <div className="flex flex-col">
         <div className={`text-base font-mono font-bold ${isPaused ? 'text-yellow-500' : ''}`}>
           {getFormattedTime()}

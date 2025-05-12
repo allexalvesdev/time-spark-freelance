@@ -1,3 +1,4 @@
+
 /**
  * Utility functions for date and time formatting and calculations
  */
@@ -10,6 +11,45 @@
 export const formatDate = (date: Date): string => {
   const options: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric' };
   return date.toLocaleDateString(undefined, options);
+};
+
+/**
+ * Formats a time component of a date
+ * @param date The date to extract and format time from
+ * @returns Formatted time string (e.g., 14:30)
+ */
+export const formatTime = (date: Date): string => {
+  const options: Intl.DateTimeFormatOptions = { hour: '2-digit', minute: '2-digit' };
+  return date.toLocaleTimeString(undefined, options);
+};
+
+/**
+ * Parses a date string into a Date object
+ * @param dateString The date string to parse
+ * @param format The expected format of the date string (e.g., 'dd/MM/yyyy HH:mm')
+ * @returns Parsed Date object
+ */
+export const parseDate = (dateString: string, format: string): Date => {
+  // Simple parsing for common formats
+  // This is a basic implementation - for production, consider using date-fns or another library
+  try {
+    // For DD/MM/YYYY HH:MM or DD-MM-YYYY HH:MM formats
+    if (format === 'dd/MM/yyyy HH:mm' || format === 'dd-MM-yyyy HH:mm') {
+      const separator = dateString.includes('/') ? '/' : '-';
+      const [datePart, timePart] = dateString.split(' ');
+      const [day, month, year] = datePart.split(separator).map(Number);
+      const [hours, minutes] = timePart.split(':').map(Number);
+      
+      // Month is 0-indexed in JavaScript Date
+      return new Date(year, month - 1, day, hours, minutes);
+    }
+    
+    // Fallback to regular Date parsing for ISO format
+    return new Date(dateString);
+  } catch (error) {
+    console.error('Error parsing date:', error);
+    return new Date(); // Return current date as fallback
+  }
 };
 
 /**
@@ -58,6 +98,30 @@ export const formatDuration = (seconds: number | null | undefined): string => {
   } catch (e) {
     console.error("Error formatting duration:", e, "seconds:", seconds);
     return '00:00:00';
+  }
+};
+
+/**
+ * Calculates the elapsed time between two dates in seconds
+ * @param startDate The start date
+ * @param endDate The end date
+ * @returns Elapsed time in seconds
+ */
+export const calculateElapsedTime = (startDate: Date, endDate: Date): number => {
+  try {
+    // Ensure we're working with valid Date objects
+    const start = startDate instanceof Date ? startDate : new Date(startDate);
+    const end = endDate instanceof Date ? endDate : new Date(endDate);
+    
+    // Calculate difference in milliseconds and convert to seconds
+    const diffInMs = end.getTime() - start.getTime();
+    const diffInSeconds = Math.floor(diffInMs / 1000);
+    
+    // Prevent negative values
+    return diffInSeconds > 0 ? diffInSeconds : 0;
+  } catch (e) {
+    console.error("Error calculating elapsed time:", e);
+    return 0;
   }
 };
 

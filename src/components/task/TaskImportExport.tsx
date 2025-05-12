@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Trash, Download, Upload } from 'lucide-react';
+import { Trash, Download, Upload, FileExcel } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -9,6 +9,7 @@ import { Task, Tag } from '@/types';
 import { read, utils, write } from 'xlsx';
 import { taskService } from '@/services';
 import { formatDate } from '@/utils/dateUtils';
+import { generateTaskTemplate } from '@/utils/excelUtils';
 
 interface TaskImportExportProps {
   projectId: string;
@@ -86,6 +87,33 @@ const TaskImportExport: React.FC<TaskImportExportProps> = ({
       toast({
         title: 'Erro na exportação',
         description: 'Não foi possível exportar as tarefas.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  // Função para baixar o modelo de Excel para importação
+  const downloadTemplate = () => {
+    try {
+      const blob = generateTaskTemplate();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `modelo_importacao_tarefas.xlsx`;
+      link.click();
+      
+      // Clean up
+      URL.revokeObjectURL(url);
+      
+      toast({
+        title: 'Modelo baixado',
+        description: 'O modelo de importação de tarefas foi baixado com sucesso.',
+      });
+    } catch (error) {
+      console.error('Erro ao baixar modelo:', error);
+      toast({
+        title: 'Erro ao baixar modelo',
+        description: 'Não foi possível baixar o modelo de importação.',
         variant: 'destructive',
       });
     }
@@ -178,12 +206,12 @@ const TaskImportExport: React.FC<TaskImportExportProps> = ({
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div className="grid grid-cols-1 gap-4">
       <div>
         <Label htmlFor="task-import-file" className="mb-2 block">
           Importar Tarefas do Excel
         </Label>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col md:flex-row items-start md:items-center gap-2">
           <Input
             id="task-import-file"
             type="file"
@@ -192,8 +220,14 @@ const TaskImportExport: React.FC<TaskImportExportProps> = ({
             disabled={importing}
             className="flex-1"
           />
-          <Button variant="outline" size="icon" disabled>
-            <Upload size={16} />
+          
+          <Button 
+            variant="outline" 
+            onClick={downloadTemplate}
+            className="w-full md:w-auto flex items-center gap-2"
+          >
+            <FileExcel size={16} />
+            Baixar Modelo
           </Button>
         </div>
       </div>

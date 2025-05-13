@@ -36,22 +36,20 @@ export function Header() {
         <h1 className="text-lg font-medium">{getPageTitle()}</h1>
       </div>
       
-      <div className="flex items-center space-x-2">
+      <div className="flex items-center gap-4">
         {activeTimeEntry && (
-          <div className="hidden sm:block max-w-[250px] mr-2 relative">
+          <div className="hidden sm:block max-w-[250px]">
             <ActiveTimerDisplay />
           </div>
         )}
         
-        <div className="flex items-center gap-2">
-          <div className="relative">
-            <Button variant="ghost" size="icon">
-              <Bell className="h-5 w-5" />
-            </Button>
-          </div>
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="icon">
+            <Bell className="h-5 w-5" />
+          </Button>
           
           {user && (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center">
               <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-medium">
                 {user.email?.charAt(0).toUpperCase()}
               </div>

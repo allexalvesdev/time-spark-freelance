@@ -87,7 +87,7 @@ const ActiveTimerDisplay: React.FC = () => {
   }
   
   return (
-    <div className="flex items-center justify-between bg-background border border-border rounded-md p-2 w-full gap-3">
+    <div className="flex items-center justify-between bg-background rounded-lg shadow-sm p-2 w-full gap-2">
       <div className="flex flex-col">
         <div className={`text-base font-mono font-bold ${isPaused ? 'text-yellow-500' : ''}`}>
           {getFormattedTime()}
@@ -100,7 +100,7 @@ const ActiveTimerDisplay: React.FC = () => {
         )}
       </div>
       
-      <div className="flex gap-1 shrink-0">
+      <div className="flex gap-2 shrink-0">
         {isPaused ? (
           <Button 
             variant="secondary" 

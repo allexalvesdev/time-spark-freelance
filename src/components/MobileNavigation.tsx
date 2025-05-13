@@ -53,7 +53,7 @@ const MobileNavigation: React.FC = () => {
   return (
     <>
       {activeTimeEntry && (
-        <div className="fixed bottom-16 left-2 right-2 bg-background border rounded-md shadow-md p-3 flex items-center justify-between z-50">
+        <div className="fixed bottom-16 left-2 right-2 bg-background border rounded-md shadow-md p-3 flex items-center justify-between z-30">
           <div className="flex items-center gap-2">
             <div className="flex flex-col">
               <div className="text-sm font-mono font-medium">{getFormattedTime()}</div>

@@ -87,20 +87,20 @@ const ActiveTimerDisplay: React.FC = () => {
   }
   
   return (
-    <div className="flex items-center justify-between bg-background w-full gap-4 z-10">
+    <div className="flex items-center justify-between bg-background border border-border rounded-md p-2 w-full gap-3">
       <div className="flex flex-col">
         <div className={`text-base font-mono font-bold ${isPaused ? 'text-yellow-500' : ''}`}>
           {getFormattedTime()}
           {isPaused && <span className="text-sm ml-2">(Pausado)</span>}
         </div>
         {taskName && (
-          <div className="text-sm opacity-90 truncate max-w-[200px]">
+          <div className="text-sm opacity-90 truncate max-w-[120px]">
             {taskName}
           </div>
         )}
       </div>
       
-      <div className="flex gap-2 shrink-0">
+      <div className="flex gap-1 shrink-0">
         {isPaused ? (
           <Button 
             variant="secondary" 
@@ -108,7 +108,7 @@ const ActiveTimerDisplay: React.FC = () => {
             onClick={handleResumeTimer}
             className="shrink-0 bg-green-500 hover:bg-green-600 text-white"
           >
-            <Play className="h-4 w-4 mr-2" />
+            <Play className="h-4 w-4 mr-1" />
             Retomar
           </Button>
         ) : (
@@ -118,7 +118,7 @@ const ActiveTimerDisplay: React.FC = () => {
             onClick={handlePauseTimer}
             className="shrink-0 bg-yellow-500 hover:bg-yellow-600 text-white"
           >
-            <Pause className="h-4 w-4 mr-2" />
+            <Pause className="h-4 w-4 mr-1" />
             Pausar
           </Button>
         )}
@@ -128,7 +128,7 @@ const ActiveTimerDisplay: React.FC = () => {
           onClick={handleStopTimer}
           className="shrink-0"
         >
-          <Square className="h-4 w-4 mr-2" />
+          <Square className="h-4 w-4 mr-1" />
           Parar
         </Button>
       </div>

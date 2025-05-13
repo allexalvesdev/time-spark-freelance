@@ -53,7 +53,7 @@ const MobileNavigation: React.FC = () => {
   return (
     <>
       {activeTimeEntry && (
-        <div className="fixed bottom-14 left-0 right-0 bg-background border-t z-30 px-3 py-2 flex items-center justify-between">
+        <div className="fixed bottom-16 left-2 right-2 bg-background border rounded-md shadow-md p-3 flex items-center justify-between z-50">
           <div className="flex items-center gap-2">
             <div className="flex flex-col">
               <div className="text-sm font-mono font-medium">{getFormattedTime()}</div>
@@ -66,7 +66,7 @@ const MobileNavigation: React.FC = () => {
             variant="destructive" 
             size="sm" 
             onClick={handleStopTimer} 
-            className="h-7 px-2 text-xs"
+            className="h-8 px-3 text-xs"
           >
             <Square className="h-3 w-3 mr-1" />
             Parar
@@ -74,7 +74,7 @@ const MobileNavigation: React.FC = () => {
         </div>
       )}
       
-      <div className="fixed bottom-0 left-0 right-0 bg-background border-t z-20 flex justify-around items-center py-2">
+      <div className="fixed bottom-0 left-0 right-0 bg-background border-t z-40 flex justify-around items-center py-2">
         {navItems.map((item) => (
           <Link 
             key={item.path}

@@ -87,14 +87,14 @@ const ActiveTimerDisplay: React.FC = () => {
   }
   
   return (
-    <div className="flex items-center justify-between bg-background rounded-lg shadow-sm p-2 w-full gap-2">
-      <div className="flex flex-col">
+    <div className="flex items-center justify-between bg-background rounded-lg shadow-sm border border-border py-1 px-3 w-full gap-3">
+      <div className="flex flex-col items-center">
         <div className={`text-base font-mono font-bold ${isPaused ? 'text-yellow-500' : ''}`}>
           {getFormattedTime()}
           {isPaused && <span className="text-sm ml-2">(Pausado)</span>}
         </div>
         {taskName && (
-          <div className="text-sm opacity-90 truncate max-w-[120px]">
+          <div className="text-sm opacity-90 truncate max-w-[130px]">
             {taskName}
           </div>
         )}

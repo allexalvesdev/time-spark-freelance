@@ -1,10 +1,10 @@
-
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useAppContext } from '@/contexts/AppContext';
 import useTimerState from '@/hooks/useTimerState';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Button } from './ui/button';
 import { Square, Pause, Play } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
 
 const ActiveTimerDisplay: React.FC = () => {
   const { state, getActiveTaskName, pauseTimer, resumeTimer, stopTimer } = useAppContext();
@@ -12,27 +12,55 @@ const ActiveTimerDisplay: React.FC = () => {
   const isMobile = useIsMobile();
   
   const isPaused = activeTimeEntry?.isPaused;
+  const taskId = activeTimeEntry?.taskId || '';
   
-  const { getFormattedTime } = useTimerState({
-    persistKey: activeTimeEntry ? `global-timer-${activeTimeEntry.taskId}` : undefined,
-    autoStart: true
+  // Use persistKey com o ID da tarefa atual para garantir que o timer continue após refresh
+  const { getFormattedTime, isRunning } = useTimerState({
+    persistKey: taskId ? `global-timer-${taskId}` : undefined,
+    autoStart: false // Não iniciamos automaticamente, deixamos o sistema de sincronização fazer isso
   });
 
-  if (!activeTimeEntry) return null;
+  // Efeito para detectar problemas de sincronização
+  useEffect(() => {
+    if (activeTimeEntry && !isRunning) {
+      // Se temos uma entrada ativa mas o timer não está rodando, sincronize novamente
+      const timerState = localStorage.getItem(`timerIsRunning-global-timer-${taskId}`);
+      if (timerState === 'true' && taskId) {
+        console.log('Detectada dessincronização do timer após refresh, corrigindo...');
+        
+        // Forçamos a renderização do timer sem alterá-lo
+        window.dispatchEvent(new Event('storage'));
+      }
+    }
+  }, [activeTimeEntry, isRunning, taskId]);
+
+  if (!activeTimeEntry || !taskId) return null;
   
   const taskName = getActiveTaskName();
   const isCompact = isMobile;
   
   const handlePauseTimer = () => {
     pauseTimer();
+    toast({
+      title: "Timer pausado",
+      description: `Timer para "${taskName}" foi pausado.`,
+    });
   };
   
   const handleResumeTimer = () => {
     resumeTimer();
+    toast({
+      title: "Timer retomado",
+      description: `Timer para "${taskName}" foi retomado.`,
+    });
   };
 
   const handleStopTimer = () => {
     stopTimer(true); // Auto-complete task on stop
+    toast({
+      title: "Timer parado",
+      description: `Timer para "${taskName}" foi parado e a tarefa foi marcada como concluída.`,
+    });
   };
   
   if (isCompact) {

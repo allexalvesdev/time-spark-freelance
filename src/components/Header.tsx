@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { SidebarTrigger } from '@/components/ui/sidebar';
@@ -13,6 +13,29 @@ export function Header() {
   const location = useLocation();
   const { state } = useAppContext();
   const { activeTimeEntry } = state || {};
+  const [refreshTimer, setRefreshTimer] = useState(false);
+  
+  // Efeito para forçar a re-sincronização do timer após carregamento da página
+  useEffect(() => {
+    if (activeTimeEntry) {
+      // Gatilho de atualização do timer após carregamento completo da página
+      const handleLoad = () => {
+        setTimeout(() => {
+          // Dispara evento de armazenamento para forçar sincronização do timer
+          window.dispatchEvent(new Event('storage'));
+          setRefreshTimer(true);
+        }, 200);
+      };
+      
+      // Se a página já foi carregada, force a atualização
+      if (document.readyState === 'complete') {
+        handleLoad();
+      } else {
+        window.addEventListener('load', handleLoad);
+        return () => window.removeEventListener('load', handleLoad);
+      }
+    }
+  }, [activeTimeEntry]);
   
   // Get page title based on current route
   const getPageTitle = () => {
@@ -39,7 +62,7 @@ export function Header() {
       <div className="flex-1 flex justify-center items-center">
         {activeTimeEntry && (
           <div className="hidden sm:block max-w-[300px]">
-            <ActiveTimerDisplay />
+            <ActiveTimerDisplay key={`timer-${refreshTimer ? 'refreshed' : 'initial'}`} />
           </div>
         )}
       </div>

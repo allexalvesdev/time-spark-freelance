@@ -20,15 +20,25 @@ const Auth = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isSignUp, setIsSignUp] = useState(false);
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
   const { toast } = useToast();
-  const { signIn, signUp } = useAuth();
+  const { signIn, signUp, forgotPassword } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
-      if (isSignUp) {
+      if (isForgotPassword) {
+        const { error } = await forgotPassword(email);
+        if (error) throw error;
+        
+        toast({
+          title: "Email enviado",
+          description: "Se um usuário com este email existir, você receberá um link para redefinir sua senha.",
+        });
+        setIsForgotPassword(false);
+      } else if (isSignUp) {
         const result = await signUp(email, password);
         if (result.error) throw result.error;
         
@@ -68,6 +78,98 @@ const Auth = () => {
     }
   };
 
+  const renderForgotPasswordForm = () => (
+    <>
+      <CardContent className="space-y-4">
+        <div className="space-y-2">
+          <label className="text-sm font-medium" htmlFor="email">
+            Email
+          </label>
+          <Input
+            id="email"
+            type="email"
+            placeholder="seu@email.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            className="bg-white/5 border-white/10 text-white"
+          />
+        </div>
+      </CardContent>
+      <CardFooter className="flex flex-col space-y-4">
+        <Button type="submit" className="w-full bg-primary text-white" disabled={isLoading}>
+          {isLoading ? 'Enviando...' : 'Enviar email de recuperação'}
+        </Button>
+        <Button
+          type="button"
+          variant="link"
+          className="w-full text-primary"
+          onClick={() => setIsForgotPassword(false)}
+        >
+          Voltar para login
+        </Button>
+      </CardFooter>
+    </>
+  );
+
+  const renderAuthForm = () => (
+    <>
+      <CardContent className="space-y-4">
+        <div className="space-y-2">
+          <label className="text-sm font-medium" htmlFor="email">
+            Email
+          </label>
+          <Input
+            id="email"
+            type="email"
+            placeholder="seu@email.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            className="bg-white/5 border-white/10 text-white"
+          />
+        </div>
+        <div className="space-y-2">
+          <label className="text-sm font-medium" htmlFor="password">
+            Senha
+          </label>
+          <Input
+            id="password"
+            type="password"
+            placeholder="********"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            className="bg-white/5 border-white/10 text-white"
+          />
+        </div>
+      </CardContent>
+      <CardFooter className="flex flex-col space-y-4">
+        <Button type="submit" className="w-full bg-primary text-white" disabled={isLoading}>
+          {isLoading ? 'Carregando...' : isSignUp ? 'Criar conta' : 'Entrar'}
+        </Button>
+        <Button
+          type="button"
+          variant="link"
+          className="w-full text-primary"
+          onClick={() => setIsSignUp(!isSignUp)}
+        >
+          {isSignUp ? 'Já tem uma conta? Entre' : 'Não tem uma conta? Crie uma'}
+        </Button>
+        {!isSignUp && (
+          <Button
+            type="button"
+            variant="link"
+            className="w-full text-primary"
+            onClick={() => setIsForgotPassword(true)}
+          >
+            Esqueceu sua senha?
+          </Button>
+        )}
+      </CardFooter>
+    </>
+  );
+
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-black p-4">
       <Card className="w-full max-w-md bg-black/90 border-white/10 text-white">
@@ -78,58 +180,23 @@ const Auth = () => {
             </h1>
           </Link>
           <h1 className="text-2xl font-bold text-center">
-            {isSignUp ? 'Criar conta' : 'Entrar'}
+            {isForgotPassword 
+              ? 'Recuperar Senha'
+              : isSignUp ? 'Criar conta' : 'Entrar'}
           </h1>
           {isSignUp && (
             <p className="text-center text-muted-foreground">
               Comece com 14 dias de teste grátis
             </p>
           )}
+          {isForgotPassword && (
+            <p className="text-center text-muted-foreground">
+              Digite seu email para receber um link de recuperação de senha
+            </p>
+          )}
         </CardHeader>
         <form onSubmit={handleSubmit}>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium" htmlFor="email">
-                Email
-              </label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="seu@email.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="bg-white/5 border-white/10 text-white"
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium" htmlFor="password">
-                Senha
-              </label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="********"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="bg-white/5 border-white/10 text-white"
-              />
-            </div>
-          </CardContent>
-          <CardFooter className="flex flex-col space-y-4">
-            <Button type="submit" className="w-full bg-primary text-white" disabled={isLoading}>
-              {isLoading ? 'Carregando...' : isSignUp ? 'Criar conta' : 'Entrar'}
-            </Button>
-            <Button
-              type="button"
-              variant="link"
-              className="w-full text-primary"
-              onClick={() => setIsSignUp(!isSignUp)}
-            >
-              {isSignUp ? 'Já tem uma conta? Entre' : 'Não tem uma conta? Crie uma'}
-            </Button>
-          </CardFooter>
+          {isForgotPassword ? renderForgotPasswordForm() : renderAuthForm()}
         </form>
       </Card>
     </div>

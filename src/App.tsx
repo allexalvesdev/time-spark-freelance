@@ -24,6 +24,7 @@ import Landing from "@/pages/Landing";
 import MobileNavigation from "@/components/MobileNavigation";
 import Index from "./pages/Index";
 import { usePlatform } from "@/hooks/use-platform";
+import ResetPassword from "./pages/ResetPassword";
 
 // PrivateRoute component needs to be defined outside of the App component
 const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
@@ -40,6 +41,30 @@ const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
   
   if (!user) {
     return <Navigate to="/auth" />;
+  }
+  
+  return children;
+};
+
+// RecoveryRoute component to ensure only recovery logins can access this route
+const RecoveryRoute = ({ children }: { children: React.ReactNode }) => {
+  const { user, isLoading, isRecoveryLogin } = useAuth();
+  
+  if (isLoading) {
+    return <div className="flex h-screen w-screen items-center justify-center">
+      <div className="text-center">
+        <h2 className="text-xl font-semibold mb-2">Carregando...</h2>
+        <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full mx-auto"></div>
+      </div>
+    </div>;
+  }
+  
+  if (!user) {
+    return <Navigate to="/auth" />;
+  }
+  
+  if (!isRecoveryLogin) {
+    return <Navigate to="/dashboard" />;
   }
   
   return children;
@@ -76,6 +101,7 @@ const App = () => (
                     <Routes>
                       <Route path="/" element={<RootPage />} />
                       <Route path="/auth" element={<Auth />} />
+                      <Route path="/redefinir-senha" element={<RecoveryRoute><ResetPassword /></RecoveryRoute>} />
                       <Route
                         path="/dashboard"
                         element={

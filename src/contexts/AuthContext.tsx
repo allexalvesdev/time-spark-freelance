@@ -41,9 +41,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     // Check for recovery tokens in the URL
     const checkForRecoveryToken = () => {
       const hash = window.location.hash;
-      if (hash && hash.includes('type=recovery')) {
+      const searchParams = new URLSearchParams(window.location.search);
+      const type = searchParams.get('type');
+      
+      // Check both hash-based and query-based recovery indicators
+      if ((hash && hash.includes('type=recovery')) || type === 'recovery') {
+        console.log("Recovery token detected");
         setIsRecoveryLogin(true);
-        // Clear the URL hash after processing to avoid loops
+        
+        // Clear the URL hash/query after processing to avoid loops
         setTimeout(() => {
           window.history.replaceState({}, document.title, window.location.pathname);
         }, 100);
@@ -55,12 +61,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     // Set up auth state listener FIRST
     const { data: { subscription }} = supabase.auth.onAuthStateChange(
       (event, session) => {
+        console.log("Auth state change:", event);
         setSession(session);
         setUser(session?.user ?? null);
         setIsLoading(false);
         
         // Check if this is a recovery login
         if (event === 'PASSWORD_RECOVERY') {
+          console.log("PASSWORD_RECOVERY event detected");
           setIsRecoveryLogin(true);
           toast({
             title: "Redefinição de senha",
@@ -74,6 +82,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         if (event === 'SIGNED_IN' && session) {
           // If it's a recovery login, navigate to reset password
           if (isRecoveryLogin) {
+            console.log("Redirecting to reset password page");
             navigate('/redefinir-senha');
           } 
           // Otherwise check if we're on the landing page or auth page and redirect accordingly
@@ -101,6 +110,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       if (session) {
         // If it's a recovery login, navigate to reset password
         if (isRecoveryLogin) {
+          console.log("Session exists with recovery flag - redirecting to reset password");
           navigate('/redefinir-senha');
         }
         // Otherwise check landing page or auth page and redirect accordingly

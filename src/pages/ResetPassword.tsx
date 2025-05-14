@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -40,11 +40,13 @@ const ResetPassword = () => {
     },
   });
 
-  // If not in recovery mode or not authenticated, redirect to auth
-  if (!isRecoveryLogin || !user) {
-    navigate('/auth');
-    return null;
-  }
+  // Add an effect to handle authentication status changes
+  useEffect(() => {
+    if (!isRecoveryLogin || !user) {
+      console.log("User tried to access reset password without recovery token, redirecting to auth");
+      navigate('/auth');
+    }
+  }, [isRecoveryLogin, user, navigate]);
 
   const onSubmit = async (values: ResetPasswordFormValues) => {
     setIsSubmitting(true);
@@ -76,6 +78,8 @@ const ResetPassword = () => {
       setIsSubmitting(false);
     }
   };
+
+  // If not in recovery mode or not authenticated, the useEffect above will handle redirection
 
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-black p-4">

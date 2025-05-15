@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 import { AppState, AppContextType } from '@/types/app';
 import { Project, Task, TimeEntry, ReportData, Tag } from '@/types';

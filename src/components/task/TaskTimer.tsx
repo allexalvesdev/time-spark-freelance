@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { formatDuration } from '@/utils/dateUtils';
-import useTimerState from '@/hooks/useTimerState';
+import { useReliableTimer } from '@/hooks/useReliableTimer';
 
 interface TaskTimerProps {
   elapsedTime: number;
@@ -20,13 +20,18 @@ const TaskTimer: React.FC<TaskTimerProps> = ({
   formattedTime,
   taskId
 }) => {
-  // Use the global timer if we have a taskId
-  const globalTimerKey = taskId ? `global-timer-${taskId}` : undefined;
-  
-  const { getFormattedTime } = useTimerState({
-    initialTime: elapsedTime,
-    autoStart: isRunning,
-    persistKey: globalTimerKey
+  // Use the reliable timer if we have a taskId
+  const { getFormattedTime } = useReliableTimer({
+    taskId,
+    initialTimeEntry: isRunning && taskId ? {
+      id: '',
+      taskId,
+      projectId: '',
+      userId: '',
+      startTime: new Date(Date.now() - elapsedTime * 1000),
+      isRunning: true,
+      isPaused: isPaused
+    } : null
   });
   
   // Always display the timer section if running or if there's time recorded

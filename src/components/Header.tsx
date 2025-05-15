@@ -1,85 +1,79 @@
 
-import React, { useEffect, useState } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
+import React, { useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { SidebarTrigger } from '@/components/ui/sidebar';
-import { useLocation } from 'react-router-dom';
-import { Bell } from 'lucide-react';
+import { User, Plus, LogOut } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { useIsMobile } from '@/hooks/use-mobile';
 import ActiveTimerDisplay from './ActiveTimerDisplay';
-import { useAppContext } from '@/contexts/AppContext';
 
-export function Header() {
-  const { user } = useAuth();
-  const location = useLocation();
-  const { state } = useAppContext();
-  const { activeTimeEntry } = state || {};
-  const [refreshTimer, setRefreshTimer] = useState(false);
-  
-  // Efeito para forçar a re-sincronização do timer após carregamento da página
+const Header: React.FC = () => {
+  const { user, signOut } = useAuth();
+  const isMobile = useIsMobile();
+
+  // Force timer sync on page load to ensure header timer is always in sync
   useEffect(() => {
-    if (activeTimeEntry) {
-      // Gatilho de atualização do timer após carregamento completo da página
-      const handleLoad = () => {
-        setTimeout(() => {
-          // Dispara evento de armazenamento para forçar sincronização do timer
-          window.dispatchEvent(new Event('storage'));
-          setRefreshTimer(true);
-        }, 200);
-      };
-      
-      // Se a página já foi carregada, force a atualização
-      if (document.readyState === 'complete') {
-        handleLoad();
-      } else {
-        window.addEventListener('load', handleLoad);
-        return () => window.removeEventListener('load', handleLoad);
-      }
-    }
-  }, [activeTimeEntry]);
-  
-  // Get page title based on current route
-  const getPageTitle = () => {
-    const path = location.pathname;
+    // Use a small timeout to ensure all components are mounted
+    const timeoutId = setTimeout(() => {
+      window.dispatchEvent(new CustomEvent('force-timer-sync'));
+    }, 100);
     
-    if (path === '/dashboard') return 'Dashboard';
-    if (path === '/novo-projeto') return 'Novo Projeto';
-    if (path === '/agenda') return 'Agenda';
-    if (path === '/tarefas') return 'Tarefas';
-    if (path === '/relatorios') return 'Relatórios';
-    if (path === '/configuracoes') return 'Configurações';
-    if (path.includes('/projeto/')) return 'Detalhes do Projeto';
-    
-    return 'Focusly';
-  };
-  
+    return () => clearTimeout(timeoutId);
+  }, []);
+
+  // Update the key whenever the page refreshes to force re-render
+  const refreshKey = React.useMemo(() => Date.now().toString(), []);
+
+  if (!user) return null;
+
   return (
-    <header className="border-b border-border bg-background px-4 h-14 flex items-center justify-between relative z-20">
-      <div className="flex items-center gap-2">
-        <SidebarTrigger className="md:hidden" />
-        <h1 className="text-lg font-medium">{getPageTitle()}</h1>
-      </div>
-      
-      <div className="flex-1 flex justify-center items-center">
-        {activeTimeEntry && (
-          <div className="hidden sm:block max-w-[300px]">
-            <ActiveTimerDisplay key={`timer-${refreshTimer ? 'refreshed' : 'initial'}`} />
+    <header className="border-b p-4 bg-background sticky top-0 z-10">
+      <div className="flex items-center justify-between">
+        <Link to="/" className="flex items-center">
+          <h1 className="font-bold text-xl">Focusly</h1>
+        </Link>
+
+        <div className="flex items-center gap-2">
+          {/* Active Timer Display with key to force re-render */}
+          <ActiveTimerDisplay key={refreshKey} />
+
+          <div className="flex items-center gap-2">
+            {!isMobile && (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="flex items-center gap-1"
+                asChild
+              >
+                <Link to="/new-project">
+                  <Plus className="w-4 h-4 mr-1" />
+                  Novo Projeto
+                </Link>
+              </Button>
+            )}
+
+            <Button 
+              variant="ghost" 
+              size="icon"
+              asChild
+            >
+              <Link to="/settings">
+                <User className="w-5 h-5" />
+              </Link>
+            </Button>
+
+            <Button 
+              variant="ghost" 
+              size="icon"
+              onClick={signOut}
+            >
+              <LogOut className="w-5 h-5" />
+            </Button>
           </div>
-        )}
-      </div>
-      
-      <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon">
-          <Bell className="h-5 w-5" />
-        </Button>
-        
-        {user && (
-          <div className="flex items-center">
-            <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center font-medium">
-              {user.email?.charAt(0).toUpperCase()}
-            </div>
-          </div>
-        )}
+        </div>
       </div>
     </header>
   );
-}
+};
+
+export default Header;

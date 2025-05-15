@@ -15,15 +15,18 @@ const ActiveTimerDisplay: React.FC = () => {
   
   const taskId = activeTimeEntry?.taskId || '';
   
+  // Use the reliable timer with autoStart: false to prevent resetting on refresh
   const {
     isRunning,
     isPaused,
     getFormattedTime,
     pauseTimer,
     resumeTimer,
-    stopTimer
+    stopTimer,
+    syncWithServer
   } = useReliableTimer({
     taskId,
+    autoStart: false, // Important: don't automatically start counting on mount
     onTimerStopped: (duration) => {
       toast({
         title: "Timer parado",
@@ -31,6 +34,31 @@ const ActiveTimerDisplay: React.FC = () => {
       });
     }
   });
+  
+  // Force sync on mount and whenever activeTimeEntry changes
+  useEffect(() => {
+    // When the component mounts or activeTimeEntry changes, force a sync
+    syncWithServer();
+    
+    // Listen for force-timer-sync events
+    const handleForceSync = () => {
+      syncWithServer();
+    };
+    
+    window.addEventListener('force-timer-sync', handleForceSync);
+    
+    return () => {
+      window.removeEventListener('force-timer-sync', handleForceSync);
+    };
+  }, [activeTimeEntry, syncWithServer]);
+  
+  // Check for desynchronization between context and timer hook
+  useEffect(() => {
+    if ((isRunning !== !!activeTimeEntry) && activeTimeEntry) {
+      // The states are out of sync - force a sync
+      syncWithServer();
+    }
+  }, [isRunning, activeTimeEntry, syncWithServer]);
   
   if (!activeTimeEntry || !taskId) return null;
   

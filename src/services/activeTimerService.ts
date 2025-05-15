@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { TimeEntry } from '@/types';
 import { toast } from '@/hooks/use-toast';

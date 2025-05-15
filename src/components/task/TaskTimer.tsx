@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { formatDuration } from '@/utils/dateUtils';
 import { useReliableTimer } from '@/hooks/useReliableTimer';
 
@@ -21,7 +21,7 @@ const TaskTimer: React.FC<TaskTimerProps> = ({
   taskId
 }) => {
   // Use the reliable timer if we have a taskId
-  const { getFormattedTime } = useReliableTimer({
+  const { getFormattedTime, syncWithServer } = useReliableTimer({
     taskId,
     initialTimeEntry: isRunning && taskId ? {
       id: '',
@@ -33,6 +33,13 @@ const TaskTimer: React.FC<TaskTimerProps> = ({
       isPaused: isPaused
     } : null
   });
+  
+  // Force sync when component mounts to ensure accurate time
+  useEffect(() => {
+    if (taskId && isRunning) {
+      syncWithServer();
+    }
+  }, [taskId, isRunning, syncWithServer]);
   
   // Always display the timer section if running or if there's time recorded
   if (elapsedTime === 0 && !isRunning) return null;

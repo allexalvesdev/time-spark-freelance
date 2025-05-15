@@ -6,7 +6,6 @@ import { Play, Square, Pause } from 'lucide-react';
 import { calculateEarnings } from '@/utils/dateUtils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useReliableTimer } from '@/hooks/useReliableTimer';
-import { activeTimerService } from '@/services/activeTimerService';
 
 interface TimerProps {
   taskId: string;
@@ -20,17 +19,22 @@ const Timer: React.FC<TimerProps> = ({ taskId, projectId, hourlyRate }) => {
   const isMobile = useIsMobile();
   
   const isActive = activeTimeEntry?.taskId === taskId;
-  const isPaused = activeTimeEntry?.isPaused && isActive;
   
   const { 
     isRunning, 
-    isPaused: localIsPaused,
+    isPaused, 
     elapsedSeconds, 
-    getFormattedTime 
+    getFormattedTime,
+    syncWithServer
   } = useReliableTimer({
     taskId,
     initialTimeEntry: activeTimeEntry?.taskId === taskId ? activeTimeEntry : null
   });
+  
+  // Force sync when component mounts to ensure accurate time
+  React.useEffect(() => {
+    syncWithServer();
+  }, [syncWithServer]);
   
   // Handler to start the timer
   const handleStartTimer = async () => {

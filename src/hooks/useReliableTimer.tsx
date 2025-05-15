@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { TimeEntry } from '@/types';
 import { activeTimerService } from '@/services/activeTimerService';
 import { formatDuration } from '@/utils/dateUtils';
@@ -8,6 +8,7 @@ interface UseReliableTimerOptions {
   taskId?: string;
   initialTimeEntry?: TimeEntry | null;
   onTimerStopped?: (duration: number) => void;
+  autoStart?: boolean;
 }
 
 /**
@@ -16,7 +17,8 @@ interface UseReliableTimerOptions {
 export function useReliableTimer({
   taskId,
   initialTimeEntry,
-  onTimerStopped
+  onTimerStopped,
+  autoStart = true
 }: UseReliableTimerOptions = {}) {
   const [timeEntry, setTimeEntry] = useState<TimeEntry | null>(initialTimeEntry || null);
   const [isRunning, setIsRunning] = useState(false);
@@ -33,67 +35,71 @@ export function useReliableTimer({
     return formatDuration(elapsedSeconds);
   };
   
-  // Initialize timer from server
-  const initializeTimer = async () => {
-    setIsLoading(true);
+  // Sync the timer with the server
+  const syncWithServer = useCallback(async () => {
     try {
-      // Get active timer from server
       const response = await activeTimerService.getActiveTimer();
-      if (!response) {
-        setTimeEntry(null);
-        setIsRunning(false);
-        setIsPaused(false);
-        setElapsedSeconds(0);
-        setIsLoading(false);
-        return;
-      }
+      if (!response) return;
       
       const { timeEntry: activeTimeEntry, serverTime } = response;
       
-      // Calculate the difference between server time and client time
+      // Update the server time difference
       serverTimeDiffRef.current = serverTime - Date.now();
       
-      // If we have a specific taskId, only set the timeEntry if it matches
+      // If we're tracking a specific task and it doesn't match, reset
       if (taskId && activeTimeEntry && activeTimeEntry.taskId !== taskId) {
         setTimeEntry(null);
         setIsRunning(false);
         setIsPaused(false);
         setElapsedSeconds(0);
-        setIsLoading(false);
+        stopTimerInterval();
         return;
       }
       
-      // Set the time entry and statuses
-      setTimeEntry(activeTimeEntry);
-      
+      // Update based on server state
       if (activeTimeEntry) {
+        setTimeEntry(activeTimeEntry);
         setIsRunning(activeTimeEntry.isRunning);
         setIsPaused(activeTimeEntry.isPaused || false);
         
-        // Calculate the initial elapsed time
         const correctedServerTime = Date.now() + serverTimeDiffRef.current;
-        const initialElapsedTime = activeTimerService.calculateElapsedTime(
+        const calculatedElapsedTime = activeTimerService.calculateElapsedTime(
           activeTimeEntry,
           correctedServerTime
         );
         
-        setElapsedSeconds(initialElapsedTime);
+        setElapsedSeconds(calculatedElapsedTime);
         
-        // Start the timer interval
-        if (activeTimeEntry.isRunning && !activeTimeEntry.isPaused) {
+        // Ensure interval is running or stopped based on timer state
+        if (activeTimeEntry.isRunning && !activeTimeEntry.isPaused && autoStart && !timerIntervalRef.current) {
           startTimerInterval();
+        } else if ((!activeTimeEntry.isRunning || activeTimeEntry.isPaused) && timerIntervalRef.current) {
+          stopTimerInterval();
         }
       } else {
+        // No active timer, reset everything
+        setTimeEntry(null);
         setIsRunning(false);
         setIsPaused(false);
         setElapsedSeconds(0);
+        stopTimerInterval();
       }
+    } catch (error) {
+      console.error("Error syncing timer with server:", error);
+    }
+  }, [taskId, autoStart]);
+  
+  // Initialize timer from server
+  const initializeTimer = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      await syncWithServer();
     } catch (error) {
       console.error("Error initializing timer:", error);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [syncWithServer]);
   
   // Start a timer on the server
   const startTimer = async (projectId: string, userId: string) => {
@@ -109,7 +115,9 @@ export function useReliableTimer({
         setIsRunning(true);
         setIsPaused(false);
         setElapsedSeconds(0);
-        startTimerInterval();
+        if (autoStart) {
+          startTimerInterval();
+        }
       }
     } catch (error) {
       console.error("Error starting timer:", error);
@@ -137,7 +145,9 @@ export function useReliableTimer({
       if (resumedEntry) {
         setTimeEntry(resumedEntry);
         setIsPaused(false);
-        startTimerInterval();
+        if (autoStart) {
+          startTimerInterval();
+        }
       }
     } catch (error) {
       console.error("Error resuming timer:", error);
@@ -206,60 +216,6 @@ export function useReliableTimer({
     }
   };
   
-  // Sync the timer with the server
-  const syncWithServer = async () => {
-    try {
-      const response = await activeTimerService.getActiveTimer();
-      if (!response) return;
-      
-      const { timeEntry: activeTimeEntry, serverTime } = response;
-      
-      // Update the server time difference
-      serverTimeDiffRef.current = serverTime - Date.now();
-      
-      // If we're tracking a specific task and it doesn't match, reset
-      if (taskId && activeTimeEntry && activeTimeEntry.taskId !== taskId) {
-        setTimeEntry(null);
-        setIsRunning(false);
-        setIsPaused(false);
-        setElapsedSeconds(0);
-        stopTimerInterval();
-        return;
-      }
-      
-      // Update based on server state
-      if (activeTimeEntry) {
-        setTimeEntry(activeTimeEntry);
-        setIsRunning(activeTimeEntry.isRunning);
-        setIsPaused(activeTimeEntry.isPaused || false);
-        
-        const correctedServerTime = Date.now() + serverTimeDiffRef.current;
-        const calculatedElapsedTime = activeTimerService.calculateElapsedTime(
-          activeTimeEntry,
-          correctedServerTime
-        );
-        
-        setElapsedSeconds(calculatedElapsedTime);
-        
-        // Ensure interval is running or stopped based on timer state
-        if (activeTimeEntry.isRunning && !activeTimeEntry.isPaused && !timerIntervalRef.current) {
-          startTimerInterval();
-        } else if ((!activeTimeEntry.isRunning || activeTimeEntry.isPaused) && timerIntervalRef.current) {
-          stopTimerInterval();
-        }
-      } else {
-        // No active timer, reset everything
-        setTimeEntry(null);
-        setIsRunning(false);
-        setIsPaused(false);
-        setElapsedSeconds(0);
-        stopTimerInterval();
-      }
-    } catch (error) {
-      console.error("Error syncing timer with server:", error);
-    }
-  };
-  
   // Event listeners for timer events
   useEffect(() => {
     const handleTimerStarted = (e: CustomEvent) => {
@@ -274,7 +230,9 @@ export function useReliableTimer({
       setIsRunning(true);
       setIsPaused(false);
       setElapsedSeconds(0);
-      startTimerInterval();
+      if (autoStart) {
+        startTimerInterval();
+      }
     };
     
     const handleTimerPaused = (e: CustomEvent) => {
@@ -300,7 +258,9 @@ export function useReliableTimer({
       
       setTimeEntry(resumedTimeEntry);
       setIsPaused(false);
-      startTimerInterval();
+      if (autoStart) {
+        startTimerInterval();
+      }
     };
     
     const handleTimerStopped = (e: CustomEvent) => {
@@ -348,7 +308,7 @@ export function useReliableTimer({
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       stopTimerInterval();
     };
-  }, [taskId, onTimerStopped]);
+  }, [taskId, onTimerStopped, syncWithServer, initializeTimer, autoStart]);
   
   return {
     timeEntry,

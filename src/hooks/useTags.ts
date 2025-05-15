@@ -8,7 +8,7 @@ export const useTags = (userId: string) => {
   const [tags, setTags] = useState<Tag[]>([]);
   const { toast } = useToast();
 
-  const addTag = async (name: string) => {
+  const addTag = async (name: string): Promise<Tag> => {
     try {
       const newTag = await tagService.createTag(name, userId);
       setTags(prev => [...prev, newTag]);

@@ -22,7 +22,7 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, project }) => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showCompleteModal, setShowCompleteModal] = useState(false);
   const [currentTask, setCurrentTask] = useState<Task>(task);
-  const [taskTags, setTaskTags] = useState<string[]>([]);
+  const [taskTagIds, setTaskTagIds] = useState<string[]>([]);
   
   const isTimerRunning = activeTimeEntry?.taskId === task.id;
   const isTimerPaused = activeTimeEntry?.isPaused && isTimerRunning;
@@ -56,7 +56,7 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, project }) => {
     const loadTaskTags = async () => {
       try {
         const tagIds = await getTaskTags(task.id);
-        setTaskTags(tagIds);
+        setTaskTagIds(tagIds);
       } catch (error) {
         // Silently handle errors
       }
@@ -66,7 +66,7 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, project }) => {
   }, [task.id, getTaskTags]);
   
   // Filter tags for this task
-  const taskTagObjects = tags.filter(tag => taskTags.includes(tag.id));
+  const taskTagObjects = tags.filter(tag => taskTagIds.includes(tag.id));
   
   // Listen for task-completed events to update this specific task
   useEffect(() => {

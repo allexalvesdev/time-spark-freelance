@@ -13,10 +13,10 @@ export interface AppState {
 
 export interface AppContextType {
   state: AppState;
-  addProject: (project: Omit<Project, 'id'>) => Promise<Project>;
+  addProject: (project: Omit<Project, 'id' | 'createdAt' | 'userId'>) => Promise<Project>;
   updateProject: (project: Project) => Promise<void>;
   deleteProject: (id: string) => Promise<void>;
-  addTask: (task: Omit<Task, 'id'>) => Promise<Task>;
+  addTask: (task: Omit<Task, 'id' | 'userId' | 'completed'>) => Promise<Task>;
   updateTask: (task: Task) => Promise<void>;
   completeTask: (taskId: string, duration?: number) => Promise<void>;
   deleteTask: (id: string) => Promise<void>;
@@ -28,9 +28,9 @@ export interface AppContextType {
   setCurrentTask: (task: Task | null) => void;
   generateReport: (projectId: string) => ReportData | null;
   getActiveTaskName: () => string | null;
-  addTag: (name: string) => Promise<string>;
+  addTag: (name: string) => Promise<Tag>;
   deleteTag: (id: string) => Promise<void>;
   addTagToTask: (taskId: string, tagId: string) => Promise<void>;
   removeTagFromTask: (taskId: string, tagId: string) => Promise<void>;
-  getTaskTags: (taskId: string) => Tag[];
+  getTaskTags: (taskId: string) => Promise<string[]>;
 }

@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { getSafeInteger } from '@/utils/timer/safeInteger';
 import { getPersistedTimerState, persistTimerState, clearPersistedTimerState } from '@/utils/timer/timerStorage';
@@ -29,7 +28,6 @@ const useTimerState = (options: UseTimerOptions = {}) => {
 
   // Use the timer sync hook to handle synchronization with global state
   useTimerSync({
-    persistKey,
     isActiveTask,
     isRunning,
     isPaused,

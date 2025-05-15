@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -77,6 +76,7 @@ const NewTaskForm: React.FC<NewTaskFormProps> = ({ projectId, onSuccess }) => {
         estimatedTime: totalMinutes,
         scheduledStartTime: new Date(data.scheduledStartTime),
         priority: data.priority,
+        completed: false
       });
       
       // Adicionar tags à tarefa

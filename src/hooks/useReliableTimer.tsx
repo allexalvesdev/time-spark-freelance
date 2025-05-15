@@ -3,6 +3,8 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { TimeEntry } from '@/types';
 import { activeTimerService } from '@/services/activeTimerService';
 import { formatDuration } from '@/utils/dateUtils';
+import { toast } from '@/hooks/use-toast';
+import { debounce } from '@/utils/debounce';
 
 interface UseReliableTimerOptions {
   taskId?: string;
@@ -29,14 +31,23 @@ export function useReliableTimer({
   const serverTimeDiffRef = useRef<number>(0); // Difference between server and client time
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const syncTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastSyncTimeRef = useRef<number>(0);
   
   // Function to format the elapsed time
   const getFormattedTime = () => {
     return formatDuration(elapsedSeconds);
   };
   
-  // Sync the timer with the server
-  const syncWithServer = useCallback(async () => {
+  // Sync the timer with the server - debounced to prevent too many calls
+  const syncWithServer = useCallback(debounce(async () => {
+    // Skip if we've synced recently (within 10 seconds)
+    const now = Date.now();
+    if (now - lastSyncTimeRef.current < 10000) {
+      return;
+    }
+    
+    lastSyncTimeRef.current = now;
+    
     try {
       const response = await activeTimerService.getActiveTimer();
       if (!response) return;
@@ -87,7 +98,7 @@ export function useReliableTimer({
     } catch (error) {
       console.error("Error syncing timer with server:", error);
     }
-  }, [taskId, autoStart]);
+  }, 1000), [taskId, autoStart]); // Debounce with 1 second delay
   
   // Initialize timer from server
   const initializeTimer = useCallback(async () => {
@@ -96,6 +107,11 @@ export function useReliableTimer({
       await syncWithServer();
     } catch (error) {
       console.error("Error initializing timer:", error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível sincronizar o cronômetro com o servidor.",
+        variant: "destructive"
+      });
     } finally {
       setIsLoading(false);
     }
@@ -121,6 +137,11 @@ export function useReliableTimer({
       }
     } catch (error) {
       console.error("Error starting timer:", error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível iniciar o cronômetro. Tente novamente.",
+        variant: "destructive"
+      });
     }
   };
   
@@ -135,6 +156,11 @@ export function useReliableTimer({
       }
     } catch (error) {
       console.error("Error pausing timer:", error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível pausar o cronômetro. Tente novamente.",
+        variant: "destructive"
+      });
     }
   };
   
@@ -151,6 +177,11 @@ export function useReliableTimer({
       }
     } catch (error) {
       console.error("Error resuming timer:", error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível retomar o cronômetro. Tente novamente.",
+        variant: "destructive"
+      });
     }
   };
   
@@ -170,6 +201,11 @@ export function useReliableTimer({
       }
     } catch (error) {
       console.error("Error stopping timer:", error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível parar o cronômetro. Tente novamente.",
+        variant: "destructive"
+      });
     }
   };
   
@@ -194,6 +230,7 @@ export function useReliableTimer({
       });
       
       // Sync with server every 30 seconds to ensure accuracy
+      // But much less frequently than before
       if (syncTimeoutRef.current === null) {
         syncTimeoutRef.current = setTimeout(() => {
           syncWithServer();

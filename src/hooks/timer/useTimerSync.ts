@@ -1,5 +1,5 @@
 
-import { useEffect, RefObject } from 'react';
+import { useEffect, RefObject, MutableRefObject } from 'react';
 import { getPersistedTimerState, persistTimerState } from '@/utils/timer/timerStorage';
 
 export interface UseTimerSyncOptions {
@@ -12,8 +12,8 @@ export interface UseTimerSyncOptions {
   setIsRunning: (running: boolean) => void;
   setElapsedTime: (time: number) => void;
   setPausedTime: (time: number) => void;
-  startTimeRef: RefObject<number | null>;
-  pausedAtRef: RefObject<number | null>;
+  startTimeRef: MutableRefObject<number | null>;
+  pausedAtRef: MutableRefObject<number | null>;
 }
 
 export const useTimerSync = ({
@@ -45,8 +45,13 @@ export const useTimerSync = ({
             setIsPaused(true);
             setPausedTime(timerState.pausedTime);
             setElapsedTime(timerState.elapsed);
-            startTimeRef.current = timerState.startTime;
-            pausedAtRef.current = timerState.pausedAt;
+            // Fixed: use mutable ref assignment
+            if (startTimeRef && 'current' in startTimeRef) {
+              startTimeRef.current = timerState.startTime;
+            }
+            if (pausedAtRef && 'current' in pausedAtRef) {
+              pausedAtRef.current = timerState.pausedAt;
+            }
           } else if (timerState.running && !timerState.paused && timerState.startTime) {
             const now = Date.now();
             const elapsed = Math.floor((now - timerState.startTime) / 1000) - timerState.pausedTime;
@@ -56,8 +61,13 @@ export const useTimerSync = ({
             setIsRunning(true);
             setIsPaused(false);
             
-            startTimeRef.current = timerState.startTime;
-            pausedAtRef.current = null;
+            // Fixed: use mutable ref assignment
+            if (startTimeRef && 'current' in startTimeRef) {
+              startTimeRef.current = timerState.startTime;
+            }
+            if (pausedAtRef && 'current' in pausedAtRef) {
+              pausedAtRef.current = null;
+            }
           }
         }
       }
@@ -90,24 +100,6 @@ export const useTimerSync = ({
     };
   }, [persistKey, isActiveTask, isRunning, isPaused, setIsPaused, setIsRunning, 
       setElapsedTime, setPausedTime, startTimeRef, pausedAtRef, globalActiveTaskId]);
-  
-  // Explicit sync function could be exposed here if needed elsewhere
-  const syncTimerState = () => {
-    if (!persistKey) return;
-    
-    const timerState = getPersistedTimerState(persistKey);
-    
-    if (timerState) {
-      // Implement sync logic similar to above
-      if (timerState.running && timerState.paused) {
-        // Sync paused state
-      } else if (timerState.running && !timerState.paused) {
-        // Sync running state
-      } else {
-        // Sync stopped state
-      }
-    }
-  };
   
   // Additional effect to listen for storage-check events to validate state
   useEffect(() => {

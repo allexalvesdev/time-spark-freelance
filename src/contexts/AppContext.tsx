@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 import { AppState, AppContextType } from '@/types/app';
 import { Project, Task, TimeEntry, ReportData, Tag } from '@/types';
@@ -9,6 +8,7 @@ import { useTimerManagement } from '@/hooks/useTimerManagement';
 import { useReportGenerator } from '@/hooks/useReportGenerator';
 import { projectService, taskService, timeEntryService, tagService } from '@/services';
 import { useTags } from '@/hooks/useTags';
+import { toast } from 'react-toastify';
 
 // Define initial state
 const initialState: AppState = {
@@ -150,6 +150,28 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   // Function to set current project
   const setCurrentProject = (project: Project | null) => {
     setState(prev => ({ ...prev, currentProject: project }));
+  };
+
+  // Function to create a new project
+  const createProject = async (projectData: Omit<Project, "id" | "createdAt" | "userId">): Promise<Project> => {
+    try {
+      const newProject = await projectService.createProject({
+        ...projectData,
+        userId: user?.id || '',
+        createdAt: new Date()
+      });
+      
+      setProjects(prev => Array.isArray(prev) ? [newProject, ...prev] : [newProject]);
+      return newProject;
+    } catch (error) {
+      console.error('Error creating project:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to create project. Please try again.',
+        variant: 'destructive',
+      });
+      throw error;
+    }
   };
 
   // Report generation function adapted to use context

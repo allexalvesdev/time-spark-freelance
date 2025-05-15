@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { TimeEntry } from '@/types';
 import { toast } from '@/hooks/use-toast';
@@ -7,13 +8,32 @@ interface ActiveTimerResponse {
   serverTime: number; // UTC timestamp in milliseconds
 }
 
+// Simple cache mechanism to reduce excessive calls
+let serverTimeCache = {
+  timestamp: 0,
+  data: null as string | null,
+  ttl: 5000 // 5 seconds TTL
+};
+
+let activeTimerCache = {
+  timestamp: 0,
+  data: null as ActiveTimerResponse | null,
+  ttl: 5000 // 5 seconds TTL
+};
+
 export const activeTimerService = {
   /**
-   * Fetches the currently active timer from the server
+   * Fetches the server time with cache
    */
-  async getActiveTimer(): Promise<ActiveTimerResponse | null> {
+  async getServerTime(): Promise<number | null> {
+    const now = Date.now();
+    
+    // Return cached time if still valid
+    if (serverTimeCache.data && now - serverTimeCache.timestamp < serverTimeCache.ttl) {
+      return new Date(serverTimeCache.data).getTime();
+    }
+    
     try {
-      // Get the current server time first to ensure accuracy
       const { data: timeData, error: timeError } = await supabase.rpc('get_server_time');
       
       if (timeError) {
@@ -21,7 +41,35 @@ export const activeTimerService = {
         return null;
       }
       
-      const serverTime = new Date(timeData).getTime();
+      // Update cache
+      serverTimeCache = {
+        timestamp: now,
+        data: timeData,
+        ttl: serverTimeCache.ttl
+      };
+      
+      return new Date(timeData).getTime();
+    } catch (error) {
+      console.error('Unexpected error fetching server time:', error);
+      return null;
+    }
+  },
+  
+  /**
+   * Fetches the currently active timer from the server
+   */
+  async getActiveTimer(): Promise<ActiveTimerResponse | null> {
+    const now = Date.now();
+    
+    // Return cached time if still valid
+    if (activeTimerCache.data && now - activeTimerCache.timestamp < activeTimerCache.ttl) {
+      return activeTimerCache.data;
+    }
+    
+    try {
+      // Get the current server time first to ensure accuracy
+      const serverTime = await this.getServerTime();
+      if (!serverTime) return null;
       
       // Fetch the active time entry
       const { data, error } = await supabase
@@ -37,25 +85,34 @@ export const activeTimerService = {
         return null;
       }
       
-      if (!data || data.length === 0) {
-        return { timeEntry: null, serverTime };
-      }
-      
-      const activeEntry: TimeEntry = {
-        id: data[0].id,
-        taskId: data[0].task_id,
-        projectId: data[0].project_id,
-        startTime: new Date(data[0].start_time),
-        isRunning: data[0].is_running,
-        isPaused: data[0].is_paused || false,
-        pausedTime: data[0].paused_time || 0,
-        userId: data[0].user_id,
-      };
-      
-      return {
-        timeEntry: activeEntry,
+      const response: ActiveTimerResponse = {
+        timeEntry: null,
         serverTime
       };
+      
+      if (data && data.length > 0) {
+        const activeEntry: TimeEntry = {
+          id: data[0].id,
+          taskId: data[0].task_id,
+          projectId: data[0].project_id,
+          startTime: new Date(data[0].start_time),
+          isRunning: data[0].is_running,
+          isPaused: data[0].is_paused || false,
+          pausedTime: data[0].paused_time || 0,
+          userId: data[0].user_id,
+        };
+        
+        response.timeEntry = activeEntry;
+      }
+      
+      // Update cache
+      activeTimerCache = {
+        timestamp: now,
+        data: response,
+        ttl: activeTimerCache.ttl
+      };
+      
+      return response;
     } catch (error) {
       console.error('Unexpected error fetching active timer:', error);
       return null;
@@ -267,6 +324,9 @@ export const activeTimerService = {
    */
   async stopActiveTimer(completeTask: boolean = true): Promise<TimeEntry | null> {
     try {
+      // Clear caches to ensure fresh data after stop
+      activeTimerCache.data = null;
+      
       const activeTimerResponse = await this.getActiveTimer();
       if (!activeTimerResponse || !activeTimerResponse.timeEntry) {
         return null;

@@ -14,7 +14,7 @@ interface TagsInputProps {
 }
 
 const TagsInput: React.FC<TagsInputProps> = ({ taskId, selectedTagIds, onTagsChange }) => {
-  const { state, addTag, deleteTag, addTagToTask, removeTagFromTask } = useAppContext();
+  const { state, addTag } = useAppContext();
   const [newTagName, setNewTagName] = useState('');
   const [isCreatingTag, setIsCreatingTag] = useState(false);
   const { tags = [] } = state;
@@ -24,8 +24,10 @@ const TagsInput: React.FC<TagsInputProps> = ({ taskId, selectedTagIds, onTagsCha
   const availableTags = tags.filter(tag => !selectedTagIds.includes(tag.id));
 
   const handleAddExistingTag = (tagId: string) => {
-    const updatedTags = [...selectedTagIds, tagId];
-    onTagsChange(updatedTags);
+    if (!selectedTagIds.includes(tagId)) {
+      const updatedTags = [...selectedTagIds, tagId];
+      onTagsChange(updatedTags);
+    }
   };
 
   const handleRemoveTag = (tagId: string) => {

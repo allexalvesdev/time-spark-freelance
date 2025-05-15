@@ -19,10 +19,11 @@ import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
 import { format } from "date-fns"
-import { Project, Task } from '@/types';
+import { Project, Task, Tag } from '@/types';
 import { projectService, taskService } from '@/services';
 import { useAppContext } from '@/contexts/AppContext';
 import { useToast } from '@/hooks/use-toast';
+import TagsInput from './task/TagsInput';
 
 interface NewTaskFormProps {
   open: boolean;
@@ -39,8 +40,10 @@ const NewTaskForm: React.FC<NewTaskFormProps> = ({ open, handleClose, projects, 
   const [priority, setPriority] = useState<'Baixa' | 'Média' | 'Alta' | 'Urgente'>('Baixa');
   const [selectedProject, setSelectedProject] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
   const { toast } = useToast();
-  const { addTask } = useAppContext();
+  const { addTask, state, addTagToTask } = useAppContext();
+  const { tags } = state;
 
   useEffect(() => {
     if (projects.length > 0 && !selectedProject) {
@@ -64,6 +67,13 @@ const NewTaskForm: React.FC<NewTaskFormProps> = ({ open, handleClose, projects, 
         priority,
       });
 
+      // Add tags to task
+      if (selectedTagIds.length > 0) {
+        for (const tagId of selectedTagIds) {
+          await addTagToTask(newTask.id, tagId);
+        }
+      }
+
       onTaskCreated(newTask);
       handleClose();
 
@@ -81,6 +91,10 @@ const NewTaskForm: React.FC<NewTaskFormProps> = ({ open, handleClose, projects, 
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleTagsChange = (tagIds: string[]) => {
+    setSelectedTagIds(tagIds);
   };
 
   return (
@@ -174,6 +188,18 @@ const NewTaskForm: React.FC<NewTaskFormProps> = ({ open, handleClose, projects, 
                 ))}
               </SelectContent>
             </Select>
+          </div>
+          <div className="grid grid-cols-4 items-start gap-4">
+            <Label htmlFor="tags" className="text-right">
+              Tags
+            </Label>
+            <div className="col-span-3">
+              <TagsInput 
+                taskId=""
+                selectedTagIds={selectedTagIds}
+                onTagsChange={handleTagsChange}
+              />
+            </div>
           </div>
         </form>
         <AlertDialogFooter>

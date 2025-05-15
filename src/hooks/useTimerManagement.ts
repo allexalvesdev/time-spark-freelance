@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { TimeEntry, Task } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 import { activeTimerService } from '@/services/activeTimerService';
@@ -8,58 +8,88 @@ import { useToast } from '@/hooks/use-toast';
 // Import the activeTaskName hook
 import { useActiveTaskName } from './timer/useActiveTaskName';
 
+// Add debounce to prevent excessive calls
+import { debounce } from '@/utils/debounce';
+
 export const useTimerManagement = (userId: string, tasks: Task[] = []) => {
   const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([]);
   const [activeTimeEntry, setActiveTimeEntry] = useState<TimeEntry | null>(null);
+  const [isInitializing, setIsInitializing] = useState(true);
   const { toast } = useToast();
 
   // Initialize by fetching active timer from server
+  const fetchActiveTimer = useCallback(async () => {
+    try {
+      const response = await activeTimerService.getActiveTimer();
+      if (response && response.timeEntry) {
+        setActiveTimeEntry(response.timeEntry);
+      }
+    } catch (error) {
+      console.error("Error fetching active timer:", error);
+    }
+  }, []);
+
+  // Debounced version to prevent excessive API calls
+  const debouncedFetchActiveTimer = useCallback(
+    debounce(fetchActiveTimer, 1000),
+    [fetchActiveTimer]
+  );
+
+  // Initialize by fetching active timer from server
   useEffect(() => {
-    const fetchActiveTimer = async () => {
+    const initializeTimerState = async () => {
+      setIsInitializing(true);
       try {
-        const response = await activeTimerService.getActiveTimer();
-        if (response && response.timeEntry) {
-          setActiveTimeEntry(response.timeEntry);
-        }
+        await fetchActiveTimer();
+        
+        // Set up event listeners for timer events
+        const handleTimerStarted = (e: CustomEvent) => {
+          const { timeEntry } = e.detail;
+          console.log("Timer started event received:", timeEntry);
+          setActiveTimeEntry(timeEntry);
+        };
+        
+        const handleTimerPaused = (e: CustomEvent) => {
+          const { timeEntry } = e.detail;
+          console.log("Timer paused event received:", timeEntry);
+          setActiveTimeEntry(timeEntry);
+        };
+        
+        const handleTimerResumed = (e: CustomEvent) => {
+          const { timeEntry } = e.detail;
+          console.log("Timer resumed event received:", timeEntry);
+          setActiveTimeEntry(timeEntry);
+        };
+        
+        const handleTimerStopped = (e: CustomEvent) => {
+          console.log("Timer stopped event received");
+          setActiveTimeEntry(null);
+        };
+        
+        window.addEventListener('timer-started', handleTimerStarted as EventListener);
+        window.addEventListener('timer-paused', handleTimerPaused as EventListener);
+        window.addEventListener('timer-resumed', handleTimerResumed as EventListener);
+        window.addEventListener('timer-stopped', handleTimerStopped as EventListener);
+        
+        // Force a timer sync event to update all timer components
+        window.dispatchEvent(new CustomEvent('force-timer-sync'));
       } catch (error) {
-        console.error("Error fetching active timer:", error);
+        console.error("Error initializing timer:", error);
+      } finally {
+        setIsInitializing(false);
       }
     };
-
-    fetchActiveTimer();
     
-    // Set up event listeners for timer events
-    const handleTimerStarted = (e: CustomEvent) => {
-      const { timeEntry } = e.detail;
-      setActiveTimeEntry(timeEntry);
-    };
-    
-    const handleTimerPaused = (e: CustomEvent) => {
-      const { timeEntry } = e.detail;
-      setActiveTimeEntry(timeEntry);
-    };
-    
-    const handleTimerResumed = (e: CustomEvent) => {
-      const { timeEntry } = e.detail;
-      setActiveTimeEntry(timeEntry);
-    };
-    
-    const handleTimerStopped = (e: CustomEvent) => {
-      setActiveTimeEntry(null);
-    };
-    
-    window.addEventListener('timer-started', handleTimerStarted as EventListener);
-    window.addEventListener('timer-paused', handleTimerPaused as EventListener);
-    window.addEventListener('timer-resumed', handleTimerResumed as EventListener);
-    window.addEventListener('timer-stopped', handleTimerStopped as EventListener);
+    initializeTimerState();
     
     return () => {
-      window.removeEventListener('timer-started', handleTimerStarted as EventListener);
-      window.removeEventListener('timer-paused', handleTimerPaused as EventListener);
-      window.removeEventListener('timer-resumed', handleTimerResumed as EventListener);
-      window.removeEventListener('timer-stopped', handleTimerStopped as EventListener);
+      // Clean up event listeners
+      window.removeEventListener('timer-started', fetchActiveTimer as EventListener);
+      window.removeEventListener('timer-paused', fetchActiveTimer as EventListener);
+      window.removeEventListener('timer-resumed', fetchActiveTimer as EventListener);
+      window.removeEventListener('timer-stopped', fetchActiveTimer as EventListener);
     };
-  }, [userId]);
+  }, [userId, fetchActiveTimer]);
 
   // Loading all time entries
   useEffect(() => {
@@ -100,7 +130,13 @@ export const useTimerManagement = (userId: string, tasks: Task[] = []) => {
   // Start a new timer
   const startTimer = async (taskId: string, projectId: string) => {
     try {
-      return await activeTimerService.startTimer(taskId, projectId, userId);
+      console.log("Starting timer for task:", taskId);
+      const result = await activeTimerService.startTimer(taskId, projectId, userId);
+      
+      // Force a timer sync event to update all timer components
+      window.dispatchEvent(new CustomEvent('force-timer-sync'));
+      
+      return result;
     } catch (error) {
       toast({
         title: 'Erro',
@@ -114,7 +150,12 @@ export const useTimerManagement = (userId: string, tasks: Task[] = []) => {
   // Pause the current timer
   const pauseTimer = async () => {
     try {
-      return await activeTimerService.pauseTimer();
+      const result = await activeTimerService.pauseTimer();
+      
+      // Force a timer sync event to update all timer components
+      window.dispatchEvent(new CustomEvent('force-timer-sync'));
+      
+      return result;
     } catch (error) {
       toast({
         title: 'Erro',
@@ -128,7 +169,12 @@ export const useTimerManagement = (userId: string, tasks: Task[] = []) => {
   // Resume a paused timer
   const resumeTimer = async () => {
     try {
-      return await activeTimerService.resumeTimer();
+      const result = await activeTimerService.resumeTimer();
+      
+      // Force a timer sync event to update all timer components
+      window.dispatchEvent(new CustomEvent('force-timer-sync'));
+      
+      return result;
     } catch (error) {
       toast({
         title: 'Erro',
@@ -142,7 +188,12 @@ export const useTimerManagement = (userId: string, tasks: Task[] = []) => {
   // Stop the current timer
   const stopTimer = async (completeTask: boolean = true) => {
     try {
-      return await activeTimerService.stopActiveTimer(completeTask);
+      const result = await activeTimerService.stopActiveTimer(completeTask);
+      
+      // Force a timer sync event to update all timer components
+      window.dispatchEvent(new CustomEvent('force-timer-sync'));
+      
+      return result;
     } catch (error) {
       toast({
         title: 'Erro',
@@ -164,10 +215,12 @@ export const useTimerManagement = (userId: string, tasks: Task[] = []) => {
     setTimeEntries,
     activeTimeEntry,
     setActiveTimeEntry,
+    isInitializing,
     startTimer,
     pauseTimer,
     resumeTimer,
     stopTimer,
     getActiveTaskName,
+    fetchActiveTimer: debouncedFetchActiveTimer,
   };
 };

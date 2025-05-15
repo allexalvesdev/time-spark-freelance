@@ -33,4 +33,5 @@ export interface AppContextType {
   addTagToTask: (taskId: string, tagId: string) => Promise<void>;
   removeTagFromTask: (taskId: string, tagId: string) => Promise<void>;
   getTaskTags: (taskId: string) => Promise<string[]>;
+  createProject: (projectData: Omit<Project, "id" | "createdAt" | "userId">) => Promise<Project>;
 }

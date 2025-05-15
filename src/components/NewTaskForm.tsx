@@ -36,7 +36,7 @@ const NewTaskForm: React.FC<NewTaskFormProps> = ({ open, handleClose, projects, 
   const [description, setDescription] = useState('');
   const [estimatedTime, setEstimatedTime] = useState('');
   const [scheduledStartTime, setScheduledStartTime] = useState<Date | undefined>(undefined);
-  const [priority, setPriority] = useState('low');
+  const [priority, setPriority] = useState<'Baixa' | 'Média' | 'Alta' | 'Urgente'>('Baixa');
   const [selectedProject, setSelectedProject] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
@@ -148,14 +148,15 @@ const NewTaskForm: React.FC<NewTaskFormProps> = ({ open, handleClose, projects, 
             <Label htmlFor="priority" className="text-right">
               Prioridade
             </Label>
-            <Select onValueChange={setPriority} defaultValue={priority}>
+            <Select onValueChange={(value: string) => setPriority(value as 'Baixa' | 'Média' | 'Alta' | 'Urgente')} defaultValue={priority}>
               <SelectTrigger className="col-span-3">
                 <SelectValue placeholder="Selecione a prioridade" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="low">Baixa</SelectItem>
-                <SelectItem value="medium">Média</SelectItem>
-                <SelectItem value="high">Alta</SelectItem>
+                <SelectItem value="Baixa">Baixa</SelectItem>
+                <SelectItem value="Média">Média</SelectItem>
+                <SelectItem value="Alta">Alta</SelectItem>
+                <SelectItem value="Urgente">Urgente</SelectItem>
               </SelectContent>
             </Select>
           </div>

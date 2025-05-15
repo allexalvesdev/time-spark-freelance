@@ -1,3 +1,4 @@
+
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 import { AppState, AppContextType } from '@/types/app';
 import { Project, Task, TimeEntry, ReportData, Tag } from '@/types';
@@ -8,7 +9,7 @@ import { useTimerManagement } from '@/hooks/useTimerManagement';
 import { useReportGenerator } from '@/hooks/useReportGenerator';
 import { projectService, taskService, timeEntryService, tagService } from '@/services';
 import { useTags } from '@/hooks/useTags';
-import { toast } from 'react-toastify';
+import { useToast } from '@/hooks/use-toast';
 
 // Define initial state
 const initialState: AppState = {
@@ -27,6 +28,7 @@ export const AppContext = createContext<AppContextType | undefined>(undefined);
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const { user } = useAuth();
   const [state, setState] = useState<AppState>(initialState);
+  const { toast } = useToast();
   
   const userId = user?.id || '';
   
@@ -158,7 +160,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const newProject = await projectService.createProject({
         ...projectData,
         userId: user?.id || '',
-        createdAt: new Date()
       });
       
       setProjects(prev => Array.isArray(prev) ? [newProject, ...prev] : [newProject]);

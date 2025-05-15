@@ -223,13 +223,12 @@ const ProjectDetails: React.FC = () => {
             </div>
             
             {showNewTaskForm && (
-              <div className="bg-card rounded-lg border p-4 md:p-6 mb-6">
-                <h3 className="text-lg font-medium mb-4">Adicionar Nova Tarefa</h3>
-                <NewTaskForm 
-                  projectId={project.id} 
-                  onSuccess={() => setShowNewTaskForm(false)} 
-                />
-              </div>
+              <NewTaskForm 
+                open={showNewTaskForm}
+                handleClose={() => setShowNewTaskForm(false)}
+                projects={[project]} 
+                onTaskCreated={(task) => setProjectTasks(prev => [task, ...prev])}
+              />
             )}
             
             {projectTasks.length === 0 ? (

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import {
   AlertDialog,
@@ -39,7 +40,7 @@ const NewTaskForm: React.FC<NewTaskFormProps> = ({ open, handleClose, projects, 
   const [selectedProject, setSelectedProject] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
-  const { createTask } = useAppContext();
+  const { addTask } = useAppContext();
 
   useEffect(() => {
     if (projects.length > 0 && !selectedProject) {
@@ -54,14 +55,13 @@ const NewTaskForm: React.FC<NewTaskFormProps> = ({ open, handleClose, projects, 
     setIsSubmitting(true);
 
     try {
-      const newTask = await createTask({
+      const newTask = await addTask({
         projectId: selectedProject,
         name,
         description,
         estimatedTime: parseFloat(estimatedTime),
         scheduledStartTime: scheduledStartTime,
         priority,
-        completed: false // Adding the missing property
       });
 
       onTaskCreated(newTask);
@@ -177,7 +177,7 @@ const NewTaskForm: React.FC<NewTaskFormProps> = ({ open, handleClose, projects, 
         </form>
         <AlertDialogFooter>
           <AlertDialogCancel>Cancelar</AlertDialogCancel>
-          <Button type="submit" disabled={isSubmitting}>
+          <Button type="submit" disabled={isSubmitting} onClick={(e) => handleSubmit(e as any)}>
             {isSubmitting ? 'Criando...' : 'Criar'}
           </Button>
         </AlertDialogFooter>

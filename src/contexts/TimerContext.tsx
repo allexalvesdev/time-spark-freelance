@@ -6,6 +6,7 @@ import { activeTimerService } from '@/services/activeTimerService';
 import { timeEntryService } from '@/services';
 import { useToast } from '@/hooks/use-toast';
 import { debounce } from '@/utils/debounce';
+import { taskService } from '@/services';
 
 interface TimerContextType {
   timeEntries: TimeEntry[];

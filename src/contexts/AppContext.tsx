@@ -72,7 +72,7 @@ const AppContextProvider: React.FC<AppContextProviderProps> = ({
 
   // Report generation function adapted to use context
   const appGenerateReport = (projectId: string) => {
-    return generateReport(projectId, projects.projects, tasks.tasks);
+    return generateReport(projectId);
   };
 
   // Group values and functions exposed by context

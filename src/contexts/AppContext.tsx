@@ -47,7 +47,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
 interface AppContextProviderProps {
   children: ReactNode;
-  generateReport: (projectId: string) => any;
+  generateReport: (projectId: string, projects: Project[], tasks: Task[]) => ReportData | null;
 }
 
 const AppContextProvider: React.FC<AppContextProviderProps> = ({ 
@@ -72,7 +72,7 @@ const AppContextProvider: React.FC<AppContextProviderProps> = ({
 
   // Report generation function adapted to use context
   const appGenerateReport = (projectId: string) => {
-    return generateReport(projectId);
+    return generateReport(projectId, projects.projects, tasks.tasks);
   };
 
   // Group values and functions exposed by context

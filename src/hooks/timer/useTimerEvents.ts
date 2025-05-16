@@ -15,41 +15,54 @@ export const useTimerEvents = ({
   setActiveTimeEntry
 }: UseTimerEventsProps) => {
   useEffect(() => {
-    const handleTimerStarted = (e: CustomEvent) => {
-      const { timeEntry } = e.detail;
-      console.log("Timer started event received:", timeEntry);
-      setActiveTimeEntry(timeEntry);
+    // Define handler functions that safely handle event data
+    const handleTimerStarted = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      const { timeEntry } = customEvent.detail || {};
+      
+      if (timeEntry) {
+        console.log("Timer started event received:", timeEntry);
+        setActiveTimeEntry(timeEntry);
+      }
     };
     
-    const handleTimerPaused = (e: CustomEvent) => {
-      const { timeEntry } = e.detail;
-      console.log("Timer paused event received:", timeEntry);
-      setActiveTimeEntry(timeEntry);
+    const handleTimerPaused = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      const { timeEntry } = customEvent.detail || {};
+      
+      if (timeEntry) {
+        console.log("Timer paused event received:", timeEntry);
+        setActiveTimeEntry(timeEntry);
+      }
     };
     
-    const handleTimerResumed = (e: CustomEvent) => {
-      const { timeEntry } = e.detail;
-      console.log("Timer resumed event received:", timeEntry);
-      setActiveTimeEntry(timeEntry);
+    const handleTimerResumed = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      const { timeEntry } = customEvent.detail || {};
+      
+      if (timeEntry) {
+        console.log("Timer resumed event received:", timeEntry);
+        setActiveTimeEntry(timeEntry);
+      }
     };
     
-    const handleTimerStopped = (e: CustomEvent) => {
+    const handleTimerStopped = () => {
       console.log("Timer stopped event received");
       setActiveTimeEntry(null);
     };
     
     // Add event listeners
-    window.addEventListener('timer-started', handleTimerStarted as EventListener);
-    window.addEventListener('timer-paused', handleTimerPaused as EventListener);
-    window.addEventListener('timer-resumed', handleTimerResumed as EventListener);
-    window.addEventListener('timer-stopped', handleTimerStopped as EventListener);
+    window.addEventListener('timer-started', handleTimerStarted);
+    window.addEventListener('timer-paused', handleTimerPaused);
+    window.addEventListener('timer-resumed', handleTimerResumed);
+    window.addEventListener('timer-stopped', handleTimerStopped);
     
     return () => {
-      // Clean up event listeners - previously incorrectly using fetchActiveTimer
-      window.removeEventListener('timer-started', handleTimerStarted as EventListener);
-      window.removeEventListener('timer-paused', handleTimerPaused as EventListener);
-      window.removeEventListener('timer-resumed', handleTimerResumed as EventListener);
-      window.removeEventListener('timer-stopped', handleTimerStopped as EventListener);
+      // Clean up event listeners with the same functions used to add them
+      window.removeEventListener('timer-started', handleTimerStarted);
+      window.removeEventListener('timer-paused', handleTimerPaused);
+      window.removeEventListener('timer-resumed', handleTimerResumed);
+      window.removeEventListener('timer-stopped', handleTimerStopped);
     };
   }, [fetchActiveTimer, setActiveTimeEntry]);
 };

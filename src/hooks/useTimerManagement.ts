@@ -42,37 +42,55 @@ export const useTimerManagement = (userId: string, tasks: Task[] = []) => {
       try {
         await fetchActiveTimer();
         
-        // Set up event listeners for timer events
-        const handleTimerStarted = (e: CustomEvent) => {
-          const { timeEntry } = e.detail;
-          console.log("Timer started event received:", timeEntry);
-          setActiveTimeEntry(timeEntry);
+        // Define event handlers
+        const handleTimerStarted = (e: Event) => {
+          const customEvent = e as CustomEvent;
+          const { timeEntry } = customEvent.detail || {};
+          if (timeEntry) {
+            console.log("Timer started event received:", timeEntry);
+            setActiveTimeEntry(timeEntry);
+          }
         };
         
-        const handleTimerPaused = (e: CustomEvent) => {
-          const { timeEntry } = e.detail;
-          console.log("Timer paused event received:", timeEntry);
-          setActiveTimeEntry(timeEntry);
+        const handleTimerPaused = (e: Event) => {
+          const customEvent = e as CustomEvent;
+          const { timeEntry } = customEvent.detail || {};
+          if (timeEntry) {
+            console.log("Timer paused event received:", timeEntry);
+            setActiveTimeEntry(timeEntry);
+          }
         };
         
-        const handleTimerResumed = (e: CustomEvent) => {
-          const { timeEntry } = e.detail;
-          console.log("Timer resumed event received:", timeEntry);
-          setActiveTimeEntry(timeEntry);
+        const handleTimerResumed = (e: Event) => {
+          const customEvent = e as CustomEvent;
+          const { timeEntry } = customEvent.detail || {};
+          if (timeEntry) {
+            console.log("Timer resumed event received:", timeEntry);
+            setActiveTimeEntry(timeEntry);
+          }
         };
         
-        const handleTimerStopped = (e: CustomEvent) => {
+        const handleTimerStopped = () => {
           console.log("Timer stopped event received");
           setActiveTimeEntry(null);
         };
         
-        window.addEventListener('timer-started', handleTimerStarted as EventListener);
-        window.addEventListener('timer-paused', handleTimerPaused as EventListener);
-        window.addEventListener('timer-resumed', handleTimerResumed as EventListener);
-        window.addEventListener('timer-stopped', handleTimerStopped as EventListener);
+        // Add event listeners
+        window.addEventListener('timer-started', handleTimerStarted);
+        window.addEventListener('timer-paused', handleTimerPaused);
+        window.addEventListener('timer-resumed', handleTimerResumed);
+        window.addEventListener('timer-stopped', handleTimerStopped);
         
         // Force a timer sync event to update all timer components
         window.dispatchEvent(new CustomEvent('force-timer-sync'));
+        
+        return () => {
+          // Clean up event listeners
+          window.removeEventListener('timer-started', handleTimerStarted);
+          window.removeEventListener('timer-paused', handleTimerPaused);
+          window.removeEventListener('timer-resumed', handleTimerResumed);
+          window.removeEventListener('timer-stopped', handleTimerStopped);
+        };
       } catch (error) {
         console.error("Error initializing timer:", error);
       } finally {
@@ -81,14 +99,6 @@ export const useTimerManagement = (userId: string, tasks: Task[] = []) => {
     };
     
     initializeTimerState();
-    
-    return () => {
-      // Clean up event listeners
-      window.removeEventListener('timer-started', fetchActiveTimer as EventListener);
-      window.removeEventListener('timer-paused', fetchActiveTimer as EventListener);
-      window.removeEventListener('timer-resumed', fetchActiveTimer as EventListener);
-      window.removeEventListener('timer-stopped', fetchActiveTimer as EventListener);
-    };
   }, [userId, fetchActiveTimer]);
 
   // Loading all time entries

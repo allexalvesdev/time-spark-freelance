@@ -1,7 +1,7 @@
 
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 import { AppState, AppContextType } from '@/types/app';
-import { Project, Task, TimeEntry, Tag } from '@/types';
+import { Project, Task, TimeEntry, Tag, ReportData } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { ProjectsProvider, useProjectsContext } from '@/contexts/ProjectsContext';
 import { TasksProvider, useTasksContext } from '@/contexts/TasksContext';

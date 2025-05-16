@@ -8,6 +8,9 @@ import { useToast } from '@/hooks/use-toast';
 // Import the activeTaskName hook
 import { useActiveTaskName } from './timer/useActiveTaskName';
 
+// Import useTimerEvents hook
+import { useTimerEvents } from './timer/useTimerEvents';
+
 // Add debounce to prevent excessive calls
 import { debounce } from '@/utils/debounce';
 
@@ -35,6 +38,12 @@ export const useTimerManagement = (userId: string, tasks: Task[] = []) => {
     [fetchActiveTimer]
   );
 
+  // Use the timer events hook
+  useTimerEvents({
+    fetchActiveTimer: debouncedFetchActiveTimer,
+    setActiveTimeEntry
+  });
+
   // Initialize by fetching active timer from server
   useEffect(() => {
     const initializeTimerState = async () => {
@@ -42,55 +51,8 @@ export const useTimerManagement = (userId: string, tasks: Task[] = []) => {
       try {
         await fetchActiveTimer();
         
-        // Define event handlers
-        const handleTimerStarted = (e: Event) => {
-          const customEvent = e as CustomEvent;
-          const { timeEntry } = customEvent.detail || {};
-          if (timeEntry) {
-            console.log("Timer started event received:", timeEntry);
-            setActiveTimeEntry(timeEntry);
-          }
-        };
-        
-        const handleTimerPaused = (e: Event) => {
-          const customEvent = e as CustomEvent;
-          const { timeEntry } = customEvent.detail || {};
-          if (timeEntry) {
-            console.log("Timer paused event received:", timeEntry);
-            setActiveTimeEntry(timeEntry);
-          }
-        };
-        
-        const handleTimerResumed = (e: Event) => {
-          const customEvent = e as CustomEvent;
-          const { timeEntry } = customEvent.detail || {};
-          if (timeEntry) {
-            console.log("Timer resumed event received:", timeEntry);
-            setActiveTimeEntry(timeEntry);
-          }
-        };
-        
-        const handleTimerStopped = () => {
-          console.log("Timer stopped event received");
-          setActiveTimeEntry(null);
-        };
-        
-        // Add event listeners
-        window.addEventListener('timer-started', handleTimerStarted);
-        window.addEventListener('timer-paused', handleTimerPaused);
-        window.addEventListener('timer-resumed', handleTimerResumed);
-        window.addEventListener('timer-stopped', handleTimerStopped);
-        
         // Force a timer sync event to update all timer components
         window.dispatchEvent(new CustomEvent('force-timer-sync'));
-        
-        return () => {
-          // Clean up event listeners
-          window.removeEventListener('timer-started', handleTimerStarted);
-          window.removeEventListener('timer-paused', handleTimerPaused);
-          window.removeEventListener('timer-resumed', handleTimerResumed);
-          window.removeEventListener('timer-stopped', handleTimerStopped);
-        };
       } catch (error) {
         console.error("Error initializing timer:", error);
       } finally {

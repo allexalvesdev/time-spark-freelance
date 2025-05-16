@@ -28,7 +28,12 @@ const EditTaskModal: React.FC<EditTaskModalProps> = ({ task, isOpen, onClose }) 
   const { toast } = useToast();
   const [name, setName] = useState(task.name);
   const [description, setDescription] = useState(task.description);
-  const [estimatedTime, setEstimatedTime] = useState(task.estimatedTime.toString());
+  // Proteção contra valores nulos ou indefinidos para estimatedTime
+  const [estimatedTime, setEstimatedTime] = useState(
+    task.estimatedTime !== null && task.estimatedTime !== undefined 
+      ? task.estimatedTime.toString() 
+      : '0'
+  );
   const [priority, setPriority] = useState<'Baixa' | 'Média' | 'Alta' | 'Urgente'>(task.priority || 'Média');
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -38,14 +43,19 @@ const EditTaskModal: React.FC<EditTaskModalProps> = ({ task, isOpen, onClose }) 
       // Reset form state when dialog opens
       setName(task.name);
       setDescription(task.description);
-      setEstimatedTime(task.estimatedTime.toString());
+      // Proteção contra valores nulos ou indefinidos para estimatedTime
+      setEstimatedTime(
+        task.estimatedTime !== null && task.estimatedTime !== undefined 
+          ? task.estimatedTime.toString() 
+          : '0'
+      );
       setPriority(task.priority || 'Média');
       
       // Fetch tags associated with this task
       const loadTaskTags = async () => {
         try {
           const tagIds = await getTaskTags(task.id);
-          setSelectedTagIds(tagIds);
+          setSelectedTagIds(tagIds || []);
         } catch (error) {
           console.error('Failed to load task tags:', error);
         }
@@ -64,7 +74,7 @@ const EditTaskModal: React.FC<EditTaskModalProps> = ({ task, isOpen, onClose }) 
         ...task,
         name,
         description,
-        estimatedTime: parseInt(estimatedTime),
+        estimatedTime: parseInt(estimatedTime) || 0,
         priority,
       };
       
@@ -138,7 +148,7 @@ const EditTaskModal: React.FC<EditTaskModalProps> = ({ task, isOpen, onClose }) 
             <Input
               id="estimatedTime"
               type="number"
-              min="1"
+              min="0"
               value={estimatedTime}
               onChange={(e) => setEstimatedTime(e.target.value)}
               required

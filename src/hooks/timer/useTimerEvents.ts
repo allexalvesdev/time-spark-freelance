@@ -45,11 +45,11 @@ export const useTimerEvents = ({
     window.addEventListener('timer-stopped', handleTimerStopped as EventListener);
     
     return () => {
-      // Clean up event listeners
-      window.removeEventListener('timer-started', fetchActiveTimer as EventListener);
-      window.removeEventListener('timer-paused', fetchActiveTimer as EventListener);
-      window.removeEventListener('timer-resumed', fetchActiveTimer as EventListener);
-      window.removeEventListener('timer-stopped', fetchActiveTimer as EventListener);
+      // Clean up event listeners - previously incorrectly using fetchActiveTimer
+      window.removeEventListener('timer-started', handleTimerStarted as EventListener);
+      window.removeEventListener('timer-paused', handleTimerPaused as EventListener);
+      window.removeEventListener('timer-resumed', handleTimerResumed as EventListener);
+      window.removeEventListener('timer-stopped', handleTimerStopped as EventListener);
     };
   }, [fetchActiveTimer, setActiveTimeEntry]);
 };

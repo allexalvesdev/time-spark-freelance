@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { TimeEntry, Task } from '@/types';
 import { supabase } from '@/integrations/supabase/client';

@@ -33,8 +33,13 @@ export const useTimerManagement = (userId: string, tasks: Task[] = []) => {
   }, []);
 
   // Debounced version to prevent excessive API calls
+  // Fixed: Return type mismatch by ensuring this returns a Promise<void>
   const debouncedFetchActiveTimer = useCallback(
-    debounce(fetchActiveTimer, 1000),
+    async () => {
+      await debounce(() => {
+        return fetchActiveTimer();
+      }, 1000)();
+    },
     [fetchActiveTimer]
   );
 

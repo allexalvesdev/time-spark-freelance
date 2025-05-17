@@ -28,12 +28,14 @@ const EditTaskModal: React.FC<EditTaskModalProps> = ({ task, isOpen, onClose }) 
   const { toast } = useToast();
   const [name, setName] = useState(task.name);
   const [description, setDescription] = useState(task.description);
-  // Proteção contra valores nulos ou indefinidos para estimatedTime
-  const [estimatedTime, setEstimatedTime] = useState(
+  
+  // Fixed: Ensure estimatedTime is properly handled when it's null or undefined
+  const [estimatedTime, setEstimatedTime] = useState<string>(
     task.estimatedTime !== null && task.estimatedTime !== undefined 
       ? task.estimatedTime.toString() 
       : '0'
   );
+  
   const [priority, setPriority] = useState<'Baixa' | 'Média' | 'Alta' | 'Urgente'>(task.priority || 'Média');
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -43,12 +45,14 @@ const EditTaskModal: React.FC<EditTaskModalProps> = ({ task, isOpen, onClose }) 
       // Reset form state when dialog opens
       setName(task.name);
       setDescription(task.description);
-      // Proteção contra valores nulos ou indefinidos para estimatedTime
+      
+      // Fixed: Safely handle estimatedTime
       setEstimatedTime(
         task.estimatedTime !== null && task.estimatedTime !== undefined 
           ? task.estimatedTime.toString() 
           : '0'
       );
+      
       setPriority(task.priority || 'Média');
       
       // Fetch tags associated with this task

@@ -104,10 +104,13 @@ const EditTaskModal: React.FC<EditTaskModalProps> = ({ task, isOpen, onClose }) 
   
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md" aria-describedby="edit-task-description">
         <DialogHeader>
           <DialogTitle>Editar Tarefa</DialogTitle>
         </DialogHeader>
+        
+        {/* Hidden span for accessibility */}
+        <span id="edit-task-description" className="sr-only">Formulário para editar detalhes da tarefa</span>
         
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">

@@ -17,38 +17,60 @@ export const useTimerEvents = ({
   useEffect(() => {
     // Define handler functions that safely handle event data
     const handleTimerStarted = (e: Event) => {
-      const customEvent = e as CustomEvent;
-      const { timeEntry } = customEvent.detail || {};
-      
-      if (timeEntry) {
-        console.log("Timer started event received:", timeEntry);
-        setActiveTimeEntry(timeEntry);
+      try {
+        const customEvent = e as CustomEvent;
+        if (!customEvent || !customEvent.detail) return;
+        
+        const { timeEntry } = customEvent.detail || {};
+        
+        if (timeEntry) {
+          console.log("Timer started event received:", timeEntry);
+          setActiveTimeEntry(timeEntry);
+        }
+      } catch (error) {
+        console.error("Error handling timer started event:", error);
       }
     };
     
     const handleTimerPaused = (e: Event) => {
-      const customEvent = e as CustomEvent;
-      const { timeEntry } = customEvent.detail || {};
-      
-      if (timeEntry) {
-        console.log("Timer paused event received:", timeEntry);
-        setActiveTimeEntry(timeEntry);
+      try {
+        const customEvent = e as CustomEvent;
+        if (!customEvent || !customEvent.detail) return;
+        
+        const { timeEntry } = customEvent.detail || {};
+        
+        if (timeEntry) {
+          console.log("Timer paused event received:", timeEntry);
+          setActiveTimeEntry(timeEntry);
+        }
+      } catch (error) {
+        console.error("Error handling timer paused event:", error);
       }
     };
     
     const handleTimerResumed = (e: Event) => {
-      const customEvent = e as CustomEvent;
-      const { timeEntry } = customEvent.detail || {};
-      
-      if (timeEntry) {
-        console.log("Timer resumed event received:", timeEntry);
-        setActiveTimeEntry(timeEntry);
+      try {
+        const customEvent = e as CustomEvent;
+        if (!customEvent || !customEvent.detail) return;
+        
+        const { timeEntry } = customEvent.detail || {};
+        
+        if (timeEntry) {
+          console.log("Timer resumed event received:", timeEntry);
+          setActiveTimeEntry(timeEntry);
+        }
+      } catch (error) {
+        console.error("Error handling timer resumed event:", error);
       }
     };
     
     const handleTimerStopped = () => {
-      console.log("Timer stopped event received");
-      setActiveTimeEntry(null);
+      try {
+        console.log("Timer stopped event received");
+        setActiveTimeEntry(null);
+      } catch (error) {
+        console.error("Error handling timer stopped event:", error);
+      }
     };
     
     // Add event listeners
@@ -64,5 +86,5 @@ export const useTimerEvents = ({
       window.removeEventListener('timer-resumed', handleTimerResumed);
       window.removeEventListener('timer-stopped', handleTimerStopped);
     };
-  }, [fetchActiveTimer, setActiveTimeEntry]);
+  }, [setActiveTimeEntry]);
 };

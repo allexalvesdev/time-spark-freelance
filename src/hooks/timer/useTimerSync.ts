@@ -85,12 +85,17 @@ export const useTimerSync = ({
     
     // Listen for timer-stopped events
     window.addEventListener('timer-stopped', (event: Event) => {
-      const stopEvent = event as CustomEvent;
-      const { taskId } = stopEvent.detail || {};
-      
-      if (persistKey?.includes(taskId)) {
-        setIsRunning(false);
-        setIsPaused(false);
+      try {
+        const stopEvent = event as CustomEvent;
+        const taskId = stopEvent.detail?.taskId;
+        
+        // Only proceed if we have a valid taskId and it matches our persistKey
+        if (taskId && persistKey?.includes(taskId)) {
+          setIsRunning(false);
+          setIsPaused(false);
+        }
+      } catch (error) {
+        console.error("Error handling timer-stopped event:", error);
       }
     });
     
@@ -104,25 +109,29 @@ export const useTimerSync = ({
   // Additional effect to listen for storage-check events to validate state
   useEffect(() => {
     const handleStorageCheck = (event: Event) => {
-      const storageEvent = event as CustomEvent;
-      const { taskId } = storageEvent.detail || {};
-      
-      if (persistKey?.includes(taskId) && isRunning) {
+      try {
+        const storageEvent = event as CustomEvent;
+        const taskId = storageEvent.detail?.taskId;
+        
+        if (!taskId || !persistKey?.includes(taskId) || !isRunning) return;
+        
         // Re-persist the current state to ensure it's fresh in storage
         persistTimerState(
           persistKey,
           isRunning,
           isPaused,
-          // Use current refs for accurate values
-          startTimeRef.current && !isPaused
+          // Use current refs for accurate values, with safe null handling
+          (startTimeRef.current && !isPaused)
             ? Math.floor((Date.now() - startTimeRef.current) / 1000)
             : 0,
-          startTimeRef.current && pausedAtRef.current && isPaused
+          (startTimeRef.current && pausedAtRef.current && isPaused)
             ? Math.floor((pausedAtRef.current - startTimeRef.current) / 1000)
             : 0,
           startTimeRef.current,
           pausedAtRef.current
         );
+      } catch (error) {
+        console.error("Error handling storage-check event:", error);
       }
     };
     

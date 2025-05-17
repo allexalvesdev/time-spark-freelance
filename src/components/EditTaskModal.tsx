@@ -130,7 +130,7 @@ const EditTaskModal: React.FC<EditTaskModalProps> = ({ task, isOpen, onClose }) 
             <Label htmlFor="description">Descrição</Label>
             <Textarea
               id="description"
-              value={description}
+              value={description || ''}
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
             />

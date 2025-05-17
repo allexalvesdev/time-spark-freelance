@@ -1,5 +1,5 @@
 
-import { useEffect, RefObject, MutableRefObject } from 'react';
+import { useEffect, RefObject, MutableRefObject, useRef } from 'react';
 import { getPersistedTimerState, persistTimerState } from '@/utils/timer/timerStorage';
 
 export interface UseTimerSyncOptions {
@@ -29,10 +29,20 @@ export const useTimerSync = ({
   startTimeRef,
   pausedAtRef
 }: UseTimerSyncOptions) => {
+  // Use ref to track last sync time to prevent excessive syncs
+  const lastSyncTime = useRef<number>(0);
+  
   // Listen for force-timer-sync events (from header) to sync timer state
   useEffect(() => {
     const handleForceSync = () => {
       if (!persistKey) return;
+      
+      // Rate limit syncs to prevent excessive operations
+      const now = Date.now();
+      if (now - lastSyncTime.current < 1000) {
+        return; // Skip if last sync was less than 1 second ago
+      }
+      lastSyncTime.current = now;
       
       // Only react to force sync if this is the active task
       if (isActiveTask) {
@@ -76,15 +86,22 @@ export const useTimerSync = ({
     // Listen for force-timer-sync events (from header or elsewhere)
     window.addEventListener('force-timer-sync', handleForceSync);
     
-    // Listen for storage events from other tabs/windows
-    window.addEventListener('storage', (event) => {
+    // Listen for storage events from other tabs/windows with throttling
+    const handleStorageEvent = (event: StorageEvent) => {
+      // Only process if enough time has elapsed since last sync
+      const now = Date.now();
+      if (now - lastSyncTime.current < 2000) return; // 2 second throttle
+      
       if (event.key === 'activeTaskId' && isActiveTask) {
+        lastSyncTime.current = now;
         handleForceSync();
       }
-    });
+    };
     
-    // Listen for timer-stopped events
-    window.addEventListener('timer-stopped', (event: Event) => {
+    window.addEventListener('storage', handleStorageEvent);
+    
+    // Listen for timer-stopped events with improved null safety
+    const handleTimerStopped = (event: Event) => {
       try {
         // Safely handle the event as a CustomEvent
         const stopEvent = event as CustomEvent;
@@ -98,19 +115,29 @@ export const useTimerSync = ({
       } catch (error) {
         console.error("Error handling timer-stopped event:", error);
       }
-    });
+    };
+    
+    window.addEventListener('timer-stopped', handleTimerStopped);
     
     return () => {
       window.removeEventListener('force-timer-sync', handleForceSync);
-      window.removeEventListener('timer-stopped', handleForceSync as EventListener);
+      window.removeEventListener('storage', handleStorageEvent);
+      window.removeEventListener('timer-stopped', handleTimerStopped);
     };
   }, [persistKey, isActiveTask, isRunning, isPaused, setIsPaused, setIsRunning, 
       setElapsedTime, setPausedTime, startTimeRef, pausedAtRef, globalActiveTaskId]);
   
-  // Additional effect to listen for storage-check events to validate state
+  // Additional effect to listen for storage-check events to validate state, with throttling
   useEffect(() => {
+    const lastCheckTime = useRef<number>(0);
+    
     const handleStorageCheck = (event: Event) => {
       try {
+        // Throttle checks to prevent excessive operations
+        const now = Date.now();
+        if (now - lastCheckTime.current < 3000) return; // 3 second throttle
+        lastCheckTime.current = now;
+        
         // Add defensive check for the event being a CustomEvent
         if (!(event instanceof CustomEvent) || !event.detail) {
           return;
@@ -128,10 +155,10 @@ export const useTimerSync = ({
           isPaused,
           // Use current refs for accurate values, with safe null handling
           (startTimeRef.current && !isPaused)
-            ? Math.floor((Date.now() - startTimeRef.current) / 1000)
+            ? Math.floor((Date.now() - (startTimeRef.current || 0)) / 1000)
             : 0,
           (startTimeRef.current && pausedAtRef.current && isPaused)
-            ? Math.floor((pausedAtRef.current - startTimeRef.current) / 1000)
+            ? Math.floor((pausedAtRef.current - (startTimeRef.current || 0)) / 1000)
             : 0,
           startTimeRef.current,
           pausedAtRef.current
@@ -149,12 +176,22 @@ export const useTimerSync = ({
     };
   }, [persistKey, isRunning, isPaused, startTimeRef, pausedAtRef]);
   
-  // Effect for prioritizing task-specific values
+  // Effect for prioritizing task-specific values with reduced frequency
   useEffect(() => {
-    // If this is the active task, make sure its values take priority
+    // Track the last time we forced a sync
+    const lastForcedSyncTime = useRef<number>(0);
+    
+    // If this is the active task, make sure its values take priority, but limit frequency
     if (isActiveTask && persistKey && globalActiveTaskId) {
-      // Dispatch event to other components to sync
-      window.dispatchEvent(new CustomEvent('force-timer-sync'));
+      const now = Date.now();
+      if (now - lastForcedSyncTime.current > 2000) { // 2 second minimum between syncs
+        lastForcedSyncTime.current = now;
+        
+        // Use setTimeout to prevent immediate dispatch
+        setTimeout(() => {
+          window.dispatchEvent(new CustomEvent('force-timer-sync'));
+        }, 50);
+      }
     }
   }, [isActiveTask, persistKey, globalActiveTaskId]);
 };

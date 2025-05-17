@@ -1,5 +1,5 @@
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { TimeEntry } from '@/types';
 
 interface UseTimerEventsProps {
@@ -8,16 +8,30 @@ interface UseTimerEventsProps {
 }
 
 /**
- * Hook to handle timer-related events
+ * Hook to handle timer-related events with optimizations to reduce excessive updates
  */
 export const useTimerEvents = ({
   fetchActiveTimer,
   setActiveTimeEntry
 }: UseTimerEventsProps) => {
+  // Use refs to track last processed event timestamps to reduce duplicate processing
+  const lastEventTimes = useRef<Record<string, number>>({
+    started: 0,
+    paused: 0,
+    resumed: 0,
+    stopped: 0
+  });
+  
   useEffect(() => {
-    // Define handler functions that safely handle event data
+    // Enhanced event handlers with throttling and null safety checks
     const handleTimerStarted = (e: Event) => {
       try {
+        // Rate limiting - ignore events that happen too close together
+        const now = Date.now();
+        if (now - lastEventTimes.current.started < 1000) return; // 1 second minimum between processing
+        lastEventTimes.current.started = now;
+        
+        // Safely handle the event
         const customEvent = e as CustomEvent;
         if (!customEvent?.detail) return;
         
@@ -37,6 +51,11 @@ export const useTimerEvents = ({
     
     const handleTimerPaused = (e: Event) => {
       try {
+        // Rate limiting
+        const now = Date.now();
+        if (now - lastEventTimes.current.paused < 1000) return;
+        lastEventTimes.current.paused = now;
+        
         const customEvent = e as CustomEvent;
         if (!customEvent?.detail) return;
         
@@ -56,6 +75,11 @@ export const useTimerEvents = ({
     
     const handleTimerResumed = (e: Event) => {
       try {
+        // Rate limiting
+        const now = Date.now();
+        if (now - lastEventTimes.current.resumed < 1000) return;
+        lastEventTimes.current.resumed = now;
+        
         const customEvent = e as CustomEvent;
         if (!customEvent?.detail) return;
         
@@ -75,6 +99,11 @@ export const useTimerEvents = ({
     
     const handleTimerStopped = (e: Event) => {
       try {
+        // Rate limiting
+        const now = Date.now();
+        if (now - lastEventTimes.current.stopped < 1000) return;
+        lastEventTimes.current.stopped = now;
+        
         // Check if this is a CustomEvent with task details
         const customEvent = e as CustomEvent;
         if (customEvent?.detail?.taskId) {

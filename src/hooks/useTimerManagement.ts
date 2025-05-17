@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { TimeEntry, Task } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
@@ -18,11 +17,19 @@ export const useTimerManagement = (userId: string, tasks: Task[] = []) => {
   const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([]);
   const [activeTimeEntry, setActiveTimeEntry] = useState<TimeEntry | null>(null);
   const [isInitializing, setIsInitializing] = useState(true);
+  const [lastFetchTimestamp, setLastFetchTimestamp] = useState(0);
   const { toast } = useToast();
 
-  // Initialize by fetching active timer from server
+  // Initialize by fetching active timer from server with rate limiting
   const fetchActiveTimer = useCallback(async () => {
     try {
+      // Add rate limiting to avoid excessive calls
+      const now = Date.now();
+      if (now - lastFetchTimestamp < 2000) { // 2 second minimum between fetches
+        return;
+      }
+      
+      setLastFetchTimestamp(now);
       const response = await activeTimerService.getActiveTimer();
       if (response && response.timeEntry) {
         setActiveTimeEntry(response.timeEntry);
@@ -30,9 +37,9 @@ export const useTimerManagement = (userId: string, tasks: Task[] = []) => {
     } catch (error) {
       console.error("Error fetching active timer:", error);
     }
-  }, []);
+  }, [lastFetchTimestamp]);
 
-  // Fixed: Ensure debouncedFetchActiveTimer properly returns a Promise<void>
+  // Properly debounced version that returns a Promise
   const debouncedFetchActiveTimer = useCallback(
     async (): Promise<void> => {
       return new Promise<void>((resolve) => {
@@ -43,40 +50,60 @@ export const useTimerManagement = (userId: string, tasks: Task[] = []) => {
               console.error("Error in debouncedFetchActiveTimer:", error);
               resolve(); // Resolve even on error to ensure Promise completion
             });
-        }, 1000)();
+        }, 2000)();
       });
     },
     [fetchActiveTimer]
   );
 
-  // Use the timer events hook
+  // Use the timer events hook with optimized event handlers
   useTimerEvents({
     fetchActiveTimer: debouncedFetchActiveTimer,
     setActiveTimeEntry
   });
 
-  // Initialize by fetching active timer from server
+  // Optimize initialization by limiting session-related fetches
   useEffect(() => {
+    let isMounted = true;
+    
     const initializeTimerState = async () => {
+      if (!userId || !isMounted) return;
+      
       setIsInitializing(true);
       try {
         await fetchActiveTimer();
         
         // Force a timer sync event to update all timer components
-        window.dispatchEvent(new CustomEvent('force-timer-sync'));
+        // But limit frequency with a small delay
+        setTimeout(() => {
+          if (isMounted) {
+            window.dispatchEvent(new CustomEvent('force-timer-sync'));
+          }
+        }, 100);
       } catch (error) {
         console.error("Error initializing timer:", error);
       } finally {
-        setIsInitializing(false);
+        if (isMounted) {
+          setIsInitializing(false);
+        }
       }
     };
     
     initializeTimerState();
+    
+    return () => {
+      isMounted = false;
+    };
   }, [userId, fetchActiveTimer]);
 
-  // Loading all time entries
+  // Loading all time entries with optimized query frequency
   useEffect(() => {
+    let isMounted = true;
+    let timeoutId: NodeJS.Timeout;
+    
     const loadTimeEntries = async () => {
+      if (!userId || !isMounted) return;
+      
       try {
         const { data: entries, error } = await supabase
           .from('time_entries')
@@ -85,6 +112,7 @@ export const useTimerManagement = (userId: string, tasks: Task[] = []) => {
           .order('created_at', { ascending: false });
 
         if (error) throw error;
+        if (!isMounted) return;
 
         const formattedEntries: TimeEntry[] = entries.map(entry => ({
           id: entry.id,
@@ -105,9 +133,16 @@ export const useTimerManagement = (userId: string, tasks: Task[] = []) => {
       }
     };
 
-    if (userId) {
-      loadTimeEntries();
-    }
+    // Load time entries once on mount and when userId changes (not on every re-render)
+    loadTimeEntries();
+    
+    // Set up periodic refresh with a reasonable interval (30 seconds)
+    timeoutId = setInterval(loadTimeEntries, 30000);
+    
+    return () => {
+      isMounted = false;
+      clearInterval(timeoutId);
+    };
   }, [userId]);
 
   // Start a new timer

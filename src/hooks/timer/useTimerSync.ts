@@ -1,5 +1,5 @@
 
-import { useEffect, RefObject, MutableRefObject, useRef } from 'react';
+import { useEffect, RefObject, MutableRefObject } from 'react';
 import { getPersistedTimerState, persistTimerState } from '@/utils/timer/timerStorage';
 
 export interface UseTimerSyncOptions {
@@ -30,10 +30,13 @@ export const useTimerSync = ({
   pausedAtRef
 }: UseTimerSyncOptions) => {
   // Use ref to track last sync time to prevent excessive syncs
-  const lastSyncTime = useRef<number>(0);
+  // IMPORTANT: This is moved inside the hook to ensure it's only called in a React function context
   
   // Listen for force-timer-sync events (from header) to sync timer state
   useEffect(() => {
+    // Create ref inside the effect to avoid useRef outside component context
+    const lastSyncTime = { current: 0 };
+    
     const handleForceSync = () => {
       if (!persistKey) return;
       
@@ -129,7 +132,8 @@ export const useTimerSync = ({
   
   // Additional effect to listen for storage-check events to validate state, with throttling
   useEffect(() => {
-    const lastCheckTime = useRef<number>(0);
+    // Using an object that acts like a ref inside the effect scope
+    const lastCheckTime = { current: 0 };
     
     const handleStorageCheck = (event: Event) => {
       try {
@@ -178,8 +182,8 @@ export const useTimerSync = ({
   
   // Effect for prioritizing task-specific values with reduced frequency
   useEffect(() => {
-    // Track the last time we forced a sync
-    const lastForcedSyncTime = useRef<number>(0);
+    // Using an object with current property instead of useRef
+    const lastForcedSyncTime = { current: 0 };
     
     // If this is the active task, make sure its values take priority, but limit frequency
     if (isActiveTask && persistKey && globalActiveTaskId) {

@@ -32,13 +32,17 @@ export const useTimerManagement = (userId: string, tasks: Task[] = []) => {
     }
   }, []);
 
-  // Fixed: Return type mismatch by ensuring this returns a Promise<void>
+  // Fixed: Ensure debouncedFetchActiveTimer properly returns a Promise<void>
   const debouncedFetchActiveTimer = useCallback(
-    async () => {
+    async (): Promise<void> => {
       return new Promise<void>((resolve) => {
-        debounce(async () => {
-          await fetchActiveTimer();
-          resolve();
+        debounce(() => {
+          fetchActiveTimer()
+            .then(() => resolve())
+            .catch((error) => {
+              console.error("Error in debouncedFetchActiveTimer:", error);
+              resolve(); // Resolve even on error to ensure Promise completion
+            });
         }, 1000)();
       });
     },

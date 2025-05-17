@@ -86,8 +86,9 @@ export const useTimerSync = ({
     // Listen for timer-stopped events
     window.addEventListener('timer-stopped', (event: Event) => {
       try {
+        // Safely handle the event as a CustomEvent
         const stopEvent = event as CustomEvent;
-        const taskId = stopEvent.detail?.taskId;
+        const taskId = stopEvent?.detail?.taskId;
         
         // Only proceed if we have a valid taskId and it matches our persistKey
         if (taskId && persistKey?.includes(taskId)) {
@@ -110,6 +111,11 @@ export const useTimerSync = ({
   useEffect(() => {
     const handleStorageCheck = (event: Event) => {
       try {
+        // Add defensive check for the event being a CustomEvent
+        if (!(event instanceof CustomEvent) || !event.detail) {
+          return;
+        }
+        
         const storageEvent = event as CustomEvent;
         const taskId = storageEvent.detail?.taskId;
         

@@ -19,13 +19,16 @@ export const useTimerEvents = ({
     const handleTimerStarted = (e: Event) => {
       try {
         const customEvent = e as CustomEvent;
-        if (!customEvent || !customEvent.detail) return;
+        if (!customEvent?.detail) return;
         
         const { timeEntry } = customEvent.detail || {};
         
-        if (timeEntry) {
+        // Add defensive check to ensure timeEntry exists and has the expected structure
+        if (timeEntry && typeof timeEntry === 'object' && 'taskId' in timeEntry) {
           console.log("Timer started event received:", timeEntry);
           setActiveTimeEntry(timeEntry);
+        } else {
+          console.warn("Timer started event received incomplete timeEntry data:", timeEntry);
         }
       } catch (error) {
         console.error("Error handling timer started event:", error);
@@ -35,13 +38,16 @@ export const useTimerEvents = ({
     const handleTimerPaused = (e: Event) => {
       try {
         const customEvent = e as CustomEvent;
-        if (!customEvent || !customEvent.detail) return;
+        if (!customEvent?.detail) return;
         
         const { timeEntry } = customEvent.detail || {};
         
-        if (timeEntry) {
+        // Add defensive check to ensure timeEntry exists and has the expected structure
+        if (timeEntry && typeof timeEntry === 'object' && 'taskId' in timeEntry) {
           console.log("Timer paused event received:", timeEntry);
           setActiveTimeEntry(timeEntry);
+        } else {
+          console.warn("Timer paused event received incomplete timeEntry data:", timeEntry);
         }
       } catch (error) {
         console.error("Error handling timer paused event:", error);
@@ -51,22 +57,33 @@ export const useTimerEvents = ({
     const handleTimerResumed = (e: Event) => {
       try {
         const customEvent = e as CustomEvent;
-        if (!customEvent || !customEvent.detail) return;
+        if (!customEvent?.detail) return;
         
         const { timeEntry } = customEvent.detail || {};
         
-        if (timeEntry) {
+        // Add defensive check to ensure timeEntry exists and has the expected structure
+        if (timeEntry && typeof timeEntry === 'object' && 'taskId' in timeEntry) {
           console.log("Timer resumed event received:", timeEntry);
           setActiveTimeEntry(timeEntry);
+        } else {
+          console.warn("Timer resumed event received incomplete timeEntry data:", timeEntry);
         }
       } catch (error) {
         console.error("Error handling timer resumed event:", error);
       }
     };
     
-    const handleTimerStopped = () => {
+    const handleTimerStopped = (e: Event) => {
       try {
-        console.log("Timer stopped event received");
+        // Check if this is a CustomEvent with task details
+        const customEvent = e as CustomEvent;
+        if (customEvent?.detail?.taskId) {
+          console.log("Timer stopped event received for taskId:", customEvent.detail.taskId);
+        } else {
+          console.log("Timer stopped event received without task details");
+        }
+        
+        // In any case, clear the active time entry
         setActiveTimeEntry(null);
       } catch (error) {
         console.error("Error handling timer stopped event:", error);

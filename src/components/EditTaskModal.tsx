@@ -29,12 +29,8 @@ const EditTaskModal: React.FC<EditTaskModalProps> = ({ task, isOpen, onClose }) 
   const [name, setName] = useState(task.name);
   const [description, setDescription] = useState(task.description);
   
-  // Fixed: Ensure estimatedTime is properly handled when it's null or undefined
-  const [estimatedTime, setEstimatedTime] = useState<string>(
-    task.estimatedTime !== null && task.estimatedTime !== undefined 
-      ? task.estimatedTime.toString() 
-      : '0'
-  );
+  // Improved handling of estimatedTime with comprehensive null/undefined checks
+  const [estimatedTime, setEstimatedTime] = useState<string>('0');
   
   const [priority, setPriority] = useState<'Baixa' | 'Média' | 'Alta' | 'Urgente'>(task.priority || 'Média');
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
@@ -46,12 +42,13 @@ const EditTaskModal: React.FC<EditTaskModalProps> = ({ task, isOpen, onClose }) 
       setName(task.name);
       setDescription(task.description);
       
-      // Fixed: Safely handle estimatedTime
-      setEstimatedTime(
-        task.estimatedTime !== null && task.estimatedTime !== undefined 
-          ? task.estimatedTime.toString() 
-          : '0'
-      );
+      // Improved handling for estimatedTime with better null and type checking
+      if (task.estimatedTime !== null && task.estimatedTime !== undefined) {
+        setEstimatedTime(String(task.estimatedTime));
+      } else {
+        // Default to '0' if estimatedTime is null or undefined
+        setEstimatedTime('0');
+      }
       
       setPriority(task.priority || 'Média');
       
@@ -74,11 +71,14 @@ const EditTaskModal: React.FC<EditTaskModalProps> = ({ task, isOpen, onClose }) 
     setIsLoading(true);
     
     try {
+      // Parse estimatedTime with fallback to 0 if parsing fails
+      const parsedEstimatedTime = parseInt(estimatedTime);
+      
       const updatedTask: Task = {
         ...task,
         name,
         description,
-        estimatedTime: parseInt(estimatedTime) || 0,
+        estimatedTime: isNaN(parsedEstimatedTime) ? 0 : parsedEstimatedTime,
         priority,
       };
       
@@ -104,7 +104,10 @@ const EditTaskModal: React.FC<EditTaskModalProps> = ({ task, isOpen, onClose }) 
   
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md" aria-describedby="edit-task-description">
+      <DialogContent 
+        className="sm:max-w-md" 
+        aria-describedby="edit-task-description"
+      >
         <DialogHeader>
           <DialogTitle>Editar Tarefa</DialogTitle>
         </DialogHeader>

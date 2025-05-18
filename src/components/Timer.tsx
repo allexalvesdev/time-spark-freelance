@@ -18,6 +18,12 @@ const Timer: React.FC<TimerProps> = ({ taskId, projectId, hourlyRate }) => {
   const { activeTimeEntry } = state;
   const isMobile = useIsMobile();
   
+  // Verificar se temos IDs válidos
+  if (!taskId || !projectId) {
+    console.error("Timer component requires valid taskId and projectId");
+    return null;
+  }
+  
   const isActive = activeTimeEntry?.taskId === taskId;
   
   const { 
@@ -28,7 +34,7 @@ const Timer: React.FC<TimerProps> = ({ taskId, projectId, hourlyRate }) => {
     syncWithServer
   } = useReliableTimer({
     taskId,
-    initialTimeEntry: activeTimeEntry?.taskId === taskId ? activeTimeEntry : null
+    initialTimeEntry: (activeTimeEntry?.taskId === taskId) ? activeTimeEntry : null
   });
   
   // Force sync when component mounts to ensure accurate time
@@ -74,7 +80,8 @@ const Timer: React.FC<TimerProps> = ({ taskId, projectId, hourlyRate }) => {
   };
   
   // Calculate earnings based on elapsed time and hourly rate
-  const currentEarnings = calculateEarnings(elapsedSeconds, hourlyRate);
+  const safeRate = hourlyRate || 0;
+  const currentEarnings = calculateEarnings(elapsedSeconds, safeRate);
   
   return (
     <div className="p-4 border rounded-lg bg-card">

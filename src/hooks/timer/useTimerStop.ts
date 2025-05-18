@@ -26,7 +26,11 @@ export const useTimerStop = ({
 
   const stopTimer = async (completeTask: boolean = true) => {
     try {
-      if (!activeTimeEntry) return;
+      // Verificação adicional para evitar tentar parar um timer inexistente
+      if (!activeTimeEntry || !activeTimeEntry.taskId) {
+        console.log("Tentativa de parar um timer inválido ou inexistente");
+        return null;
+      }
 
       const endTime = new Date();
       const startTime = new Date(activeTimeEntry.startTime);
@@ -82,7 +86,8 @@ export const useTimerStop = ({
       
       // Clear all timer-related localStorage entries
       clearTimerStorage(activeTimeEntry.taskId);
-      
+
+      return updatedTimeEntry;
     } catch (error: any) {
       console.error('Error stopping timer:', error);
       toast({
@@ -96,6 +101,11 @@ export const useTimerStop = ({
   
   const handleTaskCompletion = async (taskId: string, endTime: Date, duration: number) => {
     try {
+      if (!taskId) {
+        console.error("Tentativa de completar uma tarefa com taskId indefinido");
+        return;
+      }
+      
       const task = tasks.find(t => t.id === taskId);
       
       if (task) {

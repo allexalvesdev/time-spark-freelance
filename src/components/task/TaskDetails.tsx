@@ -12,11 +12,22 @@ interface TaskDetailsProps {
 
 const TaskDetails: React.FC<TaskDetailsProps> = ({ task, tags = [] }) => {
   const formatDateTime = (date: Date | undefined) => {
-    if (!date) return "Não definido";
-    return format(date, "dd MMM yyyy 'às' HH:mm", { locale: ptBR });
+    if (!date || !(date instanceof Date) || isNaN(date.getTime())) {
+      return "Não definido";
+    }
+    try {
+      return format(date, "dd MMM yyyy 'às' HH:mm", { locale: ptBR });
+    } catch (error) {
+      console.error("Error formatting date:", error);
+      return "Formato inválido";
+    }
   };
   
-  const formatTime = (minutes: number) => {
+  const formatTime = (minutes: number | undefined) => {
+    if (minutes === undefined || minutes === null || isNaN(minutes)) {
+      return "0min";
+    }
+    
     const hours = Math.floor(minutes / 60);
     const mins = minutes % 60;
     

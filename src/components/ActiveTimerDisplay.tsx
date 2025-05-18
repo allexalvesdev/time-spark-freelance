@@ -1,65 +1,39 @@
-
 import React, { useEffect } from 'react';
 import { useAppContext } from '@/contexts/AppContext';
+import useTimerState from '@/hooks/useTimerState';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Button } from './ui/button';
 import { Square, Pause, Play } from 'lucide-react';
-import { useReliableTimer } from '@/hooks/useReliableTimer';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from '@/hooks/use-toast';
 
 const ActiveTimerDisplay: React.FC = () => {
-  const { state, getActiveTaskName } = useAppContext();
+  const { state, getActiveTaskName, pauseTimer, resumeTimer, stopTimer } = useAppContext();
   const { activeTimeEntry } = state;
   const isMobile = useIsMobile();
-  const { toast } = useToast();
   
+  const isPaused = activeTimeEntry?.isPaused;
   const taskId = activeTimeEntry?.taskId || '';
   
-  // Use the reliable timer with autoStart: false to prevent resetting on refresh
-  const {
-    isRunning,
-    isPaused,
-    getFormattedTime,
-    pauseTimer,
-    resumeTimer,
-    stopTimer,
-    syncWithServer
-  } = useReliableTimer({
-    taskId,
-    autoStart: false, // Important: don't automatically start counting on mount
-    onTimerStopped: (duration) => {
-      toast({
-        title: "Timer parado",
-        description: `Tempo registrado: ${duration} segundos.`,
-      });
-    }
+  // Use persistKey com o ID da tarefa atual para garantir que o timer continue após refresh
+  const { getFormattedTime, isRunning } = useTimerState({
+    persistKey: taskId ? `global-timer-${taskId}` : undefined,
+    autoStart: false // Não iniciamos automaticamente, deixamos o sistema de sincronização fazer isso
   });
-  
-  // Force sync on mount and whenever activeTimeEntry changes
+
+  // Efeito para detectar problemas de sincronização
   useEffect(() => {
-    // When the component mounts or activeTimeEntry changes, force a sync
-    syncWithServer();
-    
-    // Listen for force-timer-sync events
-    const handleForceSync = () => {
-      syncWithServer();
-    };
-    
-    window.addEventListener('force-timer-sync', handleForceSync);
-    
-    return () => {
-      window.removeEventListener('force-timer-sync', handleForceSync);
-    };
-  }, [activeTimeEntry, syncWithServer]);
-  
-  // Check for desynchronization between context and timer hook
-  useEffect(() => {
-    if ((isRunning !== !!activeTimeEntry) && activeTimeEntry) {
-      // The states are out of sync - force a sync
-      syncWithServer();
+    if (activeTimeEntry && !isRunning) {
+      // Se temos uma entrada ativa mas o timer não está rodando, sincronize novamente
+      const timerState = localStorage.getItem(`timerIsRunning-global-timer-${taskId}`);
+      if (timerState === 'true' && taskId) {
+        console.log('Detectada dessincronização do timer após refresh, corrigindo...');
+        
+        // Forçamos a renderização do timer sem alterá-lo
+        window.dispatchEvent(new Event('storage'));
+      }
     }
-  }, [isRunning, activeTimeEntry, syncWithServer]);
-  
+  }, [activeTimeEntry, isRunning, taskId]);
+
   if (!activeTimeEntry || !taskId) return null;
   
   const taskName = getActiveTaskName();

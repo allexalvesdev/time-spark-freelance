@@ -1,7 +1,7 @@
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import { formatDuration } from '@/utils/dateUtils';
-import { useReliableTimer } from '@/hooks/useReliableTimer';
+import useTimerState from '@/hooks/useTimerState';
 
 interface TaskTimerProps {
   elapsedTime: number;
@@ -20,46 +20,24 @@ const TaskTimer: React.FC<TaskTimerProps> = ({
   formattedTime,
   taskId
 }) => {
-  // Ensure we have valid inputs
-  const safeElapsedTime = elapsedTime || 0;
-  const safeTaskId = taskId || '';
-  const safeCurrentEarnings = currentEarnings || 0;
+  // Use the global timer if we have a taskId
+  const globalTimerKey = taskId ? `global-timer-${taskId}` : undefined;
   
-  // Use the reliable timer if we have a taskId
-  const { getFormattedTime, syncWithServer } = useReliableTimer({
-    taskId: safeTaskId || undefined,
-    initialTimeEntry: (isRunning && safeTaskId) ? {
-      id: '',
-      taskId: safeTaskId,
-      projectId: '',
-      userId: '',
-      startTime: new Date(Date.now() - safeElapsedTime * 1000),
-      isRunning: true,
-      isPaused: !!isPaused
-    } : null
+  const { getFormattedTime } = useTimerState({
+    initialTime: elapsedTime,
+    autoStart: isRunning,
+    persistKey: globalTimerKey
   });
   
-  // Force sync when component mounts to ensure accurate time
-  useEffect(() => {
-    if (safeTaskId && isRunning) {
-      syncWithServer();
-    }
-  }, [safeTaskId, isRunning, syncWithServer]);
-  
   // Always display the timer section if running or if there's time recorded
-  if (safeElapsedTime === 0 && !isRunning) return null;
-
-  // Safely format the time display
-  const displayTime = isRunning && safeTaskId ? 
-    getFormattedTime() : 
-    formatDuration(safeElapsedTime);
+  if (elapsedTime === 0 && !isRunning) return null;
 
   return (
     <div className="flex items-center justify-between p-2 bg-muted rounded mb-4">
       <div className="text-sm">
         <span className="text-muted-foreground">Tempo: </span>
         <span className={`font-medium ${isPaused ? 'text-yellow-500' : ''}`}>
-          {displayTime}
+          {isRunning && taskId ? getFormattedTime() : formatDuration(elapsedTime)}
           {isPaused && <span className="ml-1">(Pausado)</span>}
         </span>
       </div>
@@ -69,7 +47,7 @@ const TaskTimer: React.FC<TaskTimerProps> = ({
           {new Intl.NumberFormat('pt-BR', {
             style: 'currency',
             currency: 'BRL'
-          }).format(safeCurrentEarnings)}
+          }).format(currentEarnings)}
         </span>
       </div>
     </div>

@@ -1,5 +1,5 @@
 
-import React, { useMemo } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import { Plus, ClipboardList } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -8,55 +8,11 @@ import ProjectCard from '@/components/ProjectCard';
 
 const Dashboard: React.FC = () => {
   const { state } = useAppContext();
+  const { projects = [], tasks = [] } = state;
   
-  // Ensure projects and tasks are always arrays and valid data
-  const projectsArray = useMemo(() => {
-    if (!state.projects || !Array.isArray(state.projects)) {
-      return [];
-    }
-    // Filter out invalid projects and deduplicate by ID
-    const uniqueProjects = new Map();
-    state.projects.forEach(project => {
-      if (project && project.id) {
-        uniqueProjects.set(project.id, project);
-      }
-    });
-    
-    return Array.from(uniqueProjects.values());
-  }, [state.projects]);
-  
-  const tasksArray = useMemo(() => {
-    if (!state.tasks || !Array.isArray(state.tasks)) {
-      return [];
-    }
-    
-    // Filter out invalid tasks and deduplicate by ID
-    const uniqueTasks = new Map();
-    state.tasks.forEach(task => {
-      if (task && task.id) {
-        // Only add the task if it's valid and not already in the map
-        uniqueTasks.set(task.id, task);
-      }
-    });
-    
-    return Array.from(uniqueTasks.values());
-  }, [state.tasks]);
-  
-  // Group tasks by project ID for efficient rendering
-  const tasksByProject = useMemo(() => {
-    const groupedTasks = new Map();
-    
-    tasksArray.forEach(task => {
-      if (task && task.projectId) {
-        if (!groupedTasks.has(task.projectId)) {
-          groupedTasks.set(task.projectId, []);
-        }
-        groupedTasks.get(task.projectId).push(task);
-      }
-    });
-    
-    return groupedTasks;
-  }, [tasksArray]);
+  // Ensure projects and tasks are always arrays
+  const projectsArray = Array.isArray(projects) ? projects : [];
+  const tasksArray = Array.isArray(tasks) ? tasks : [];
   
   return (
     <div>
@@ -98,7 +54,7 @@ const Dashboard: React.FC = () => {
             <ProjectCard 
               key={project.id} 
               project={project} 
-              tasks={tasksByProject.get(project.id) || []} 
+              tasks={tasksArray.filter(task => task.projectId === project.id)} 
             />
           ))}
         </div>

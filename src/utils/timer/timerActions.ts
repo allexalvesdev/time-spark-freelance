@@ -81,18 +81,9 @@ export const pauseTimerAction = (options: TimerActionOptions): void => {
     // Clear interval when paused - this is crucial to stop the timer
     clearInterval();
     
-    // Verificar se persistKey é válido antes de extrair taskId
-    let taskId = null;
-    if (persistKey && typeof persistKey === 'string') {
-      const parts = persistKey.split('-');
-      if (parts.length > 0) {
-        taskId = parts[parts.length - 1];
-      }
-    }
-    
     // Force a custom event to notify other components about the change
     const pauseEvent = new CustomEvent('timer-paused', {
-      detail: { taskId, pausedAt: pausedAtRef.current }
+      detail: { taskId: persistKey?.split('-').pop(), pausedAt: pausedAtRef.current }
     });
     window.dispatchEvent(pauseEvent);
     
@@ -146,18 +137,9 @@ export const resumeTimerAction = (options: TimerActionOptions): void => {
     setIsPaused(false);
     pausedAtRef.current = null;
     
-    // Verificar se persistKey é válido antes de extrair taskId
-    let taskId = null;
-    if (persistKey && typeof persistKey === 'string') {
-      const parts = persistKey.split('-');
-      if (parts.length > 0) {
-        taskId = parts[parts.length - 1];
-      }
-    }
-    
     // Force a custom event to notify other components about the change
     const resumeEvent = new CustomEvent('timer-resumed', {
-      detail: { taskId, newPausedTime }
+      detail: { taskId: persistKey?.split('-').pop(), newPausedTime }
     });
     window.dispatchEvent(resumeEvent);
     
@@ -219,18 +201,9 @@ export const stopTimerAction = (options: TimerActionOptions): void => {
       persistTimerState(persistKey, false, false, finalElapsedTime, finalPausedTime, null, null);
     }
     
-    // Verificar se persistKey é válido antes de extrair taskId
-    let taskId = null;
-    if (persistKey && typeof persistKey === 'string') {
-      const parts = persistKey.split('-');
-      if (parts.length > 0) {
-        taskId = parts[parts.length - 1];
-      }
-    }
-    
     // Force a custom event to notify other components about the change
     const stopEvent = new CustomEvent('timer-stopped', {
-      detail: { taskId, elapsedTime: finalElapsedTime, pausedTime: finalPausedTime }
+      detail: { taskId: persistKey?.split('-').pop(), elapsedTime: finalElapsedTime, pausedTime: finalPausedTime }
     });
     window.dispatchEvent(stopEvent);
   }

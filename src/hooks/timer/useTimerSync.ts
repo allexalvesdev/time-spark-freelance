@@ -1,21 +1,24 @@
 
-import { useEffect, RefObject, MutableRefObject } from 'react';
-import { getPersistedTimerState, persistTimerState } from '@/utils/timer/timerStorage';
+import { useEffect } from 'react';
+import { getSafeInteger } from '@/utils/timer/safeInteger';
 
-export interface UseTimerSyncOptions {
+interface UseTimerSyncOptions {
   persistKey?: string;
   isActiveTask: boolean;
   isRunning: boolean;
   isPaused: boolean;
-  globalActiveTaskId: string | null;
+  globalActiveTaskId?: string | null;
   setIsPaused: (paused: boolean) => void;
   setIsRunning: (running: boolean) => void;
-  setElapsedTime: (time: number) => void;
-  setPausedTime: (time: number) => void;
-  startTimeRef: MutableRefObject<number | null>;
-  pausedAtRef: MutableRefObject<number | null>;
+  setElapsedTime: (elapsed: number) => void;
+  setPausedTime: (paused: number) => void;
+  startTimeRef: React.MutableRefObject<number | null>;
+  pausedAtRef: React.MutableRefObject<number | null>;
 }
 
+/**
+ * Hook to synchronize timer state with global state and localStorage
+ */
 export const useTimerSync = ({
   persistKey,
   isActiveTask,
@@ -29,173 +32,168 @@ export const useTimerSync = ({
   startTimeRef,
   pausedAtRef
 }: UseTimerSyncOptions) => {
-  // Use ref to track last sync time to prevent excessive syncs
-  // IMPORTANT: This is moved inside the hook to ensure it's only called in a React function context
-  
-  // Listen for force-timer-sync events (from header) to sync timer state
+  // Listen for global pause/resume events
   useEffect(() => {
-    // Create ref inside the effect to avoid useRef outside component context
-    const lastSyncTime = { current: 0 };
-    
-    const handleForceSync = () => {
-      if (!persistKey) return;
-      
-      // Rate limit syncs to prevent excessive operations
-      const now = Date.now();
-      if (now - lastSyncTime.current < 1000) {
-        return; // Skip if last sync was less than 1 second ago
-      }
-      lastSyncTime.current = now;
-      
-      // Only react to force sync if this is the active task
-      if (isActiveTask) {
-        // Get the latest state from local storage
-        const timerState = getPersistedTimerState(persistKey);
-        
-        if (timerState) {
-          if (timerState.running && timerState.paused && timerState.pausedAt) {
-            setIsRunning(true);
-            setIsPaused(true);
-            setPausedTime(timerState.pausedTime);
-            setElapsedTime(timerState.elapsed);
-            // Fixed: use mutable ref assignment
-            if (startTimeRef && 'current' in startTimeRef) {
-              startTimeRef.current = timerState.startTime;
-            }
-            if (pausedAtRef && 'current' in pausedAtRef) {
-              pausedAtRef.current = timerState.pausedAt;
-            }
-          } else if (timerState.running && !timerState.paused && timerState.startTime) {
-            const now = Date.now();
-            const elapsed = Math.floor((now - timerState.startTime) / 1000) - timerState.pausedTime;
-            
-            setElapsedTime(elapsed > 0 ? elapsed : 0);
-            setPausedTime(timerState.pausedTime);
-            setIsRunning(true);
-            setIsPaused(false);
-            
-            // Fixed: use mutable ref assignment
-            if (startTimeRef && 'current' in startTimeRef) {
-              startTimeRef.current = timerState.startTime;
-            }
-            if (pausedAtRef && 'current' in pausedAtRef) {
-              pausedAtRef.current = null;
-            }
-          }
-        }
+    const handleTimerPaused = (e: CustomEvent) => {
+      if (persistKey?.includes(e.detail.taskId) && isRunning && !isPaused) {
+        setIsPaused(true);
+        pausedAtRef.current = e.detail.pausedAt || Date.now();
       }
     };
     
-    // Listen for force-timer-sync events (from header or elsewhere)
-    window.addEventListener('force-timer-sync', handleForceSync);
-    
-    // Listen for storage events from other tabs/windows with throttling
-    const handleStorageEvent = (event: StorageEvent) => {
-      // Only process if enough time has elapsed since last sync
-      const now = Date.now();
-      if (now - lastSyncTime.current < 2000) return; // 2 second throttle
-      
-      if (event.key === 'activeTaskId' && isActiveTask) {
-        lastSyncTime.current = now;
-        handleForceSync();
+    const handleTimerResumed = (e: CustomEvent) => {
+      if (persistKey?.includes(e.detail.taskId) && isRunning && isPaused) {
+        setIsPaused(false);
+        setPausedTime(e.detail.newPausedTime || 0);
+        pausedAtRef.current = null;
       }
     };
     
-    window.addEventListener('storage', handleStorageEvent);
-    
-    // Listen for timer-stopped events with improved null safety
-    const handleTimerStopped = (event: Event) => {
-      try {
-        // Safely handle the event as a CustomEvent
-        const stopEvent = event as CustomEvent;
-        const taskId = stopEvent?.detail?.taskId;
-        
-        // Only proceed if we have a valid taskId and it matches our persistKey
-        if (taskId && persistKey?.includes(taskId)) {
-          setIsRunning(false);
-          setIsPaused(false);
-        }
-      } catch (error) {
-        console.error("Error handling timer-stopped event:", error);
+    const handleTimerStopped = (e: CustomEvent) => {
+      if (persistKey?.includes(e.detail.taskId) && isRunning) {
+        setIsRunning(false);
+        setIsPaused(false);
+        setElapsedTime(e.detail.elapsedTime || 0);
       }
     };
     
-    window.addEventListener('timer-stopped', handleTimerStopped);
+    window.addEventListener('timer-paused', handleTimerPaused as EventListener);
+    window.addEventListener('timer-resumed', handleTimerResumed as EventListener);
+    window.addEventListener('timer-stopped', handleTimerStopped as EventListener);
     
     return () => {
-      window.removeEventListener('force-timer-sync', handleForceSync);
-      window.removeEventListener('storage', handleStorageEvent);
-      window.removeEventListener('timer-stopped', handleTimerStopped);
+      window.removeEventListener('timer-paused', handleTimerPaused as EventListener);
+      window.removeEventListener('timer-resumed', handleTimerResumed as EventListener);
+      window.removeEventListener('timer-stopped', handleTimerStopped as EventListener);
     };
-  }, [persistKey, isActiveTask, isRunning, isPaused, setIsPaused, setIsRunning, 
-      setElapsedTime, setPausedTime, startTimeRef, pausedAtRef, globalActiveTaskId]);
-  
-  // Additional effect to listen for storage-check events to validate state, with throttling
+  }, [persistKey, isRunning, isPaused, setIsPaused, setPausedTime, setIsRunning, setElapsedTime, pausedAtRef]);
+
+  // Handle global storage changes using event listeners
   useEffect(() => {
-    // Using an object that acts like a ref inside the effect scope
-    const lastCheckTime = { current: 0 };
+    const handleStorageChange = (e: StorageEvent | Event) => {
+      if (!persistKey || !isActiveTask || !globalActiveTaskId) return;
+      
+      // For manual dispatched events (non-StorageEvent), just do the sync
+      if (!(e instanceof StorageEvent)) {
+        syncFromLocalStorage();
+        return;
+      }
+      
+      // Only handle changes to timer-related keys for StorageEvent
+      const isTimerKey = e instanceof StorageEvent && e.key && (
+        e.key.includes('timer') || 
+        e.key.includes('activeTask') || 
+        e.key.includes('activeTimeEntry')
+      );
+
+      if (!isTimerKey) return;
+      
+      syncFromLocalStorage();
+    };
     
-    const handleStorageCheck = (event: Event) => {
-      try {
-        // Throttle checks to prevent excessive operations
-        const now = Date.now();
-        if (now - lastCheckTime.current < 3000) return; // 3 second throttle
-        lastCheckTime.current = now;
+    // Function to sync from localStorage
+    const syncFromLocalStorage = () => {
+      // Re-read all relevant timer state from localStorage
+      const globalStartTimeStr = localStorage.getItem('timerStartTime');
+      const globalIsPaused = localStorage.getItem('timerIsPaused') === 'true';
+      const globalPausedAt = localStorage.getItem('timerPausedAt');
+      const globalPausedTime = localStorage.getItem('timerPausedTime');
+      const taskStartTimeStr = localStorage.getItem(`timerStartTime-global-timer-${globalActiveTaskId}`);
+      
+      // Use task-specific or global timer values
+      const startTimeStr = taskStartTimeStr || globalStartTimeStr;
+
+      // Synchronize pause state across tabs
+      if (globalIsPaused && !isPaused) {
+        setIsPaused(true);
+        pausedAtRef.current = globalPausedAt ? parseInt(globalPausedAt, 10) : Date.now();
+        setPausedTime(getSafeInteger(globalPausedTime ? parseInt(globalPausedTime, 10) : 0));
+      } 
+      else if (!globalIsPaused && isPaused) {
+        setIsPaused(false);
+        const pausedTimeValue = getSafeInteger(globalPausedTime ? parseInt(globalPausedTime, 10) : 0);
+        setPausedTime(pausedTimeValue);
+        pausedAtRef.current = null;
+      }
+      
+      // Ensure the timer is running if it should be
+      if (startTimeStr && !isRunning) {
+        const startTime = parseInt(startTimeStr, 10);
+        startTimeRef.current = startTime;
         
-        // Add defensive check for the event being a CustomEvent
-        if (!(event instanceof CustomEvent) || !event.detail) {
-          return;
-        }
+        // Calculate the correct elapsed time
+        const pausedTimeValue = getSafeInteger(globalPausedTime ? parseInt(globalPausedTime, 10) : 0);
+        const currentElapsed = getSafeInteger(Math.floor((Date.now() - startTime) / 1000) - pausedTimeValue);
         
-        const storageEvent = event as CustomEvent;
-        const taskId = storageEvent.detail?.taskId;
-        
-        if (!taskId || !persistKey?.includes(taskId) || !isRunning) return;
-        
-        // Re-persist the current state to ensure it's fresh in storage
-        persistTimerState(
-          persistKey,
-          isRunning,
-          isPaused,
-          // Use current refs for accurate values, with safe null handling
-          (startTimeRef.current && !isPaused)
-            ? Math.floor((Date.now() - (startTimeRef.current || 0)) / 1000)
-            : 0,
-          (startTimeRef.current && pausedAtRef.current && isPaused)
-            ? Math.floor((pausedAtRef.current - (startTimeRef.current || 0)) / 1000)
-            : 0,
-          startTimeRef.current,
-          pausedAtRef.current
-        );
-      } catch (error) {
-        console.error("Error handling storage-check event:", error);
+        setElapsedTime(currentElapsed);
+        setIsRunning(true);
       }
     };
+
+    // Listen for storage events (from other tabs)
+    window.addEventListener('storage', handleStorageChange);
     
-    // Listen for timer consistency check events
-    window.addEventListener('storage-check', handleStorageCheck);
+    // Listen for manual event triggers (from within the same tab)
+    window.addEventListener('storage-check', handleStorageChange);
+    
+    // Force a sync on mount
+    syncFromLocalStorage();
     
     return () => {
-      window.removeEventListener('storage-check', handleStorageCheck);
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('storage-check', handleStorageChange);
     };
-  }, [persistKey, isRunning, isPaused, startTimeRef, pausedAtRef]);
-  
-  // Effect for prioritizing task-specific values with reduced frequency
+  }, [persistKey, isActiveTask, globalActiveTaskId, isRunning, isPaused, setIsPaused, setIsRunning, setElapsedTime, setPausedTime, startTimeRef, pausedAtRef]);
+
+  // Handle the active task global timer synchronization
   useEffect(() => {
-    // Using an object with current property instead of useRef
-    const lastForcedSyncTime = { current: 0 };
+    if (!persistKey) return;
     
-    // If this is the active task, make sure its values take priority, but limit frequency
-    if (isActiveTask && persistKey && globalActiveTaskId) {
-      const now = Date.now();
-      if (now - lastForcedSyncTime.current > 2000) { // 2 second minimum between syncs
-        lastForcedSyncTime.current = now;
-        
-        // Use setTimeout to prevent immediate dispatch
-        setTimeout(() => {
-          window.dispatchEvent(new CustomEvent('force-timer-sync'));
-        }, 50);
+    // If this is the active task's timer and we have a global active timer state
+    if (isActiveTask && globalActiveTaskId) {
+      const globalStartTimeStr = localStorage.getItem('timerStartTime');
+      const globalIsPaused = localStorage.getItem('timerIsPaused') === 'true';
+      const globalPausedAt = localStorage.getItem('timerPausedAt');
+      const globalPausedTime = localStorage.getItem('timerPausedTime');
+      const taskStartTimeStr = localStorage.getItem(`timerStartTime-global-timer-${globalActiveTaskId}`);
+      
+      // Use task-specific values when available, fall back to global values
+      const startTimeStr = taskStartTimeStr || globalStartTimeStr;
+      
+      if (globalIsPaused && !isPaused) {
+        // Global timer is paused but local timer is not
+        setIsPaused(true);
+        pausedAtRef.current = globalPausedAt ? parseInt(globalPausedAt, 10) : Date.now();
+        setPausedTime(getSafeInteger(globalPausedTime ? parseInt(globalPausedTime, 10) : 0));
       }
+      else if (!globalIsPaused && isPaused) {
+        // Global timer is running but local timer is paused
+        setIsPaused(false);
+        const pausedTimeValue = getSafeInteger(globalPausedTime ? parseInt(globalPausedTime, 10) : 0);
+        setPausedTime(pausedTimeValue);
+        pausedAtRef.current = null;
+      }
+      else if (startTimeStr && !isRunning) {
+        // Global timer is running but local timer is not
+        const startTime = parseInt(startTimeStr, 10);
+        const pausedTimeValue = getSafeInteger(globalPausedTime ? parseInt(globalPausedTime, 10) : 0);
+        const currentElapsed = getSafeInteger(Math.floor((Date.now() - startTime) / 1000) - pausedTimeValue);
+        
+        startTimeRef.current = startTime;
+        setElapsedTime(currentElapsed);
+        setIsPaused(globalIsPaused);
+        setIsRunning(true);
+        
+        if (globalIsPaused && globalPausedAt) {
+          pausedAtRef.current = parseInt(globalPausedAt, 10);
+        }
+      }
+      
+      // Dispara um evento personalizado para garantir que todos os timers se sincronizem
+      const syncEvent = new CustomEvent('storage-check');
+      window.dispatchEvent(syncEvent);
     }
-  }, [isActiveTask, persistKey, globalActiveTaskId]);
+  }, [persistKey, isActiveTask, globalActiveTaskId, isRunning, isPaused, setIsPaused, setIsRunning, setElapsedTime, setPausedTime, startTimeRef, pausedAtRef]);
+
+  return null;
 };

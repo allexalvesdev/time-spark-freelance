@@ -1,215 +1,238 @@
 
-import React, { useState, useEffect } from 'react';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Button } from "@/components/ui/button"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Calendar } from "@/components/ui/calendar"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { cn } from "@/lib/utils"
-import { format } from "date-fns"
-import { Project, Task, Tag } from '@/types';
-import { projectService, taskService } from '@/services';
+import React, { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { 
+  Form, 
+  FormControl, 
+  FormField, 
+  FormItem, 
+  FormLabel, 
+  FormMessage 
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/components/ui/button';
 import { useAppContext } from '@/contexts/AppContext';
 import { useToast } from '@/hooks/use-toast';
-import TagsInput from './task/TagsInput';
+import PrioritySelect from '@/components/task/PrioritySelect';
+import TagsInput from '@/components/task/TagsInput';
+
+const formSchema = z.object({
+  name: z.string().min(3, 'O nome da tarefa deve ter pelo menos 3 caracteres'),
+  description: z.string().optional(),
+  estimatedHours: z.preprocess(
+    (val) => (val === '' ? 0 : Number(val)),
+    z.number().min(0, 'As horas devem ser um número positivo')
+  ),
+  estimatedMinutes: z.preprocess(
+    (val) => (val === '' ? 0 : Number(val)),
+    z.number().min(0, 'Os minutos devem ser um número positivo').max(59, 'Os minutos devem ser menor que 60')
+  ),
+  scheduledStartTime: z.string().refine(val => !!val, {
+    message: 'Selecione uma data e hora de início',
+  }),
+  priority: z.enum(['Baixa', 'Média', 'Alta', 'Urgente']).default('Média'),
+});
+
+type FormValues = z.infer<typeof formSchema>;
 
 interface NewTaskFormProps {
-  open: boolean;
-  handleClose: () => void;
-  projects: Project[];
-  onTaskCreated: (task: Task) => void;
+  projectId: string;
+  onSuccess?: () => void;
 }
 
-const NewTaskForm: React.FC<NewTaskFormProps> = ({ open, handleClose, projects, onTaskCreated }) => {
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
-  const [estimatedTime, setEstimatedTime] = useState('');
-  const [scheduledStartTime, setScheduledStartTime] = useState<Date | undefined>(undefined);
-  const [priority, setPriority] = useState<'Baixa' | 'Média' | 'Alta' | 'Urgente'>('Baixa');
-  const [selectedProject, setSelectedProject] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
+const NewTaskForm: React.FC<NewTaskFormProps> = ({ projectId, onSuccess }) => {
+  const { addTask, addTagToTask } = useAppContext();
   const { toast } = useToast();
-  const { addTask, state, addTagToTask } = useAppContext();
-  const { tags } = state;
-
-  useEffect(() => {
-    if (projects.length > 0 && !selectedProject) {
-      setSelectedProject(projects[0].id);
-    }
-  }, [projects, selectedProject]);
-
-  if (!open) return null;
-
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Get current date in Brazil timezone
+  const now = new Date();
+  const brasilDate = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+  
+  const form = useForm<FormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      name: '',
+      description: '',
+      estimatedHours: 0,
+      estimatedMinutes: 0,
+      scheduledStartTime: brasilDate,
+      priority: 'Média',
+    },
+  });
+  
+  const onSubmit = async (data: FormValues) => {
     setIsSubmitting(true);
-
     try {
+      const totalMinutes = (Number(data.estimatedHours) * 60) + Number(data.estimatedMinutes);
+      
       const newTask = await addTask({
-        projectId: selectedProject,
-        name,
-        description,
-        estimatedTime: parseFloat(estimatedTime),
-        scheduledStartTime: scheduledStartTime,
-        priority,
+        projectId,
+        name: data.name,
+        description: data.description || '',
+        estimatedTime: totalMinutes,
+        scheduledStartTime: new Date(data.scheduledStartTime),
+        priority: data.priority,
       });
-
-      // Add tags to task
-      if (selectedTagIds.length > 0) {
-        for (const tagId of selectedTagIds) {
-          await addTagToTask(newTask.id, tagId);
-        }
+      
+      // Adicionar tags à tarefa
+      if (selectedTagIds.length > 0 && newTask) {
+        await Promise.all(selectedTagIds.map(tagId => addTagToTask(newTask.id, tagId)));
       }
-
-      onTaskCreated(newTask);
-      handleClose();
-
+      
       toast({
         title: 'Tarefa criada',
-        description: 'Nova tarefa adicionada com sucesso.',
+        description: `A tarefa "${data.name}" foi criada com sucesso.`,
       });
+      
+      form.reset({
+        name: '',
+        description: '',
+        estimatedHours: 0,
+        estimatedMinutes: 0,
+        scheduledStartTime: brasilDate,
+        priority: 'Média',
+      });
+      
+      setSelectedTagIds([]);
+      
+      if (onSuccess) {
+        onSuccess();
+      }
     } catch (error) {
       console.error('Error creating task:', error);
-      toast({
-        title: 'Erro',
-        description: 'Não foi possível criar a tarefa. Tente novamente.',
-        variant: 'destructive',
-      });
     } finally {
       setIsSubmitting(false);
     }
   };
-
-  const handleTagsChange = (tagIds: string[]) => {
-    setSelectedTagIds(tagIds);
-  };
-
+  
   return (
-    <AlertDialog open={open} onOpenChange={handleClose}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Nova Tarefa</AlertDialogTitle>
-          <AlertDialogDescription>
-            Adicione uma nova tarefa ao seu projeto.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <form onSubmit={handleSubmit} className="grid gap-4 py-4">
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="name" className="text-right">
-              Nome
-            </Label>
-            <Input type="text" id="name" value={name} onChange={(e) => setName(e.target.value)} className="col-span-3" />
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="description" className="text-right">
-              Descrição
-            </Label>
-            <Input type="text" id="description" value={description} onChange={(e) => setDescription(e.target.value)} className="col-span-3" />
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="estimatedTime" className="text-right">
-              Tempo Estimado
-            </Label>
-            <Input type="number" id="estimatedTime" value={estimatedTime} onChange={(e) => setEstimatedTime(e.target.value)} className="col-span-3" />
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="scheduledStartTime" className="text-right">
-              Data de Início
-            </Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant={"outline"}
-                  className={cn(
-                    "w-[240px] pl-3 text-left font-normal",
-                    !scheduledStartTime && "text-muted-foreground"
-                  )}
-                >
-                  {scheduledStartTime ? (
-                    format(scheduledStartTime, "PPP")
-                  ) : (
-                    <span>Escolha uma data</span>
-                  )}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={scheduledStartTime}
-                  onSelect={setScheduledStartTime}
-                  disabled={(date) =>
-                    date < new Date()
-                  }
-                  initialFocus
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <FormField
+          control={form.control}
+          name="name"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Nome da Tarefa</FormLabel>
+              <FormControl>
+                <Input placeholder="Ex: Criar wireframes" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        
+        <FormField
+          control={form.control}
+          name="description"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Descrição</FormLabel>
+              <FormControl>
+                <Textarea 
+                  placeholder="Descreva os detalhes da tarefa" 
+                  {...field} 
                 />
-              </PopoverContent>
-            </Popover>
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="priority" className="text-right">
-              Prioridade
-            </Label>
-            <Select onValueChange={(value: string) => setPriority(value as 'Baixa' | 'Média' | 'Alta' | 'Urgente')} defaultValue={priority}>
-              <SelectTrigger className="col-span-3">
-                <SelectValue placeholder="Selecione a prioridade" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Baixa">Baixa</SelectItem>
-                <SelectItem value="Média">Média</SelectItem>
-                <SelectItem value="Alta">Alta</SelectItem>
-                <SelectItem value="Urgente">Urgente</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="project" className="text-right">
-              Projeto
-            </Label>
-            <Select onValueChange={setSelectedProject} defaultValue={selectedProject}>
-              <SelectTrigger className="col-span-3">
-                <SelectValue placeholder="Selecione o projeto" />
-              </SelectTrigger>
-              <SelectContent>
-                {projects.map((project) => (
-                  <SelectItem key={project.id} value={project.id}>{project.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="grid grid-cols-4 items-start gap-4">
-            <Label htmlFor="tags" className="text-right">
-              Tags
-            </Label>
-            <div className="col-span-3">
-              <TagsInput 
-                taskId=""
-                selectedTagIds={selectedTagIds}
-                onTagsChange={handleTagsChange}
-              />
-            </div>
-          </div>
-        </form>
-        <AlertDialogFooter>
-          <AlertDialogCancel>Cancelar</AlertDialogCancel>
-          <Button type="submit" disabled={isSubmitting} onClick={(e) => handleSubmit(e as any)}>
-            {isSubmitting ? 'Criando...' : 'Criar'}
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        
+        <FormField
+          control={form.control}
+          name="priority"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Prioridade</FormLabel>
+              <FormControl>
+                <PrioritySelect 
+                  value={field.value} 
+                  onChange={field.onChange} 
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <div className="space-y-2">
+          <FormLabel>Tags</FormLabel>
+          <TagsInput 
+            taskId=""
+            selectedTagIds={selectedTagIds}
+            onTagsChange={setSelectedTagIds}
+          />
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <FormField
+            control={form.control}
+            name="estimatedHours"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Horas Estimadas</FormLabel>
+                <FormControl>
+                  <Input 
+                    type="number" 
+                    min="0"
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          
+          <FormField
+            control={form.control}
+            name="estimatedMinutes"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Minutos Estimados</FormLabel>
+                <FormControl>
+                  <Input 
+                    type="number" 
+                    min="0"
+                    max="59"
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          
+          <FormField
+            control={form.control}
+            name="scheduledStartTime"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Data e Hora de Início</FormLabel>
+                <FormControl>
+                  <Input 
+                    type="datetime-local"
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+        
+        <div className="flex justify-end pt-4">
+          <Button type="submit" disabled={isSubmitting}>
+            {isSubmitting ? 'Adicionando...' : 'Adicionar Tarefa'}
           </Button>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+        </div>
+      </form>
+    </Form>
   );
 };
 

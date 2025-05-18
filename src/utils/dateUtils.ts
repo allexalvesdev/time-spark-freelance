@@ -8,17 +8,9 @@
  * @param date The date to format
  * @returns Formatted date string (e.g., January 1, 2023)
  */
-export const formatDate = (date: Date | undefined | null): string => {
-  if (!date || !(date instanceof Date) || isNaN(date.getTime())) {
-    return '';
-  }
-  try {
-    const options: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric' };
-    return date.toLocaleDateString(undefined, options);
-  } catch (error) {
-    console.error('Error formatting date:', error);
-    return '';
-  }
+export const formatDate = (date: Date): string => {
+  const options: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'long', day: 'numeric' };
+  return date.toLocaleDateString(undefined, options);
 };
 
 /**
@@ -26,17 +18,9 @@ export const formatDate = (date: Date | undefined | null): string => {
  * @param date The date to extract and format time from
  * @returns Formatted time string (e.g., 14:30)
  */
-export const formatTime = (date: Date | undefined | null): string => {
-  if (!date || !(date instanceof Date) || isNaN(date.getTime())) {
-    return '';
-  }
-  try {
-    const options: Intl.DateTimeFormatOptions = { hour: '2-digit', minute: '2-digit' };
-    return date.toLocaleTimeString(undefined, options);
-  } catch (error) {
-    console.error('Error formatting time:', error);
-    return '';
-  }
+export const formatTime = (date: Date): string => {
+  const options: Intl.DateTimeFormatOptions = { hour: '2-digit', minute: '2-digit' };
+  return date.toLocaleTimeString(undefined, options);
 };
 
 /**
@@ -45,11 +29,7 @@ export const formatTime = (date: Date | undefined | null): string => {
  * @param format The expected format of the date string (e.g., 'dd/MM/yyyy HH:mm')
  * @returns Parsed Date object
  */
-export const parseDate = (dateString: string | undefined | null, format: string): Date | null => {
-  if (!dateString) {
-    return null;
-  }
-  
+export const parseDate = (dateString: string, format: string): Date => {
   // Simple parsing for common formats
   // This is a basic implementation - for production, consider using date-fns or another library
   try {
@@ -57,31 +37,15 @@ export const parseDate = (dateString: string | undefined | null, format: string)
     if (format === 'dd/MM/yyyy HH:mm' || format === 'dd-MM-yyyy HH:mm') {
       const separator = dateString.includes('/') ? '/' : '-';
       const [datePart, timePart] = dateString.split(' ');
-      
-      if (!datePart || !timePart) {
-        return new Date(); // Return current date as fallback
-      }
-      
       const [day, month, year] = datePart.split(separator).map(Number);
       const [hours, minutes] = timePart.split(':').map(Number);
-      
-      if (isNaN(day) || isNaN(month) || isNaN(year) || isNaN(hours) || isNaN(minutes)) {
-        return new Date(); // Return current date as fallback
-      }
       
       // Month is 0-indexed in JavaScript Date
       return new Date(year, month - 1, day, hours, minutes);
     }
     
     // Fallback to regular Date parsing for ISO format
-    const date = new Date(dateString);
-    
-    // Check if the date is valid
-    if (isNaN(date.getTime())) {
-      return new Date(); // Return current date as fallback
-    }
-    
-    return date;
+    return new Date(dateString);
   } catch (error) {
     console.error('Error parsing date:', error);
     return new Date(); // Return current date as fallback
@@ -93,21 +57,11 @@ export const parseDate = (dateString: string | undefined | null, format: string)
  * @param value The currency value to format
  * @returns Formatted currency string (e.g., $1,234.56)
  */
-export const formatCurrency = (value: number | undefined | null): string => {
-  // Check for null, undefined, or NaN
-  if (value === null || value === undefined || isNaN(value)) {
-    value = 0;
-  }
-  
-  try {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(value);
-  } catch (error) {
-    console.error("Error formatting currency:", error);
-    return "R$ 0,00";
-  }
+export const formatCurrency = (value: number): string => {
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL'
+  }).format(value);
 };
 
 /**
@@ -153,15 +107,14 @@ export const formatDuration = (seconds: number | null | undefined): string => {
  * @param endDate The end date
  * @returns Elapsed time in seconds
  */
-export const calculateElapsedTime = (startDate: Date | undefined | null, endDate: Date | undefined | null): number => {
-  if (!startDate || !endDate || !(startDate instanceof Date) || !(endDate instanceof Date) || 
-      isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
-    return 0;
-  }
-  
+export const calculateElapsedTime = (startDate: Date, endDate: Date): number => {
   try {
+    // Ensure we're working with valid Date objects
+    const start = startDate instanceof Date ? startDate : new Date(startDate);
+    const end = endDate instanceof Date ? endDate : new Date(endDate);
+    
     // Calculate difference in milliseconds and convert to seconds
-    const diffInMs = endDate.getTime() - startDate.getTime();
+    const diffInMs = end.getTime() - start.getTime();
     const diffInSeconds = Math.floor(diffInMs / 1000);
     
     // Prevent negative values
@@ -178,14 +131,9 @@ export const calculateElapsedTime = (startDate: Date | undefined | null, endDate
  * @param hourlyRate Hourly rate in currency units
  * @returns Calculated earnings
  */
-export const calculateEarnings = (seconds: number | undefined | null, hourlyRate: number | undefined | null): number => {
-  // Validate inputs
-  if (seconds === null || seconds === undefined || isNaN(seconds) || seconds < 0) {
-    seconds = 0;
-  }
-  
-  if (hourlyRate === null || hourlyRate === undefined || isNaN(hourlyRate) || hourlyRate < 0) {
-    hourlyRate = 0;
+export const calculateEarnings = (seconds: number, hourlyRate: number): number => {
+  if (seconds <= 0 || hourlyRate <= 0) {
+    return 0;
   }
   
   try {

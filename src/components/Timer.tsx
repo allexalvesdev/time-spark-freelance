@@ -1,11 +1,11 @@
 
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useAppContext } from '@/contexts/AppContext';
+import useTimerState from '@/hooks/useTimerState';
 import { Button } from '@/components/ui/button';
 import { Play, Square, Pause } from 'lucide-react';
-import { calculateEarnings } from '@/utils/dateUtils';
+import { formatDuration, calculateEarnings } from '@/utils/dateUtils';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { useReliableTimer } from '@/hooks/useReliableTimer';
 
 interface TimerProps {
   taskId: string;
@@ -18,70 +18,160 @@ const Timer: React.FC<TimerProps> = ({ taskId, projectId, hourlyRate }) => {
   const { activeTimeEntry } = state;
   const isMobile = useIsMobile();
   
-  // Verificar se temos IDs válidos
-  if (!taskId || !projectId) {
-    console.error("Timer component requires valid taskId and projectId");
-    return null;
-  }
-  
   const isActive = activeTimeEntry?.taskId === taskId;
+  const isPaused = activeTimeEntry?.isPaused && isActive;
+  
+  // Use a global timer key for better persistence across tabs
+  const timerKey = `global-timer-${taskId}`;
+  const syncTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   const { 
     isRunning, 
-    isPaused, 
-    elapsedSeconds, 
-    getFormattedTime,
-    syncWithServer
-  } = useReliableTimer({
-    taskId,
-    initialTimeEntry: (activeTimeEntry?.taskId === taskId) ? activeTimeEntry : null
+    isPaused: localIsPaused,
+    elapsedTime, 
+    start, 
+    stop, 
+    pause,
+    resume,
+    reset,
+    getFormattedTime 
+  } = useTimerState({
+    autoStart: isActive, // Start automatically if this is the active task
+    persistKey: timerKey
   });
+
+  // Force sync when component mounts and when active state changes
+  useEffect(() => {
+    if (isActive) {
+      const syncState = () => {
+        if (isPaused !== localIsPaused) {
+          if (isPaused) {
+            pause();
+          } else {
+            resume();
+          }
+        }
+      };
+      
+      // Initial sync
+      syncState();
+      
+      // Set up sync interval
+      const syncInterval = setInterval(syncState, 1000);
+      return () => clearInterval(syncInterval);
+    }
+  }, [isActive, isPaused, localIsPaused, pause, resume]);
   
-  // Force sync when component mounts to ensure accurate time
-  React.useEffect(() => {
-    syncWithServer();
-  }, [syncWithServer]);
+  // Listen for timer events
+  useEffect(() => {
+    const handleTimerPaused = (e: CustomEvent) => {
+      if (e.detail.taskId === taskId && isRunning && !localIsPaused) {
+        pause();
+      }
+    };
+    
+    const handleTimerResumed = (e: CustomEvent) => {
+      if (e.detail.taskId === taskId && isRunning && localIsPaused) {
+        resume();
+      }
+    };
+    
+    const handleTimerStopped = (e: CustomEvent) => {
+      if (e.detail.taskId === taskId && isRunning) {
+        stop();
+        reset();
+      }
+    };
+    
+    window.addEventListener('timer-paused', handleTimerPaused as EventListener);
+    window.addEventListener('timer-resumed', handleTimerResumed as EventListener);
+    window.addEventListener('timer-stopped', handleTimerStopped as EventListener);
+    
+    return () => {
+      window.removeEventListener('timer-paused', handleTimerPaused as EventListener);
+      window.removeEventListener('timer-resumed', handleTimerResumed as EventListener);
+      window.removeEventListener('timer-stopped', handleTimerStopped as EventListener);
+    };
+  }, [taskId, isRunning, localIsPaused, pause, resume, stop, reset]);
   
-  // Handler to start the timer
+  // This effect handles syncing between local timer state and global state
+  useEffect(() => {
+    // If time entry is active in global context but not in local state
+    if (isActive && !isRunning) {
+      start();
+    } 
+    // If time entry is no longer active in global context but still running locally
+    else if (!isActive && isRunning) {
+      stop();
+      reset();
+    }
+    
+    // Sync pause state with some debounce to avoid flickering
+    if (isActive && isPaused !== localIsPaused) {
+      if (syncTimeoutRef.current) {
+        clearTimeout(syncTimeoutRef.current);
+      }
+      
+      syncTimeoutRef.current = setTimeout(() => {
+        if (isPaused && !localIsPaused) {
+          pause();
+        } else if (!isPaused && localIsPaused) {
+          resume();
+        }
+      }, 100);
+    }
+    
+    return () => {
+      if (syncTimeoutRef.current) {
+        clearTimeout(syncTimeoutRef.current);
+      }
+    };
+  }, [isActive, isRunning, isPaused, localIsPaused, taskId, start, stop, pause, resume, reset]);
+  
+  // Handler to start the global and local timer
   const handleStartTimer = async () => {
     try {
       await startTimer(taskId, projectId);
+      start();
     } catch (error) {
       console.error("Error starting timer:", error);
     }
   };
   
-  // Handler to pause the timer
+  // Handler to pause the global and local timer
   const handlePauseTimer = async () => {
     try {
       await pauseTimer();
+      pause();
     } catch (error) {
       console.error("Error pausing timer:", error);
     }
   };
   
-  // Handler to resume the timer
+  // Handler to resume the global and local timer
   const handleResumeTimer = async () => {
     try {
       await resumeTimer();
+      resume();
     } catch (error) {
       console.error("Error resuming timer:", error);
     }
   };
   
-  // Handler to stop the timer
+  // Handler to stop the global and local timer
   const handleStopTimer = async () => {
     try {
       // Pass true to complete the task automatically
       await stopTimer(true);
+      stop();
+      reset();
     } catch (error) {
       console.error("Error stopping timer:", error);
     }
   };
   
-  // Calculate earnings based on elapsed time and hourly rate
-  const safeRate = hourlyRate || 0;
-  const currentEarnings = calculateEarnings(elapsedSeconds, safeRate);
+  // Calculate earnings based on recorded time and hourly rate
+  const currentEarnings = calculateEarnings(elapsedTime, hourlyRate);
   
   return (
     <div className="p-4 border rounded-lg bg-card">

@@ -3,7 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { usePlan } from '@/contexts/PlanContext';
 import BlockedAccountScreen from '@/components/BlockedAccountScreen';
 import { Sidebar } from '@/components/Sidebar';
-import Header from '@/components/Header';
+import { Header } from '@/components/Header';
 import { useLocation } from 'react-router-dom';
 import MobileNavigation from './MobileNavigation';
 

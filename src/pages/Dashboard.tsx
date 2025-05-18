@@ -14,8 +14,15 @@ const Dashboard: React.FC = () => {
     if (!state.projects || !Array.isArray(state.projects)) {
       return [];
     }
-    // Filter out invalid projects
-    return state.projects.filter(project => project && project.id);
+    // Filter out invalid projects and deduplicate by ID
+    const uniqueProjects = new Map();
+    state.projects.forEach(project => {
+      if (project && project.id) {
+        uniqueProjects.set(project.id, project);
+      }
+    });
+    
+    return Array.from(uniqueProjects.values());
   }, [state.projects]);
   
   const tasksArray = useMemo(() => {

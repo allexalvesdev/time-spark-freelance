@@ -3,7 +3,6 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, 
   Plus, 
-  Clock, 
   CalendarDays, 
   ClipboardList,
   Trash,
@@ -19,7 +18,6 @@ import { Button } from '@/components/ui/button';
 import { useAppContext } from '@/contexts/AppContext';
 import TaskItem from '@/components/TaskItem';
 import NewTaskForm from '@/components/NewTaskForm';
-import Timer from '@/components/Timer';
 import { formatCurrency, formatDuration } from '@/utils/dateUtils';
 import {
   AlertDialog,
@@ -172,7 +170,7 @@ const ProjectDetails: React.FC = () => {
           
           <div className="bg-card rounded-lg border p-4">
             <div className="flex items-center gap-2 mb-2">
-              <Clock size={20} className="text-timespark-primary" />
+              <ClipboardList size={20} className="text-timespark-primary" />
               <h3 className="font-medium">Tempo Total</h3>
             </div>
             <p className="text-2xl font-bold">{formatDuration(totalTime)}</p>
@@ -193,19 +191,15 @@ const ProjectDetails: React.FC = () => {
           <TabsList className={`${isMobile ? 'flex w-full overflow-x-auto space-x-1' : ''}`}>
             <TabsTrigger value="tasks" className="flex items-center gap-2">
               <ClipboardList size={16} />
-              <span>{isMobile ? '' : 'Tarefas'}</span>
+              <span>{isMobile ? 'Tarefas' : 'Tarefas'}</span>
             </TabsTrigger>
             <TabsTrigger value="calendar" className="flex items-center gap-2">
               <CalendarDays size={16} />
-              <span>{isMobile ? '' : 'Agenda'}</span>
-            </TabsTrigger>
-            <TabsTrigger value="timer" className="flex items-center gap-2">
-              <Clock size={16} />
-              <span>{isMobile ? '' : 'Cronômetro'}</span>
+              <span>{isMobile ? 'Agenda' : 'Agenda'}</span>
             </TabsTrigger>
             <TabsTrigger value="report" className="flex items-center gap-2">
               <FileText size={16} />
-              <span>{isMobile ? '' : 'Relatório'}</span>
+              <span>{isMobile ? 'Relatório' : 'Relatório'}</span>
             </TabsTrigger>
           </TabsList>
           
@@ -268,41 +262,6 @@ const ProjectDetails: React.FC = () => {
                 Por enquanto, você pode gerenciar suas tarefas na aba "Tarefas".
               </p>
             </div>
-          </TabsContent>
-          
-          <TabsContent value="timer" className="mt-6">
-            {projectTasks.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12 space-y-4">
-                <Clock size={48} className="text-muted-foreground" />
-                <h2 className="text-xl font-medium">Nenhuma tarefa para cronometrar</h2>
-                <p className="text-muted-foreground text-center max-w-md">
-                  Adicione tarefas para começar a cronometrar seu tempo.
-                </p>
-                <Button onClick={() => setShowNewTaskForm(true)}>
-                  Adicionar Tarefa
-                </Button>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {projectTasks
-                  .filter(task => !task.completed)
-                  .map((task) => (
-                    <div key={task.id} className="bg-card rounded-lg border overflow-hidden">
-                      <div className="p-4 bg-muted">
-                        <h3 className="font-medium truncate">{task.name}</h3>
-                      </div>
-                      <div className="p-4">
-                        <Timer 
-                          taskId={task.id} 
-                          projectId={project.id} 
-                          hourlyRate={project.hourlyRate} 
-                        />
-                      </div>
-                    </div>
-                  ))
-                }
-              </div>
-            )}
           </TabsContent>
           
           <TabsContent value="report" className="mt-6">

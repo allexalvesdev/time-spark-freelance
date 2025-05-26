@@ -33,6 +33,7 @@ export const useTaskActions = ({
     try {
       // Immediately freeze display at current elapsed time for instant feedback
       if (activeTimer) {
+        console.log(`Task ${task.id} - Immediate pause, freezing at:`, activeTimer.elapsedSeconds);
         setDisplaySeconds(activeTimer.elapsedSeconds);
       }
       await pauseTimer();

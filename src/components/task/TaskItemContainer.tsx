@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Task, Project } from '@/types';
 import { useAppContext } from '@/contexts/AppContext';
@@ -7,6 +8,7 @@ import { useTaskEvents } from '@/hooks/task/useTaskEvents';
 import { useTaskTags } from '@/hooks/task/useTaskTags';
 import { useTaskActions } from '@/hooks/task/useTaskActions';
 import { useDatabaseTimer } from '@/hooks/useDatabaseTimer';
+import { useTimerDebug } from '@/hooks/timer/useTimerDebug';
 import EditTaskModal from '../EditTaskModal';
 import CompleteTaskModal from '../CompleteTaskModal';
 import TaskHeader from './TaskHeader';
@@ -26,6 +28,9 @@ const TaskItemContainer: React.FC<TaskItemContainerProps> = ({ task, project }) 
   const [showEditModal, setShowEditModal] = useState(false);
   const [showCompleteModal, setShowCompleteModal] = useState(false);
   const [currentTask, setCurrentTask] = useState<Task>(task);
+
+  // Add debugging for this task
+  useTimerDebug(`TaskItem-${task.id.slice(0, 8)}`);
 
   // Use the custom hooks
   const { displaySeconds, setDisplaySeconds, isTimerRunning, isTimerPaused } = useTaskTimerState({ task: currentTask });

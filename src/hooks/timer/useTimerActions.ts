@@ -26,13 +26,13 @@ export const useTimerActions = ({
     
     setLoading(true);
     try {
-      await databaseTimerService.startTimer(taskId, projectId, userId);
-      await loadActiveTimer();
-      
-      // Dispatch immediate synchronization event
+      // Dispatch immediate event FIRST for instant UI feedback
       window.dispatchEvent(new CustomEvent('timer-started', { 
         detail: { taskId, projectId, timestamp: Date.now() } 
       }));
+      
+      await databaseTimerService.startTimer(taskId, projectId, userId);
+      await loadActiveTimer();
       
       toast({
         title: "Timer iniciado",
@@ -55,17 +55,11 @@ export const useTimerActions = ({
     
     setLoading(true);
     try {
-      // Get current elapsed seconds before pausing
+      // Get current elapsed seconds BEFORE any state changes
       const currentElapsedSeconds = activeTimer.elapsedSeconds;
+      console.log('Pausing timer with elapsed seconds:', currentElapsedSeconds);
       
-      // Immediately update local state for instant UI feedback
-      const pausedTimer = { ...activeTimer, isPaused: true };
-      setActiveTimer(pausedTimer);
-      
-      // Stop the real-time counter immediately when pausing
-      setRealTimeSeconds(currentElapsedSeconds);
-      
-      // Dispatch immediate pause event with current elapsed seconds
+      // IMMEDIATELY dispatch pause event with exact elapsed time for instant UI freeze
       window.dispatchEvent(new CustomEvent('timer-paused', { 
         detail: { 
           taskId: activeTimer.taskId, 
@@ -75,6 +69,14 @@ export const useTimerActions = ({
         } 
       }));
       
+      // Immediately update local state for instant UI feedback
+      const pausedTimer = { ...activeTimer, isPaused: true };
+      setActiveTimer(pausedTimer);
+      
+      // Stop the real-time counter immediately
+      setRealTimeSeconds(currentElapsedSeconds);
+      
+      // THEN do database operation
       await databaseTimerService.pauseTimer(userId);
       await loadActiveTimer();
       
@@ -99,11 +101,7 @@ export const useTimerActions = ({
     
     setLoading(true);
     try {
-      // Immediately update local state for instant UI feedback
-      const resumedTimer = { ...activeTimer, isPaused: false };
-      setActiveTimer(resumedTimer);
-      
-      // Dispatch immediate resume event for synchronization
+      // Dispatch immediate resume event FIRST for instant UI feedback
       window.dispatchEvent(new CustomEvent('timer-resumed', { 
         detail: { 
           taskId: activeTimer.taskId, 
@@ -112,6 +110,10 @@ export const useTimerActions = ({
           timestamp: Date.now()
         } 
       }));
+      
+      // Immediately update local state for instant UI feedback
+      const resumedTimer = { ...activeTimer, isPaused: false };
+      setActiveTimer(resumedTimer);
       
       await databaseTimerService.resumeTimer(userId);
       await loadActiveTimer();

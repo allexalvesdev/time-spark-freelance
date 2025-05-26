@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Task, Project } from '@/types';
 import { useDatabaseTimer } from '@/hooks/useDatabaseTimer';
@@ -31,19 +32,28 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, project }) => {
   // Update display seconds based on timer state
   useEffect(() => {
     if (isTimerRunning) {
-      setDisplaySeconds(realTimeSeconds);
+      // If this task has the active timer, use the exact same logic as header
+      if (activeTimer.isPaused) {
+        // When paused, show the exact elapsed seconds from database
+        setDisplaySeconds(activeTimer.elapsedSeconds);
+      } else {
+        // When running, show real-time seconds
+        setDisplaySeconds(realTimeSeconds);
+      }
     } else {
+      // If not the active timer, show stored elapsed time
       setDisplaySeconds(currentTask.elapsedTime || 0);
     }
-  }, [isTimerRunning, realTimeSeconds, currentTask.elapsedTime]);
+  }, [isTimerRunning, realTimeSeconds, currentTask.elapsedTime, activeTimer]);
 
   // Listen for immediate timer synchronization events
   useEffect(() => {
     const handleTimerEvent = (event: CustomEvent) => {
-      const { taskId, elapsedSeconds, timestamp } = event.detail;
+      const { taskId, elapsedSeconds, isPaused } = event.detail;
       
       if (taskId === task.id) {
         if (elapsedSeconds !== undefined) {
+          // Use the exact elapsed seconds from the event for perfect sync
           setDisplaySeconds(elapsedSeconds);
         }
       }
@@ -73,7 +83,6 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, project }) => {
     setCurrentTask(task);
   }, [task]);
   
-  // Load task tags
   useEffect(() => {
     const loadTaskTags = async () => {
       try {
@@ -90,12 +99,10 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, project }) => {
     loadTaskTags();
   }, [task.id, getTaskTags]);
   
-  // Filter tags for this task
   const { state } = useAppContext();
   const { tags } = state;
   const taskTagObjects = Array.isArray(tags) ? tags.filter(tag => tag && taskTags.includes(tag.id)) : [];
   
-  // Listen for task-completed events
   useEffect(() => {
     const handleTaskCompleted = (event: CustomEvent) => {
       try {
@@ -125,6 +132,10 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, project }) => {
   
   const handlePauseTimer = async () => {
     try {
+      // Immediately freeze display at current elapsed time for instant feedback
+      if (activeTimer) {
+        setDisplaySeconds(activeTimer.elapsedSeconds);
+      }
       await pauseTimer();
     } catch (error) {
       console.error('Error pausing timer:', error);
@@ -141,7 +152,7 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, project }) => {
   
   const handleStopTimer = async () => {
     try {
-      await stopTimer(true); // Auto-complete task
+      await stopTimer(true);
     } catch (error) {
       console.error('Error stopping timer:', error);
     }
@@ -150,7 +161,7 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, project }) => {
   const handleDeleteTask = async () => {
     try {
       if (isTimerRunning) {
-        await stopTimer(false); // Don't complete task on delete
+        await stopTimer(false);
       }
       if (task.id && deleteTask) {
         await deleteTask(task.id);

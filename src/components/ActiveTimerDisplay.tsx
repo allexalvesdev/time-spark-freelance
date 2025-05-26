@@ -14,7 +14,13 @@ const ActiveTimerDisplay: React.FC = () => {
   // Sync display with real-time seconds and handle external events
   useEffect(() => {
     if (activeTimer) {
-      setDisplaySeconds(realTimeSeconds);
+      // If paused, show the exact elapsed seconds from the database
+      // If running, show the real-time updating seconds
+      if (activeTimer.isPaused) {
+        setDisplaySeconds(activeTimer.elapsedSeconds);
+      } else {
+        setDisplaySeconds(realTimeSeconds);
+      }
     } else {
       setDisplaySeconds(0);
     }
@@ -27,6 +33,7 @@ const ActiveTimerDisplay: React.FC = () => {
       
       if (activeTimer?.taskId === taskId || event.type === 'timer-state-loaded') {
         if (isActive && elapsedSeconds !== undefined) {
+          // Always use the exact elapsed seconds from the event for consistency
           setDisplaySeconds(elapsedSeconds);
         } else if (!isActive) {
           setDisplaySeconds(0);
@@ -58,17 +65,16 @@ const ActiveTimerDisplay: React.FC = () => {
   }
 
   const handlePause = async () => {
-    // Immediately update display for instant feedback
+    // Immediately freeze display at current elapsed time
+    setDisplaySeconds(activeTimer.elapsedSeconds);
     await pauseTimer();
   };
 
   const handleResume = async () => {
-    // Immediately update display for instant feedback  
     await resumeTimer();
   };
 
   const handleStop = async () => {
-    // Immediately update display for instant feedback
     setDisplaySeconds(0);
     await stopTimer(true);
   };

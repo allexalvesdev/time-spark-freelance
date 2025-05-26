@@ -24,7 +24,7 @@ export const useDatabaseTimer = () => {
         setRealTimeSeconds(0);
       }
       
-      // Dispatch global event for synchronization
+      // Dispatch global event for synchronization with exact elapsed seconds
       if (timer) {
         window.dispatchEvent(new CustomEvent('timer-state-loaded', { 
           detail: { 
@@ -83,15 +83,19 @@ export const useDatabaseTimer = () => {
     
     setLoading(true);
     try {
+      // Get current elapsed seconds before pausing
+      const currentElapsedSeconds = activeTimer.elapsedSeconds;
+      
       // Immediately update local state for instant UI feedback
       const pausedTimer = { ...activeTimer, isPaused: true };
       setActiveTimer(pausedTimer);
       
-      // Dispatch immediate pause event for synchronization
+      // Dispatch immediate pause event with current elapsed seconds
       window.dispatchEvent(new CustomEvent('timer-paused', { 
         detail: { 
           taskId: activeTimer.taskId, 
-          elapsedSeconds: activeTimer.elapsedSeconds,
+          elapsedSeconds: currentElapsedSeconds,
+          isPaused: true,
           timestamp: Date.now()
         } 
       }));
@@ -129,6 +133,7 @@ export const useDatabaseTimer = () => {
         detail: { 
           taskId: activeTimer.taskId, 
           elapsedSeconds: activeTimer.elapsedSeconds,
+          isPaused: false,
           timestamp: Date.now()
         } 
       }));

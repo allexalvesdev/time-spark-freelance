@@ -7,15 +7,11 @@ import { useLocation } from 'react-router-dom';
 import { Bell } from 'lucide-react';
 import SimpleActiveTimerDisplay from './SimpleActiveTimerDisplay';
 import { useDatabaseTimer } from '@/hooks/useDatabaseTimer';
-import { useTimerDebug } from '@/hooks/timer/useTimerDebug';
 
 export function Header() {
   const { user } = useAuth();
   const location = useLocation();
   const { activeTimer } = useDatabaseTimer();
-  
-  // Add debugging for header timer
-  useTimerDebug('Header');
   
   // Get page title based on current route
   const getPageTitle = () => {

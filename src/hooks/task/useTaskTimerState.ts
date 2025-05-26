@@ -1,6 +1,5 @@
-
 import { Task } from '@/types';
-import { useUnifiedTimerState } from '@/hooks/timer/useUnifiedTimerState';
+import { useDatabaseTimer } from '@/hooks/useDatabaseTimer';
 
 interface UseTaskTimerStateOptions {
   task: Task;
@@ -8,23 +7,29 @@ interface UseTaskTimerStateOptions {
 
 export const useTaskTimerState = ({ task }: UseTaskTimerStateOptions) => {
   const { 
-    displaySeconds, 
-    setDisplaySeconds, 
-    isTimerRunning: isUnifiedTimerRunning,
-    isTimerPaused: isUnifiedTimerPaused,
+    realTimeSeconds, 
     activeTimer 
-  } = useUnifiedTimerState({ taskId: task.id });
+  } = useDatabaseTimer();
   
   // Check if this specific task has the active timer
   const isTimerRunning = activeTimer?.taskId === task.id;
   const isTimerPaused = isTimerRunning && activeTimer?.isPaused;
   
-  // If this task doesn't have the active timer, show stored elapsed time
-  const finalDisplaySeconds = isTimerRunning ? displaySeconds : (task.elapsedTime || 0);
+  // If this task has the active timer, show real-time seconds
+  // Otherwise, show stored elapsed time from task
+  const displaySeconds = isTimerRunning ? realTimeSeconds : (task.elapsedTime || 0);
+  
+  console.log('[TaskTimerState]', {
+    taskId: task.id.slice(0, 8),
+    isTimerRunning,
+    isTimerPaused,
+    displaySeconds,
+    realTimeSeconds,
+    taskElapsedTime: task.elapsedTime
+  });
   
   return {
-    displaySeconds: finalDisplaySeconds,
-    setDisplaySeconds,
+    displaySeconds,
     isTimerRunning,
     isTimerPaused
   };

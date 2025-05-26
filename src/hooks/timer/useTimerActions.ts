@@ -24,7 +24,9 @@ export const useTimerActions = ({
   const startTimer = useCallback(async (taskId: string, projectId: string) => {
     if (!userId) return;
     
+    console.log('[TimerActions] Starting timer for task:', taskId);
     setLoading(true);
+    
     try {
       // Dispatch immediate event FIRST for instant UI feedback
       window.dispatchEvent(new CustomEvent('timer-started', { 
@@ -39,7 +41,7 @@ export const useTimerActions = ({
         description: "O timer foi iniciado com sucesso.",
       });
     } catch (error) {
-      console.error('Error starting timer:', error);
+      console.error('[TimerActions] Error starting timer:', error);
       toast({
         title: "Erro",
         description: "Erro ao iniciar o timer.",
@@ -53,11 +55,13 @@ export const useTimerActions = ({
   const pauseTimer = useCallback(async () => {
     if (!userId || !activeTimer) return;
     
+    console.log('[TimerActions] Pausing timer for task:', activeTimer.taskId);
     setLoading(true);
+    
     try {
       // Get current elapsed seconds BEFORE any state changes
       const currentElapsedSeconds = activeTimer.elapsedSeconds;
-      console.log('Pausing timer with elapsed seconds:', currentElapsedSeconds);
+      console.log('[TimerActions] Current elapsed seconds at pause:', currentElapsedSeconds);
       
       // IMMEDIATELY dispatch pause event with exact elapsed time for instant UI freeze
       window.dispatchEvent(new CustomEvent('timer-paused', { 
@@ -85,7 +89,7 @@ export const useTimerActions = ({
         description: "O timer foi pausado.",
       });
     } catch (error) {
-      console.error('Error pausing timer:', error);
+      console.error('[TimerActions] Error pausing timer:', error);
       toast({
         title: "Erro",
         description: "Erro ao pausar o timer.",
@@ -99,7 +103,9 @@ export const useTimerActions = ({
   const resumeTimer = useCallback(async () => {
     if (!userId || !activeTimer) return;
     
+    console.log('[TimerActions] Resuming timer for task:', activeTimer.taskId);
     setLoading(true);
+    
     try {
       // Dispatch immediate resume event FIRST for instant UI feedback
       window.dispatchEvent(new CustomEvent('timer-resumed', { 
@@ -123,7 +129,7 @@ export const useTimerActions = ({
         description: "O timer foi retomado.",
       });
     } catch (error) {
-      console.error('Error resuming timer:', error);
+      console.error('[TimerActions] Error resuming timer:', error);
       toast({
         title: "Erro",
         description: "Erro ao retomar o timer.",
@@ -137,7 +143,9 @@ export const useTimerActions = ({
   const stopTimer = useCallback(async (completeTask: boolean = false) => {
     if (!userId || !activeTimer) return;
     
+    console.log('[TimerActions] Stopping timer for task:', activeTimer.taskId);
     setLoading(true);
+    
     try {
       const finalDuration = await databaseTimerService.stopTimer(userId, completeTask);
       
@@ -162,7 +170,7 @@ export const useTimerActions = ({
       
       return finalDuration;
     } catch (error) {
-      console.error('Error stopping timer:', error);
+      console.error('[TimerActions] Error stopping timer:', error);
       toast({
         title: "Erro",
         description: "Erro ao parar o timer.",

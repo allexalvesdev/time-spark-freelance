@@ -7,67 +7,63 @@ interface UseTaskActionsOptions {
   task: Task;
   projectId: string;
   isTimerRunning: boolean;
-  activeTimer: any;
-  setDisplaySeconds: (seconds: number) => void;
 }
 
 export const useTaskActions = ({ 
   task, 
   projectId, 
-  isTimerRunning, 
-  activeTimer,
-  setDisplaySeconds 
+  isTimerRunning
 }: UseTaskActionsOptions) => {
   const { deleteTask } = useAppContext();
   const { startTimer, pauseTimer, resumeTimer, stopTimer } = useDatabaseTimer();
 
   const handleStartTimer = async () => {
     try {
+      console.log('[TaskActions] Starting timer for task:', task.id);
       await startTimer(task.id, projectId);
     } catch (error) {
-      console.error('Error starting timer:', error);
+      console.error('[TaskActions] Error starting timer:', error);
     }
   };
   
   const handlePauseTimer = async () => {
     try {
-      // Immediately freeze display at current elapsed time for instant feedback
-      if (activeTimer) {
-        console.log(`Task ${task.id} - Immediate pause, freezing at:`, activeTimer.elapsedSeconds);
-        setDisplaySeconds(activeTimer.elapsedSeconds);
-      }
+      console.log('[TaskActions] Pausing timer for task:', task.id);
       await pauseTimer();
     } catch (error) {
-      console.error('Error pausing timer:', error);
+      console.error('[TaskActions] Error pausing timer:', error);
     }
   };
   
   const handleResumeTimer = async () => {
     try {
+      console.log('[TaskActions] Resuming timer for task:', task.id);
       await resumeTimer();
     } catch (error) {
-      console.error('Error resuming timer:', error);
+      console.error('[TaskActions] Error resuming timer:', error);
     }
   };
   
   const handleStopTimer = async () => {
     try {
+      console.log('[TaskActions] Stopping timer for task:', task.id);
       await stopTimer(true);
     } catch (error) {
-      console.error('Error stopping timer:', error);
+      console.error('[TaskActions] Error stopping timer:', error);
     }
   };
   
   const handleDeleteTask = async () => {
     try {
       if (isTimerRunning) {
+        console.log('[TaskActions] Stopping timer before deleting task:', task.id);
         await stopTimer(false);
       }
       if (task.id && deleteTask) {
         await deleteTask(task.id);
       }
     } catch (error) {
-      console.error('Error deleting task:', error);
+      console.error('[TaskActions] Error deleting task:', error);
     }
   };
 

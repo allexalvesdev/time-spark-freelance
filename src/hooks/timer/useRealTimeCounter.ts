@@ -12,12 +12,19 @@ export const useRealTimeCounter = (activeTimer: ActiveTimer | null) => {
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
       intervalRef.current = null;
-      console.log('Interval cleared');
+      console.log('[RealTimeCounter] Interval cleared');
     }
   };
 
   // Set initial real-time seconds when activeTimer changes
   useEffect(() => {
+    console.log('[RealTimeCounter] ActiveTimer changed:', {
+      hasTimer: !!activeTimer,
+      taskId: activeTimer?.taskId,
+      elapsedSeconds: activeTimer?.elapsedSeconds,
+      isPaused: activeTimer?.isPaused
+    });
+
     if (activeTimer) {
       setRealTimeSeconds(activeTimer.elapsedSeconds);
       isPausedRef.current = activeTimer.isPaused;
@@ -34,47 +41,61 @@ export const useRealTimeCounter = (activeTimer: ActiveTimer | null) => {
       const wasPaused = isPausedRef.current;
       const isNowPaused = activeTimer.isPaused;
       
+      console.log('[RealTimeCounter] Pause state check:', {
+        wasPaused,
+        isNowPaused,
+        taskId: activeTimer.taskId
+      });
+      
       if (!wasPaused && isNowPaused) {
-        // Just paused - immediately stop interval and freeze display
-        console.log('Timer paused - clearing interval immediately');
+        // Just paused - IMMEDIATELY stop interval and freeze display
+        console.log('[RealTimeCounter] PAUSING - clearing interval immediately');
         clearCurrentInterval();
         setRealTimeSeconds(activeTimer.elapsedSeconds);
+        isPausedRef.current = true;
       } else if (wasPaused && !isNowPaused) {
-        // Just resumed - start new interval
-        console.log('Timer resumed - starting new interval');
+        // Just resumed - prepare for new interval (will be started in next effect)
+        console.log('[RealTimeCounter] RESUMING - preparing for new interval');
         clearCurrentInterval(); // Clear any existing interval first
+        isPausedRef.current = false;
       }
-      
-      isPausedRef.current = isNowPaused;
     }
-  }, [activeTimer?.isPaused]);
+  }, [activeTimer?.isPaused, activeTimer?.taskId]);
 
   // Real-time counter for active timers - ONLY runs when NOT paused
   useEffect(() => {
     if (!activeTimer || activeTimer.isPaused) {
-      // If paused or no timer, stop the interval completely
+      // If paused or no timer, ensure interval is stopped
       clearCurrentInterval();
+      console.log('[RealTimeCounter] Timer paused or inactive - interval cleared');
       return;
     }
 
-    // Start new interval only if not paused
-    console.log('Starting new timer interval');
+    // Only start interval if not paused
+    console.log('[RealTimeCounter] Starting new timer interval for task:', activeTimer.taskId);
     intervalRef.current = setInterval(() => {
       // Double-check pause state before updating
       if (!isPausedRef.current) {
-        setRealTimeSeconds(prev => prev + 1);
+        setRealTimeSeconds(prev => {
+          const newValue = prev + 1;
+          console.log('[RealTimeCounter] Tick:', newValue);
+          return newValue;
+        });
+      } else {
+        console.log('[RealTimeCounter] Tick skipped - timer is paused');
       }
     }, 1000);
 
     return () => clearCurrentInterval();
   }, [activeTimer?.isPaused, activeTimer?.id]);
 
-  // Listen for immediate pause events
+  // Listen for immediate pause/resume events
   useEffect(() => {
     const handleImmediatePause = (event: CustomEvent) => {
       const { taskId, elapsedSeconds } = event.detail;
+      console.log('[RealTimeCounter] Immediate pause event:', { taskId, elapsedSeconds });
+      
       if (activeTimer && taskId === activeTimer.taskId) {
-        console.log('Immediate pause event received', { elapsedSeconds });
         clearCurrentInterval();
         setRealTimeSeconds(elapsedSeconds);
         isPausedRef.current = true;
@@ -83,8 +104,9 @@ export const useRealTimeCounter = (activeTimer: ActiveTimer | null) => {
 
     const handleImmediateResume = (event: CustomEvent) => {
       const { taskId } = event.detail;
+      console.log('[RealTimeCounter] Immediate resume event:', { taskId });
+      
       if (activeTimer && taskId === activeTimer.taskId) {
-        console.log('Immediate resume event received');
         isPausedRef.current = false;
       }
     };
@@ -100,7 +122,10 @@ export const useRealTimeCounter = (activeTimer: ActiveTimer | null) => {
 
   // Cleanup on unmount
   useEffect(() => {
-    return () => clearCurrentInterval();
+    return () => {
+      console.log('[RealTimeCounter] Component unmounting - clearing interval');
+      clearCurrentInterval();
+    };
   }, []);
 
   return {

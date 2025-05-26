@@ -11,71 +11,40 @@ const ActiveTimerDisplay: React.FC = () => {
   const isMobile = useIsMobile();
   const [displaySeconds, setDisplaySeconds] = useState(0);
 
-  // Sync display with real-time seconds and handle external events
+  // Use unified state from database timer
   useEffect(() => {
     if (activeTimer) {
       if (activeTimer.isPaused) {
-        // When paused, always show the exact elapsed seconds from database - never update
+        // When paused, always show the exact elapsed seconds from database
         setDisplaySeconds(activeTimer.elapsedSeconds);
+        console.log('[ActiveTimerDisplay] Timer paused, showing elapsed:', activeTimer.elapsedSeconds);
       } else {
         // Only update in real-time when NOT paused
         setDisplaySeconds(realTimeSeconds);
+        console.log('[ActiveTimerDisplay] Timer running, showing real-time:', realTimeSeconds);
       }
     } else {
       setDisplaySeconds(0);
+      console.log('[ActiveTimerDisplay] No active timer');
     }
   }, [realTimeSeconds, activeTimer?.elapsedSeconds, activeTimer?.isPaused, activeTimer?.id]);
-
-  // Listen for immediate synchronization events
-  useEffect(() => {
-    const handleTimerEvent = (event: CustomEvent) => {
-      const { taskId, elapsedSeconds, isPaused, isActive } = event.detail;
-      
-      if (activeTimer?.taskId === taskId || event.type === 'timer-state-loaded') {
-        if (isActive && elapsedSeconds !== undefined) {
-          // Always use the exact elapsed seconds from the event for consistency
-          setDisplaySeconds(elapsedSeconds);
-        } else if (!isActive) {
-          setDisplaySeconds(0);
-        }
-      }
-    };
-
-    const events = [
-      'timer-started',
-      'timer-paused', 
-      'timer-resumed',
-      'timer-stopped',
-      'timer-state-loaded'
-    ];
-
-    events.forEach(eventType => {
-      window.addEventListener(eventType, handleTimerEvent as EventListener);
-    });
-
-    return () => {
-      events.forEach(eventType => {
-        window.removeEventListener(eventType, handleTimerEvent as EventListener);
-      });
-    };
-  }, [activeTimer?.taskId]);
 
   if (!activeTimer) {
     return null;
   }
 
   const handlePause = async () => {
-    // Immediately freeze display at current elapsed time
-    setDisplaySeconds(activeTimer.elapsedSeconds);
+    console.log('[ActiveTimerDisplay] Pause button clicked');
     await pauseTimer();
   };
 
   const handleResume = async () => {
+    console.log('[ActiveTimerDisplay] Resume button clicked');
     await resumeTimer();
   };
 
   const handleStop = async () => {
-    setDisplaySeconds(0);
+    console.log('[ActiveTimerDisplay] Stop button clicked');
     await stopTimer(true);
   };
 

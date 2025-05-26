@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Task, Project } from '@/types';
 import { useAppContext } from '@/contexts/AppContext';
@@ -7,8 +6,6 @@ import { useTaskTimerState } from '@/hooks/task/useTaskTimerState';
 import { useTaskEvents } from '@/hooks/task/useTaskEvents';
 import { useTaskTags } from '@/hooks/task/useTaskTags';
 import { useTaskActions } from '@/hooks/task/useTaskActions';
-import { useDatabaseTimer } from '@/hooks/useDatabaseTimer';
-import { useTimerDebug } from '@/hooks/timer/useTimerDebug';
 import EditTaskModal from '../EditTaskModal';
 import CompleteTaskModal from '../CompleteTaskModal';
 import TaskHeader from './TaskHeader';
@@ -24,27 +21,21 @@ interface TaskItemContainerProps {
 const TaskItemContainer: React.FC<TaskItemContainerProps> = ({ task, project }) => {
   const { state } = useAppContext();
   const { tags } = state;
-  const { activeTimer } = useDatabaseTimer();
   const [showEditModal, setShowEditModal] = useState(false);
   const [showCompleteModal, setShowCompleteModal] = useState(false);
   const [currentTask, setCurrentTask] = useState<Task>(task);
 
-  // Add debugging for this task
-  useTimerDebug(`TaskItem-${task.id.slice(0, 8)}`);
-
-  // Use the custom hooks
-  const { displaySeconds, setDisplaySeconds, isTimerRunning, isTimerPaused } = useTaskTimerState({ task: currentTask });
+  // Use the simplified hooks
+  const { displaySeconds, isTimerRunning, isTimerPaused } = useTaskTimerState({ task: currentTask });
   const { taskTags } = useTaskTags({ taskId: currentTask.id });
   const taskActions = useTaskActions({ 
     task: currentTask, 
     projectId: project.id, 
-    isTimerRunning, 
-    activeTimer,
-    setDisplaySeconds 
+    isTimerRunning
   });
 
-  // Set up event listeners
-  useTaskEvents({ task: currentTask, setDisplaySeconds, setCurrentTask });
+  // Set up event listeners for task updates
+  useTaskEvents({ task: currentTask, setDisplaySeconds: () => {}, setCurrentTask });
 
   // Keep local task state updated with props
   useEffect(() => {

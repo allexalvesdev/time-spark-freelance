@@ -17,6 +17,7 @@ export const useProjects = (userId: string) => {
       });
       setProjects(prev => [newProject, ...prev]);
       setCurrentProject(newProject);
+      return newProject;
     } catch (error: any) {
       toast({
         title: 'Erro',

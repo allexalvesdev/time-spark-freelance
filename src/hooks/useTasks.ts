@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Task } from '@/types';
 import { taskService } from '@/services';
@@ -10,29 +9,16 @@ export const useTasks = (userId: string) => {
   const [currentTask, setCurrentTask] = useState<Task | null>(null);
   const { toast } = useToast();
 
-  const addTask = async (taskData: Omit<Task, 'id' | 'userId'>) => {
+  const addTask = async (taskData: Omit<Task, 'id' | 'userId' | 'completed'>) => {
     try {
       console.log('Adding task with data:', taskData);
       
       // Create the task with the right completion status and timing data
       const taskToCreate = {
         ...taskData,
-        userId
+        userId,
+        completed: false, // Always start as incomplete
       };
-      
-      // If task has end time and is marked as completed, ensure all timing data is set
-      if (taskData.completed && taskData.actualEndTime) {
-        if (!taskData.actualStartTime) {
-          taskToCreate.actualStartTime = taskData.scheduledStartTime;
-        }
-        
-        if (!taskData.elapsedTime && taskData.actualStartTime) {
-          taskToCreate.elapsedTime = calculateElapsedTime(
-            taskData.actualStartTime, 
-            taskData.actualEndTime
-          );
-        }
-      }
       
       const newTask = await taskService.createTask(taskToCreate);
       

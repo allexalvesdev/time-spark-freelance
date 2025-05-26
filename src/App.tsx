@@ -21,7 +21,6 @@ import NotFound from "@/pages/NotFound";
 import Settings from "@/pages/Settings";
 import { useAuth } from "@/contexts/AuthContext";
 import Landing from "@/pages/Landing";
-import MobileNavigation from "@/components/MobileNavigation";
 import Index from "./pages/Index";
 import { usePlatform } from "@/hooks/use-platform";
 import ResetPassword from "./pages/ResetPassword";
@@ -174,7 +173,6 @@ const App = () => (
                       />
                       <Route path="*" element={<NotFound />} />
                     </Routes>
-                    <MobileNavigation />
                   </TooltipProvider>
                 </AppProvider>
               </PlanProvider>

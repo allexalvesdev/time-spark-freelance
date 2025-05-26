@@ -21,6 +21,14 @@ const TaskTimer: React.FC<TaskTimerProps> = ({
   // Only show timer section if running or if there's time recorded
   if (elapsedTime === 0 && !isRunning) return null;
 
+  console.log('[TaskTimer] 📊 Rendering timer:', {
+    taskId: taskId?.slice(0, 8),
+    elapsedTime,
+    isRunning,
+    isPaused,
+    formattedTime
+  });
+
   return (
     <div className="flex items-center justify-between p-2 bg-muted rounded mb-4">
       <div className="text-sm">

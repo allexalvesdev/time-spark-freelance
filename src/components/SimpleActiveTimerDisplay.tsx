@@ -13,7 +13,7 @@ const SimpleActiveTimerDisplay: React.FC = () => {
   // Use real-time seconds when running, elapsed seconds when paused
   const displaySeconds = activeTimer.isPaused ? activeTimer.elapsedSeconds : realTimeSeconds;
   
-  console.log('[SimpleActiveTimerDisplay]', {
+  console.log('[SimpleActiveTimerDisplay] 📺 Display state:', {
     taskId: activeTimer.taskId?.slice(0, 8),
     isPaused: activeTimer.isPaused,
     displaySeconds,

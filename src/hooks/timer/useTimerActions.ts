@@ -24,24 +24,24 @@ export const useTimerActions = ({
   const startTimer = useCallback(async (taskId: string, projectId: string) => {
     if (!userId) return;
     
-    console.log('[TimerActions] Starting timer for task:', taskId);
+    console.log('[TimerActions] 🚀 Starting timer for task:', taskId?.slice(0, 8));
     setLoading(true);
     
     try {
-      // Dispatch immediate event FIRST for instant UI feedback
+      await databaseTimerService.startTimer(taskId, projectId, userId);
+      await loadActiveTimer();
+      
+      // Dispatch event for INSTANT UI feedback
       window.dispatchEvent(new CustomEvent('timer-started', { 
         detail: { taskId, projectId, timestamp: Date.now() } 
       }));
-      
-      await databaseTimerService.startTimer(taskId, projectId, userId);
-      await loadActiveTimer();
       
       toast({
         title: "Timer iniciado",
         description: "O timer foi iniciado com sucesso.",
       });
     } catch (error) {
-      console.error('[TimerActions] Error starting timer:', error);
+      console.error('[TimerActions] ❌ Error starting timer:', error);
       toast({
         title: "Erro",
         description: "Erro ao iniciar o timer.",
@@ -55,41 +55,38 @@ export const useTimerActions = ({
   const pauseTimer = useCallback(async () => {
     if (!userId || !activeTimer) return;
     
-    console.log('[TimerActions] Pausing timer for task:', activeTimer.taskId);
-    setLoading(true);
+    console.log('[TimerActions] ⏸️ Pausing timer for task:', activeTimer.taskId?.slice(0, 8));
     
     try {
-      // Get current elapsed seconds BEFORE any state changes
+      // Get EXACT current elapsed seconds before any operations
       const currentElapsedSeconds = activeTimer.elapsedSeconds;
-      console.log('[TimerActions] Current elapsed seconds at pause:', currentElapsedSeconds);
+      console.log('[TimerActions] 📊 Exact elapsed at pause:', currentElapsedSeconds);
       
-      // IMMEDIATELY dispatch pause event with exact elapsed time for instant UI freeze
+      // FIRST: Dispatch IMMEDIATE event for instant UI freeze
       window.dispatchEvent(new CustomEvent('timer-paused', { 
         detail: { 
           taskId: activeTimer.taskId, 
           elapsedSeconds: currentElapsedSeconds,
-          isPaused: true,
           timestamp: Date.now()
         } 
       }));
       
-      // Immediately update local state for instant UI feedback
-      const pausedTimer = { ...activeTimer, isPaused: true };
+      // SECOND: Update local state immediately
+      const pausedTimer = { ...activeTimer, isPaused: true, elapsedSeconds: currentElapsedSeconds };
       setActiveTimer(pausedTimer);
-      
-      // Stop the real-time counter immediately
       setRealTimeSeconds(currentElapsedSeconds);
       
-      // THEN do database operation
+      // THIRD: Do database operation in background
+      setLoading(true);
       await databaseTimerService.pauseTimer(userId);
       await loadActiveTimer();
       
       toast({
         title: "Timer pausado",
-        description: "O timer foi pausado.",
+        description: "O timer foi pausado instantaneamente.",
       });
     } catch (error) {
-      console.error('[TimerActions] Error pausing timer:', error);
+      console.error('[TimerActions] ❌ Error pausing timer:', error);
       toast({
         title: "Erro",
         description: "Erro ao pausar o timer.",
@@ -103,33 +100,33 @@ export const useTimerActions = ({
   const resumeTimer = useCallback(async () => {
     if (!userId || !activeTimer) return;
     
-    console.log('[TimerActions] Resuming timer for task:', activeTimer.taskId);
-    setLoading(true);
+    console.log('[TimerActions] ▶️ Resuming timer for task:', activeTimer.taskId?.slice(0, 8));
     
     try {
-      // Dispatch immediate resume event FIRST for instant UI feedback
+      // FIRST: Dispatch IMMEDIATE event for instant UI resume
       window.dispatchEvent(new CustomEvent('timer-resumed', { 
         detail: { 
           taskId: activeTimer.taskId, 
           elapsedSeconds: activeTimer.elapsedSeconds,
-          isPaused: false,
           timestamp: Date.now()
         } 
       }));
       
-      // Immediately update local state for instant UI feedback
+      // SECOND: Update local state immediately
       const resumedTimer = { ...activeTimer, isPaused: false };
       setActiveTimer(resumedTimer);
       
+      // THIRD: Do database operation in background
+      setLoading(true);
       await databaseTimerService.resumeTimer(userId);
       await loadActiveTimer();
       
       toast({
         title: "Timer retomado",
-        description: "O timer foi retomado.",
+        description: "O timer foi retomado instantaneamente.",
       });
     } catch (error) {
-      console.error('[TimerActions] Error resuming timer:', error);
+      console.error('[TimerActions] ❌ Error resuming timer:', error);
       toast({
         title: "Erro",
         description: "Erro ao retomar o timer.",
@@ -143,17 +140,17 @@ export const useTimerActions = ({
   const stopTimer = useCallback(async (completeTask: boolean = false) => {
     if (!userId || !activeTimer) return;
     
-    console.log('[TimerActions] Stopping timer for task:', activeTimer.taskId);
-    setLoading(true);
+    console.log('[TimerActions] 🛑 Stopping timer for task:', activeTimer.taskId?.slice(0, 8));
     
     try {
+      setLoading(true);
       const finalDuration = await databaseTimerService.stopTimer(userId, completeTask);
       
-      // Immediately clear local state
+      // Clear state immediately
       setActiveTimer(null);
       setRealTimeSeconds(0);
       
-      // Dispatch immediate stop event for synchronization
+      // Dispatch stop event
       window.dispatchEvent(new CustomEvent('timer-stopped', { 
         detail: { 
           taskId: activeTimer.taskId, 
@@ -170,7 +167,7 @@ export const useTimerActions = ({
       
       return finalDuration;
     } catch (error) {
-      console.error('[TimerActions] Error stopping timer:', error);
+      console.error('[TimerActions] ❌ Error stopping timer:', error);
       toast({
         title: "Erro",
         description: "Erro ao parar o timer.",

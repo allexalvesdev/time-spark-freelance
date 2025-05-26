@@ -11,21 +11,21 @@ const ActiveTimerDisplay: React.FC = () => {
   const isMobile = useIsMobile();
   const [displaySeconds, setDisplaySeconds] = useState(0);
 
-  // Use unified state from database timer
+  // Unified display logic with immediate updates
   useEffect(() => {
     if (activeTimer) {
       if (activeTimer.isPaused) {
         // When paused, always show the exact elapsed seconds from database
         setDisplaySeconds(activeTimer.elapsedSeconds);
-        console.log('[ActiveTimerDisplay] Timer paused, showing elapsed:', activeTimer.elapsedSeconds);
+        console.log('[ActiveTimerDisplay] ⏸️ Timer paused, showing elapsed:', activeTimer.elapsedSeconds);
       } else {
         // Only update in real-time when NOT paused
         setDisplaySeconds(realTimeSeconds);
-        console.log('[ActiveTimerDisplay] Timer running, showing real-time:', realTimeSeconds);
+        console.log('[ActiveTimerDisplay] ▶️ Timer running, showing real-time:', realTimeSeconds);
       }
     } else {
       setDisplaySeconds(0);
-      console.log('[ActiveTimerDisplay] No active timer');
+      console.log('[ActiveTimerDisplay] ❌ No active timer');
     }
   }, [realTimeSeconds, activeTimer?.elapsedSeconds, activeTimer?.isPaused, activeTimer?.id]);
 
@@ -34,17 +34,17 @@ const ActiveTimerDisplay: React.FC = () => {
   }
 
   const handlePause = async () => {
-    console.log('[ActiveTimerDisplay] Pause button clicked');
+    console.log('[ActiveTimerDisplay] 🔽 Pause button clicked');
     await pauseTimer();
   };
 
   const handleResume = async () => {
-    console.log('[ActiveTimerDisplay] Resume button clicked');
+    console.log('[ActiveTimerDisplay] 🔼 Resume button clicked');
     await resumeTimer();
   };
 
   const handleStop = async () => {
-    console.log('[ActiveTimerDisplay] Stop button clicked');
+    console.log('[ActiveTimerDisplay] 🛑 Stop button clicked');
     await stopTimer(true);
   };
 

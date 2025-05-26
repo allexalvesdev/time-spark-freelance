@@ -15,17 +15,20 @@ export const useTaskTimerState = ({ task }: UseTaskTimerStateOptions) => {
   const isTimerRunning = activeTimer?.taskId === task.id;
   const isTimerPaused = isTimerRunning && activeTimer?.isPaused;
   
-  // If this task has the active timer, show real-time seconds
+  // If this task has the active timer, show real-time seconds when running, elapsed when paused
   // Otherwise, show stored elapsed time from task
-  const displaySeconds = isTimerRunning ? realTimeSeconds : (task.elapsedTime || 0);
+  const displaySeconds = isTimerRunning 
+    ? (activeTimer.isPaused ? activeTimer.elapsedSeconds : realTimeSeconds)
+    : (task.elapsedTime || 0);
   
-  console.log('[TaskTimerState]', {
+  console.log('[TaskTimerState] 📊 Timer state for task:', {
     taskId: task.id.slice(0, 8),
     isTimerRunning,
     isTimerPaused,
     displaySeconds,
     realTimeSeconds,
-    taskElapsedTime: task.elapsedTime
+    taskElapsedTime: task.elapsedTime,
+    activeTimerElapsed: activeTimer?.elapsedSeconds
   });
   
   return {

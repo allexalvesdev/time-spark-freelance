@@ -34,10 +34,10 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
         <TooltipProvider>
-          <AuthProvider>
-            <PlanProvider>
-              <AppContextProvider>
-                <Router>
+          <Router>
+            <AuthProvider>
+              <PlanProvider>
+                <AppContextProvider>
                   <Routes>
                     <Route path="/" element={<Landing />} />
                     <Route path="/index" element={<Index />} />
@@ -58,10 +58,10 @@ function App() {
                       </Layout>
                     } />
                   </Routes>
-                </Router>
-              </AppContextProvider>
-            </PlanProvider>
-          </AuthProvider>
+                </AppContextProvider>
+              </PlanProvider>
+            </AuthProvider>
+          </Router>
           <Toaster />
           <Sonner />
         </TooltipProvider>

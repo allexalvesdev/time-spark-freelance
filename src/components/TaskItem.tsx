@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Task, Project } from '@/types';
-import { useAppContext } from '@/contexts/AppContext';
-import useTimerState from '@/hooks/useTimerState';
+import { useDatabaseTimer } from '@/hooks/useDatabaseTimer';
+import { useSimpleTimer } from '@/hooks/useSimpleTimer';
 import EditTaskModal from './EditTaskModal';
 import CompleteTaskModal from './CompleteTaskModal';
 import TaskHeader from './task/TaskHeader';
@@ -9,7 +9,7 @@ import TaskDetails from './task/TaskDetails';
 import TaskTimer from './task/TaskTimer';
 import TaskActions from './task/TaskActions';
 import { calculateEarnings } from '@/utils/dateUtils';
-import { getCurrentElapsedFromStorage } from '@/utils/timer/timeCalculator';
+import { useAppContext } from '@/contexts/AppContext';
 
 interface TaskItemProps {
   task: Task;
@@ -17,54 +17,34 @@ interface TaskItemProps {
 }
 
 const TaskItem: React.FC<TaskItemProps> = ({ task, project }) => {
-  const { state, startTimer, pauseTimer, resumeTimer, stopTimer, deleteTask, getTaskTags } = useAppContext();
-  const { activeTimeEntry, tags } = state;
+  const { deleteTask, getTaskTags } = useAppContext();
+  const { activeTimer, startTimer, pauseTimer, resumeTimer, stopTimer } = useDatabaseTimer();
   const [showEditModal, setShowEditModal] = useState(false);
   const [showCompleteModal, setShowCompleteModal] = useState(false);
   const [currentTask, setCurrentTask] = useState<Task>(task);
   const [taskTags, setTaskTags] = useState<string[]>([]);
   
-  // Add null checks for safer operations
-  const safeTask = task || {} as Task;
-  const safeProject = project || {} as Project;
-  const safeTaskId = safeTask.id || '';
-  const safeProjectId = safeProject.id || '';
+  // Check if this task has the active timer
+  const isTimerRunning = activeTimer?.taskId === task.id;
+  const isTimerPaused = isTimerRunning && activeTimer?.isPaused;
   
-  const isTimerRunning = activeTimeEntry?.taskId === safeTaskId;
-  const isTimerPaused = activeTimeEntry?.isPaused && isTimerRunning;
-  
-  // Use global timer key for persistence
-  const timerKey = safeTaskId ? `global-timer-${safeTaskId}` : undefined;
-  
-  const { 
-    isRunning, 
-    isPaused,
-    elapsedTime: liveElapsedTime,
-    start,
-    pause,
-    resume,
-    stop,
-    reset,
-    getFormattedTime 
-  } = useTimerState({
-    autoStart: false,
-    initialTime: safeTask.elapsedTime || 0,
-    persistKey: timerKey
+  // Use simple timer for UI updates when this task is active
+  const { elapsedSeconds, formattedTime } = useSimpleTimer({
+    initialElapsedSeconds: isTimerRunning ? (activeTimer?.elapsedSeconds || 0) : (task.elapsedTime || 0),
+    isActive: isTimerRunning && !isTimerPaused
   });
 
   // Keep local task state updated with props
   useEffect(() => {
-    if (task) {
-      setCurrentTask(task);
-    }
+    setCurrentTask(task);
   }, [task]);
   
-  // Carregar tags da tarefa
+  // Load task tags
   useEffect(() => {
     const loadTaskTags = async () => {
       try {
-        if (safeTaskId && getTaskTags) {
-          const tagIds = await getTaskTags(safeTaskId);
+        if (task.id && getTaskTags) {
+          const tagIds = await getTaskTags(task.id);
           setTaskTags(tagIds || []);
         }
       } catch (error) {
@@ -73,20 +53,20 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, project }) => {
       }
     };
     
-    if (safeTaskId) {
-      loadTaskTags();
-    }
-  }, [safeTaskId, getTaskTags]);
+    loadTaskTags();
+  }, [task.id, getTaskTags]);
   
   // Filter tags for this task
+  const { state } = useAppContext();
+  const { tags } = state;
   const taskTagObjects = Array.isArray(tags) ? tags.filter(tag => tag && taskTags.includes(tag.id)) : [];
   
-  // Listen for task-completed events to update this specific task
+  // Listen for task-completed events
   useEffect(() => {
     const handleTaskCompleted = (event: CustomEvent) => {
       try {
         const { taskId, updatedTask } = event.detail || {};
-        if (taskId === safeTaskId && updatedTask) {
+        if (taskId === task.id && updatedTask) {
           setCurrentTask(updatedTask);
         }
       } catch (error) {
@@ -99,37 +79,11 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, project }) => {
     return () => {
       window.removeEventListener('task-completed', handleTaskCompleted as EventListener);
     };
-  }, [safeTaskId]);
-  
-  useEffect(() => {
-    try {
-      if (isTimerRunning && !isRunning) {
-        start();
-      } else if (!isTimerRunning && isRunning) {
-        stop();
-        reset();
-      }
-      
-      // Sync pause state
-      if (isTimerRunning && isTimerPaused && !isPaused) {
-        pause();
-      }
-      else if (isTimerRunning && !isTimerPaused && isPaused) {
-        resume();
-      }
-    } catch (error) {
-      console.error('Error syncing timer state:', error);
-    }
-  }, [isTimerRunning, isTimerPaused, isRunning, isPaused, start, stop, pause, resume, reset]);
+  }, [task.id]);
   
   const handleStartTimer = async () => {
     try {
-      if (!safeTaskId || !safeProjectId) {
-        console.error('Missing taskId or projectId');
-        return;
-      }
-      await startTimer(safeTaskId, safeProjectId);
-      start();
+      await startTimer(task.id, project.id);
     } catch (error) {
       console.error('Error starting timer:', error);
     }
@@ -138,7 +92,6 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, project }) => {
   const handlePauseTimer = async () => {
     try {
       await pauseTimer();
-      pause();
     } catch (error) {
       console.error('Error pausing timer:', error);
     }
@@ -147,7 +100,6 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, project }) => {
   const handleResumeTimer = async () => {
     try {
       await resumeTimer();
-      resume();
     } catch (error) {
       console.error('Error resuming timer:', error);
     }
@@ -156,8 +108,6 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, project }) => {
   const handleStopTimer = async () => {
     try {
       await stopTimer(true); // Auto-complete task
-      stop();
-      reset();
     } catch (error) {
       console.error('Error stopping timer:', error);
     }
@@ -168,26 +118,18 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, project }) => {
       if (isTimerRunning) {
         await stopTimer(false); // Don't complete task on delete
       }
-      if (safeTaskId && deleteTask) {
-        await deleteTask(safeTaskId);
+      if (task.id && deleteTask) {
+        await deleteTask(task.id);
       }
     } catch (error) {
       console.error('Error deleting task:', error);
     }
   };
   
-  // Use unified calculation for earnings - get current time if running, otherwise use saved time
-  const currentTimeForEarnings = isTimerRunning ? 
-    getCurrentElapsedFromStorage(safeTaskId) : 
-    (currentTask.elapsedTime || 0);
-    
-  const safeHourlyRate = typeof safeProject.hourlyRate === 'number' ? safeProject.hourlyRate : 0;
+  // Calculate earnings based on current elapsed time
+  const currentTimeForEarnings = isTimerRunning ? elapsedSeconds : (currentTask.elapsedTime || 0);
+  const safeHourlyRate = typeof project.hourlyRate === 'number' ? project.hourlyRate : 0;
   const currentEarnings = calculateEarnings(currentTimeForEarnings, safeHourlyRate);
-  
-  // Don't render if task is invalid
-  if (!safeTask.id) {
-    return null;
-  }
   
   return (
     <div className="task-item rounded-lg border p-4 bg-card">
@@ -201,7 +143,7 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, project }) => {
         isRunning={isTimerRunning}
         isPaused={isTimerPaused}
         currentEarnings={currentEarnings}
-        formattedTime={getFormattedTime()}
+        formattedTime={formattedTime}
         taskId={currentTask.id}
       />
       <TaskActions 

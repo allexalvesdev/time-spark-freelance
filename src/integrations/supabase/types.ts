@@ -206,6 +206,7 @@ export type Database = {
           duration: number | null
           end_time: string | null
           id: string
+          is_active: boolean | null
           is_paused: boolean | null
           is_running: boolean
           paused_time: number | null
@@ -219,6 +220,7 @@ export type Database = {
           duration?: number | null
           end_time?: string | null
           id?: string
+          is_active?: boolean | null
           is_paused?: boolean | null
           is_running?: boolean
           paused_time?: number | null
@@ -232,6 +234,7 @@ export type Database = {
           duration?: number | null
           end_time?: string | null
           id?: string
+          is_active?: boolean | null
           is_paused?: boolean | null
           is_running?: boolean
           paused_time?: number | null
@@ -262,6 +265,26 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calculate_timer_elapsed: {
+        Args: {
+          start_timestamp: string
+          paused_seconds?: number
+          is_currently_paused?: boolean
+        }
+        Returns: number
+      }
+      get_active_timer: {
+        Args: { user_uuid: string }
+        Returns: {
+          id: string
+          task_id: string
+          project_id: string
+          start_time: string
+          is_paused: boolean
+          paused_time: number
+          elapsed_seconds: number
+        }[]
+      }
       get_current_user_id: {
         Args: Record<PropertyKey, never>
         Returns: string

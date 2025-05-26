@@ -1,7 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { Tag } from '@/types';
-import { batchTagService } from './batchTagService';
 
 export const tagService = {
   async loadTags(userId: string) {
@@ -48,9 +47,6 @@ export const tagService = {
     
     if (taskTagError) throw taskTagError;
     
-    // Clear cache for affected tasks
-    batchTagService.clearCache();
-    
     // Then delete the tag itself
     const { error } = await supabase
       .from('tags')
@@ -69,9 +65,6 @@ export const tagService = {
       }]);
     
     if (error) throw error;
-    
-    // Clear cache for this task
-    batchTagService.clearCache();
   },
   
   async removeTagFromTask(taskId: string, tagId: string) {
@@ -82,16 +75,16 @@ export const tagService = {
       .eq('tag_id', tagId);
     
     if (error) throw error;
-    
-    // Clear cache for this task
-    batchTagService.clearCache();
   },
   
   async getTaskTags(taskId: string): Promise<string[]> {
-    return batchTagService.getTaskTags(taskId);
-  },
-  
-  async batchGetTaskTags(taskIds: string[]): Promise<Map<string, string[]>> {
-    return batchTagService.batchGetTaskTags(taskIds);
+    const { data, error } = await supabase
+      .from('task_tags')
+      .select('tag_id')
+      .eq('task_id', taskId);
+    
+    if (error) throw error;
+    
+    return data?.map(relation => relation.tag_id) || [];
   }
 };

@@ -1,91 +1,169 @@
 
-import React, { useState, useEffect } from 'react';
-import { useDatabaseTimer } from '@/hooks/useDatabaseTimer';
+import React, { useEffect } from 'react';
+import { useAppContext } from '@/contexts/AppContext';
+import { getCurrentElapsedFromStorage } from '@/utils/timer/timeCalculator';
 import { formatDuration } from '@/utils/dateUtils';
-import { Button } from '@/components/ui/button';
-import { Play, Pause, Square } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { Button } from './ui/button';
+import { Square, Pause, Play } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
 
 const ActiveTimerDisplay: React.FC = () => {
-  const { activeTimer, realTimeSeconds, pauseTimer, resumeTimer, stopTimer } = useDatabaseTimer();
+  const { state, getActiveTaskName, pauseTimer, resumeTimer, stopTimer } = useAppContext();
+  const { activeTimeEntry } = state;
   const isMobile = useIsMobile();
-  const [displaySeconds, setDisplaySeconds] = useState(0);
+  
+  const isPaused = activeTimeEntry?.isPaused;
+  const taskId = activeTimeEntry?.taskId || '';
+  
+  // Get current time using unified calculation
+  const currentElapsed = taskId ? getCurrentElapsedFromStorage(taskId) : 0;
+  const formattedTime = formatDuration(currentElapsed);
 
-  // Unified display logic with immediate updates
+  // Auto-refresh timer display every second when active
   useEffect(() => {
-    if (activeTimer) {
-      if (activeTimer.isPaused) {
-        // When paused, always show the exact elapsed seconds from database
-        setDisplaySeconds(activeTimer.elapsedSeconds);
-        console.log('[ActiveTimerDisplay] ⏸️ Timer paused, showing elapsed:', activeTimer.elapsedSeconds);
-      } else {
-        // Only update in real-time when NOT paused
-        setDisplaySeconds(realTimeSeconds);
-        console.log('[ActiveTimerDisplay] ▶️ Timer running, showing real-time:', realTimeSeconds);
-      }
-    } else {
-      setDisplaySeconds(0);
-      console.log('[ActiveTimerDisplay] ❌ No active timer');
-    }
-  }, [realTimeSeconds, activeTimer?.elapsedSeconds, activeTimer?.isPaused, activeTimer?.id]);
+    if (!activeTimeEntry || !taskId) return;
+    
+    const interval = setInterval(() => {
+      // Force re-render by triggering a storage event
+      window.dispatchEvent(new Event('storage-check'));
+    }, 1000);
+    
+    return () => clearInterval(interval);
+  }, [activeTimeEntry, taskId]);
 
-  if (!activeTimer) {
-    return null;
+  if (!activeTimeEntry || !taskId) return null;
+  
+  const taskName = getActiveTaskName();
+  const isCompact = isMobile;
+  
+  console.log('ActiveTimerDisplay render:', {
+    taskId,
+    isPaused,
+    currentElapsed,
+    formattedTime,
+    taskName
+  });
+  
+  const handlePauseTimer = () => {
+    pauseTimer();
+    toast({
+      title: "Timer pausado",
+      description: `Timer para "${taskName}" foi pausado.`,
+    });
+  };
+  
+  const handleResumeTimer = () => {
+    resumeTimer();
+    toast({
+      title: "Timer retomado",
+      description: `Timer para "${taskName}" foi retomado.`,
+    });
+  };
+
+  const handleStopTimer = () => {
+    stopTimer(true); // Auto-complete task on stop
+    toast({
+      title: "Timer parado",
+      description: `Timer para "${taskName}" foi parado e a tarefa foi marcada como concluída.`,
+    });
+  };
+  
+  if (isCompact) {
+    return (
+      <div className="flex items-center justify-between w-full gap-2">
+        <div className="flex flex-col">
+          <div className={`text-sm font-mono font-medium ${isPaused ? 'text-yellow-500' : ''}`}>
+            {formattedTime}
+            {isPaused && <span className="text-xs ml-1">(Pausado)</span>}
+          </div>
+          {taskName && (
+            <div className="text-xs opacity-70 truncate max-w-[100px]">
+              {taskName}
+            </div>
+          )}
+        </div>
+        
+        <div className="flex gap-1">
+          {isPaused ? (
+            <Button 
+              variant="secondary" 
+              size="sm" 
+              onClick={handleResumeTimer}
+              className="h-7 px-2 text-xs shrink-0 bg-green-500 hover:bg-green-600 text-white"
+            >
+              <Play className="h-3 w-3 mr-1" />
+              Retomar
+            </Button>
+          ) : (
+            <Button 
+              variant="secondary" 
+              size="sm" 
+              onClick={handlePauseTimer}
+              className="h-7 px-2 text-xs shrink-0 bg-yellow-500 hover:bg-yellow-600 text-white"
+            >
+              <Pause className="h-3 w-3 mr-1" />
+              Pausar
+            </Button>
+          )}
+          <Button 
+            variant="destructive" 
+            size="sm" 
+            onClick={handleStopTimer}
+            className="h-7 px-2 text-xs shrink-0"
+          >
+            <Square className="h-3 w-3 mr-1" />
+            Parar
+          </Button>
+        </div>
+      </div>
+    );
   }
-
-  const handlePause = async () => {
-    console.log('[ActiveTimerDisplay] 🔽 Pause button clicked');
-    await pauseTimer();
-  };
-
-  const handleResume = async () => {
-    console.log('[ActiveTimerDisplay] 🔼 Resume button clicked');
-    await resumeTimer();
-  };
-
-  const handleStop = async () => {
-    console.log('[ActiveTimerDisplay] 🛑 Stop button clicked');
-    await stopTimer(true);
-  };
-
+  
   return (
-    <div className="flex items-center gap-2 bg-timespark-accent/10 border border-timespark-accent/20 rounded-lg px-3 py-2">
-      <div className="flex items-center gap-2">
-        <div className={`w-2 h-2 rounded-full ${activeTimer.isPaused ? 'bg-yellow-500' : 'bg-green-500 animate-pulse'}`} />
-        <span className="text-sm font-medium">
-          {formatDuration(displaySeconds)}
-          {activeTimer.isPaused && <span className="text-yellow-500 ml-1">(Pausado)</span>}
-        </span>
+    <div className="flex items-center justify-between py-1 px-3 w-full gap-3">
+      <div className="flex flex-col items-center">
+        <div className={`text-base font-mono font-bold ${isPaused ? 'text-yellow-500' : ''}`}>
+          {formattedTime}
+          {isPaused && <span className="text-sm ml-2">(Pausado)</span>}
+        </div>
+        {taskName && (
+          <div className="text-sm opacity-90 truncate max-w-[130px]">
+            {taskName}
+          </div>
+        )}
       </div>
       
-      <div className="flex items-center gap-1">
-        {activeTimer.isPaused ? (
-          <Button
-            variant="ghost"
-            size={isMobile ? "sm" : "sm"}
-            onClick={handleResume}
-            className="h-6 w-6 p-0 text-green-600 hover:text-green-700 hover:bg-green-50"
+      <div className="flex gap-2 shrink-0">
+        {isPaused ? (
+          <Button 
+            variant="secondary" 
+            size="sm" 
+            onClick={handleResumeTimer}
+            className="shrink-0 bg-green-500 hover:bg-green-600 text-white"
           >
-            <Play size={12} />
+            <Play className="h-4 w-4 mr-1" />
+            Retomar
           </Button>
         ) : (
-          <Button
-            variant="ghost"
-            size={isMobile ? "sm" : "sm"}
-            onClick={handlePause}
-            className="h-6 w-6 p-0 text-yellow-600 hover:text-yellow-700 hover:bg-yellow-50"
+          <Button 
+            variant="secondary" 
+            size="sm" 
+            onClick={handlePauseTimer}
+            className="shrink-0 bg-yellow-500 hover:bg-yellow-600 text-white"
           >
-            <Pause size={12} />
+            <Pause className="h-4 w-4 mr-1" />
+            Pausar
           </Button>
         )}
-        
-        <Button
-          variant="ghost"
-          size={isMobile ? "sm" : "sm"}
-          onClick={handleStop}
-          className="h-6 w-6 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+        <Button 
+          variant="destructive" 
+          size="sm" 
+          onClick={handleStopTimer}
+          className="shrink-0"
         >
-          <Square size={12} />
+          <Square className="h-4 w-4 mr-1" />
+          Parar
         </Button>
       </div>
     </div>

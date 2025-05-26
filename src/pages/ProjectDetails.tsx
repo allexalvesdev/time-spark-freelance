@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { 
@@ -59,7 +58,6 @@ const ProjectDetails: React.FC = () => {
   const [projectTasks, setProjectTasks] = useState<Task[]>([]);
   const [deleteConfirmation, setDeleteConfirmation] = useState("");
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [refreshTrigger, setRefreshTrigger] = useState(0);
   
   // Verificar se projects existe antes de usar find
   const project = projects && Array.isArray(projects) ? projects.find(p => p.id === projectId) : undefined;
@@ -75,38 +73,12 @@ const ProjectDetails: React.FC = () => {
       setProjectTasks(currentTasks => 
         currentTasks.map(task => task.id === taskId ? updatedTask : task)
       );
-      
-      // Trigger a refresh of project calculations
-      setRefreshTrigger(prev => prev + 1);
-    };
-
-    const handleTimerStopped = (event: CustomEvent) => {
-      const { taskId, duration, completed } = event.detail;
-      
-      // Update the task with new elapsed time
-      setProjectTasks(currentTasks => 
-        currentTasks.map(task => {
-          if (task.id === taskId) {
-            return {
-              ...task,
-              elapsedTime: (task.elapsedTime || 0) + duration,
-              completed: completed || task.completed
-            };
-          }
-          return task;
-        })
-      );
-      
-      // Trigger a refresh of project calculations
-      setRefreshTrigger(prev => prev + 1);
     };
     
     window.addEventListener('task-completed', handleTaskCompleted as EventListener);
-    window.addEventListener('timer-stopped', handleTimerStopped as EventListener);
     
     return () => {
       window.removeEventListener('task-completed', handleTaskCompleted as EventListener);
-      window.removeEventListener('timer-stopped', handleTimerStopped as EventListener);
     };
   }, [tasks, projectId]);
   
@@ -124,7 +96,6 @@ const ProjectDetails: React.FC = () => {
     );
   }
   
-  // Recalculate project stats whenever projectTasks or refreshTrigger changes
   const completedTasks = projectTasks.filter(task => task.completed).length;
   const totalTime = projectTasks.reduce((total, task) => {
     return total + (task.elapsedTime || 0);

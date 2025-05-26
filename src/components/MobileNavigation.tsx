@@ -12,8 +12,7 @@ import {
 import { usePlatform } from '@/hooks/use-platform';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAppContext } from '@/contexts/AppContext';
-import { useDatabaseTimer } from '@/hooks/useDatabaseTimer';
-import { formatDuration } from '@/utils/dateUtils';
+import useTimerState from '@/hooks/useTimerState';
 import { Button } from '@/components/ui/button';
 
 const MobileNavigation: React.FC = () => {
@@ -23,11 +22,10 @@ const MobileNavigation: React.FC = () => {
   const { state, getActiveTaskName, stopTimer } = useAppContext();
   const { activeTimeEntry } = state || {};
   
-  const { activeTimer, realTimeSeconds } = useDatabaseTimer();
-  
-  // Use real-time seconds when running, elapsed seconds when paused
-  const displaySeconds = activeTimer?.isPaused ? activeTimer.elapsedSeconds : realTimeSeconds;
-  const formattedTime = formatDuration(displaySeconds);
+  const { getFormattedTime } = useTimerState({
+    persistKey: activeTimeEntry ? `global-timer-${activeTimeEntry.taskId}` : undefined,
+    autoStart: true
+  });
   
   // Only show the mobile navigation when in a native app or on a mobile device
   // AND when the user is authenticated
@@ -54,11 +52,11 @@ const MobileNavigation: React.FC = () => {
 
   return (
     <>
-      {(activeTimeEntry || activeTimer) && (
+      {activeTimeEntry && (
         <div className="fixed bottom-16 left-2 right-2 bg-background border rounded-md shadow-md p-3 flex items-center justify-between z-30">
           <div className="flex items-center gap-2">
             <div className="flex flex-col">
-              <div className="text-sm font-mono font-medium">{formattedTime}</div>
+              <div className="text-sm font-mono font-medium">{getFormattedTime()}</div>
               <div className="text-xs opacity-70 truncate max-w-[150px]">
                 {getActiveTaskName() || 'Tarefa ativa'}
               </div>

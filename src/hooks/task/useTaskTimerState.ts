@@ -1,34 +1,31 @@
 
-import { useMemo, useState } from 'react';
 import { Task } from '@/types';
-import { useDatabaseTimer } from '@/hooks/useDatabaseTimer';
+import { useUnifiedTimerState } from '@/hooks/timer/useUnifiedTimerState';
 
 interface UseTaskTimerStateOptions {
   task: Task;
 }
 
 export const useTaskTimerState = ({ task }: UseTaskTimerStateOptions) => {
-  const { displaySeconds, isPaused, isActive, timerId } = useDatabaseTimer();
-  const [localDisplaySeconds, setLocalDisplaySeconds] = useState(0);
+  const { 
+    displaySeconds, 
+    setDisplaySeconds, 
+    isTimerRunning: isUnifiedTimerRunning,
+    isTimerPaused: isUnifiedTimerPaused,
+    activeTimer 
+  } = useUnifiedTimerState({ taskId: task.id });
   
-  // Use useMemo to prevent unnecessary recalculations
-  const timerState = useMemo(() => {
-    // Check if this specific task has the active timer
-    const isTimerRunning = timerId === task.id;
-    const isTimerPaused = isTimerRunning && isPaused;
-    
-    // If this task doesn't have the active timer, show stored elapsed time
-    const finalDisplaySeconds = isTimerRunning ? displaySeconds : (task.elapsedTime || 0);
-    
-    return {
-      displaySeconds: finalDisplaySeconds,
-      isTimerRunning,
-      isTimerPaused
-    };
-  }, [displaySeconds, isPaused, isActive, timerId, task.id, task.elapsedTime]);
+  // Check if this specific task has the active timer
+  const isTimerRunning = activeTimer?.taskId === task.id;
+  const isTimerPaused = isTimerRunning && activeTimer?.isPaused;
+  
+  // If this task doesn't have the active timer, show stored elapsed time
+  const finalDisplaySeconds = isTimerRunning ? displaySeconds : (task.elapsedTime || 0);
   
   return {
-    ...timerState,
-    setDisplaySeconds: setLocalDisplaySeconds
+    displaySeconds: finalDisplaySeconds,
+    setDisplaySeconds,
+    isTimerRunning,
+    isTimerPaused
   };
 };

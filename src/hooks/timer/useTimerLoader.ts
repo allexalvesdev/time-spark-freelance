@@ -4,13 +4,12 @@ import { databaseTimerService, ActiveTimer } from '@/services/databaseTimerServi
 
 export const useTimerLoader = (userId?: string) => {
   const [activeTimer, setActiveTimer] = useState<ActiveTimer | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const loadActiveTimer = useCallback(async () => {
     if (!userId) return;
     
     try {
-      setIsLoading(true);
       const timer = await databaseTimerService.getActiveTimer(userId);
       setActiveTimer(timer);
       
@@ -36,19 +35,14 @@ export const useTimerLoader = (userId?: string) => {
       }
     } catch (error) {
       console.error('Error loading active timer:', error);
-    } finally {
-      setIsLoading(false);
     }
   }, [userId]);
-
-  const refetch = loadActiveTimer;
 
   return {
     activeTimer,
     setActiveTimer,
-    isLoading,
-    setIsLoading,
-    loadActiveTimer,
-    refetch
+    loading,
+    setLoading,
+    loadActiveTimer
   };
 };

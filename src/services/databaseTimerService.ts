@@ -1,6 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { Timer } from '@/types/timer';
+import { TimeEntry } from '@/types';
 
 export interface ActiveTimer {
   id: string;
@@ -162,44 +162,5 @@ export const databaseTimerService = {
       .eq('is_active', true);
 
     if (error) throw error;
-  }
-};
-
-// New exported functions to match expected interface
-export const startTimer = async (taskId: string): Promise<Timer | null> => {
-  try {
-    // This would need user ID - for now return null
-    return null;
-  } catch (error) {
-    console.error('Error starting timer:', error);
-    return null;
-  }
-};
-
-export const pauseTimer = async (timerId: string): Promise<Timer | null> => {
-  try {
-    // This would need user ID - for now return null
-    return null;
-  } catch (error) {
-    console.error('Error pausing timer:', error);
-    return null;
-  }
-};
-
-export const resumeTimer = async (timerId: string): Promise<Timer | null> => {
-  try {
-    // This would need user ID - for now return null
-    return null;
-  } catch (error) {
-    console.error('Error resuming timer:', error);
-    return null;
-  }
-};
-
-export const stopTimer = async (timerId: string): Promise<void> => {
-  try {
-    // This would need user ID - for now do nothing
-  } catch (error) {
-    console.error('Error stopping timer:', error);
   }
 };

@@ -3,38 +3,45 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useTimerLoader } from './timer/useTimerLoader';
 import { useTimerActions } from './timer/useTimerActions';
 import { useRealTimeCounter } from './timer/useRealTimeCounter';
-import { useUnifiedTimerState } from './timer/useUnifiedTimerState';
 import { useTimerRefresh } from './timer/useTimerRefresh';
 
-export function useDatabaseTimer() {
+export const useDatabaseTimer = () => {
   const { user } = useAuth();
   
-  // 1. Carrega timer ativo do banco
-  const { activeTimer, isLoading, refetch } = useTimerLoader(user?.id);
-  
-  // 2. Ações do timer
-  const actions = useTimerActions();
-  
-  // 3. Contador em tempo real
-  const realTimeSeconds = useRealTimeCounter(activeTimer);
-  
-  // 4. Estado unificado
-  const state = useUnifiedTimerState(activeTimer, realTimeSeconds);
-  
-  // 5. Auto-refresh (opcional)
-  useTimerRefresh(refetch);
-  
-  return {
-    // Estado
-    ...state,
-    isLoading,
+  const {
     activeTimer,
-    realTimeSeconds,
-    
-    // Ações
-    ...actions,
-    
-    // Função de refresh manual
-    refetch
+    setActiveTimer,
+    loading,
+    setLoading,
+    loadActiveTimer
+  } = useTimerLoader(user?.id);
+
+  const { realTimeSeconds, setRealTimeSeconds } = useRealTimeCounter(activeTimer);
+
+  const {
+    startTimer,
+    pauseTimer,
+    resumeTimer,
+    stopTimer
+  } = useTimerActions({
+    userId: user?.id,
+    activeTimer,
+    setActiveTimer,
+    setLoading,
+    setRealTimeSeconds,
+    loadActiveTimer
+  });
+
+  useTimerRefresh(loadActiveTimer);
+
+  return {
+    activeTimer,
+    loading,
+    realTimeSeconds: activeTimer ? realTimeSeconds : 0,
+    startTimer,
+    pauseTimer,
+    resumeTimer,
+    stopTimer,
+    refreshTimer: loadActiveTimer
   };
-}
+};

@@ -178,11 +178,7 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, project }) => {
   
   // Use unified calculation for earnings - get current time if running, otherwise use saved time
   const currentTimeForEarnings = isTimerRunning ? 
-    (() => {
-      // Import the getCurrentElapsedFromStorage function for consistent calculation
-      const { getCurrentElapsedFromStorage } = require('@/utils/timer/timeCalculator');
-      return getCurrentElapsedFromStorage(safeTaskId);
-    })() : 
+    getCurrentElapsedFromStorage(safeTaskId) : 
     (currentTask.elapsedTime || 0);
     
   const safeHourlyRate = typeof safeProject.hourlyRate === 'number' ? safeProject.hourlyRate : 0;

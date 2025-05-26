@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react';
 import { getSafeInteger } from '@/utils/timer/safeInteger';
 import { getPersistedTimerState, persistTimerState, clearPersistedTimerState } from '@/utils/timer/timerStorage';
@@ -50,8 +49,32 @@ const useTimerState = (options: UseTimerOptions = {}) => {
       const timerState = getPersistedTimerState(persistKey);
       
       if (timerState) {
+        // If timer is running and this is the active task, calculate current elapsed time
+        if (timerState.running && isActiveTask && timerState.startTime) {
+          const currentTime = Date.now();
+          let calculatedElapsed = Math.floor((currentTime - timerState.startTime) / 1000);
+          
+          // Subtract total paused time
+          calculatedElapsed -= timerState.pausedTime;
+          
+          // If currently paused, subtract additional paused time since pause started
+          if (timerState.paused && timerState.pausedAt) {
+            const additionalPausedTime = Math.floor((currentTime - timerState.pausedAt) / 1000);
+            calculatedElapsed -= additionalPausedTime;
+          }
+          
+          // Ensure non-negative elapsed time
+          calculatedElapsed = Math.max(0, calculatedElapsed);
+          
+          setElapsedTime(getSafeInteger(calculatedElapsed));
+          setPausedTime(timerState.pausedTime);
+          setIsRunning(true);
+          setIsPaused(timerState.paused);
+          startTimeRef.current = timerState.startTime;
+          pausedAtRef.current = timerState.pausedAt;
+        }
         // Handle paused state
-        if (timerState.running && timerState.paused && timerState.pausedAt) {
+        else if (timerState.running && timerState.paused && timerState.pausedAt) {
           setIsRunning(true);
           setIsPaused(true);
           setPausedTime(timerState.pausedTime);
@@ -61,15 +84,13 @@ const useTimerState = (options: UseTimerOptions = {}) => {
         }
         // If timer was running but not paused
         else if (timerState.running && !timerState.paused && timerState.startTime) {
-          const startTimeMs = timerState.startTime;
-          // Calculate time elapsed since timer started, accounting for paused time
-          const currentElapsed = getSafeInteger(Math.floor((Date.now() - startTimeMs) / 1000) - timerState.pausedTime);
+          const currentElapsed = getSafeInteger(Math.floor((Date.now() - timerState.startTime) / 1000) - timerState.pausedTime);
           
-          setElapsedTime(currentElapsed);
+          setElapsedTime(Math.max(0, currentElapsed));
           setPausedTime(timerState.pausedTime);
           setIsRunning(true);
           setIsPaused(false);
-          startTimeRef.current = startTimeMs;
+          startTimeRef.current = timerState.startTime;
           pausedAtRef.current = null;
         } 
         // If timer was not running, just load the elapsed time
@@ -81,14 +102,30 @@ const useTimerState = (options: UseTimerOptions = {}) => {
           startTimeRef.current = null;
           pausedAtRef.current = null;
         }
+      } else if (isActiveTask) {
+        // If this is the active task but no timer state, check global timer state
+        const globalStartTime = localStorage.getItem('timerStartTime');
+        const globalIsPaused = localStorage.getItem('timerIsPaused') === 'true';
+        const globalPausedTime = localStorage.getItem('timerPausedTime');
+        
+        if (globalStartTime) {
+          const startTime = parseInt(globalStartTime, 10);
+          const pausedTimeValue = globalPausedTime ? parseInt(globalPausedTime, 10) : 0;
+          const currentElapsed = Math.max(0, Math.floor((Date.now() - startTime) / 1000) - pausedTimeValue);
+          
+          setElapsedTime(getSafeInteger(currentElapsed));
+          setPausedTime(getSafeInteger(pausedTimeValue));
+          setIsRunning(true);
+          setIsPaused(globalIsPaused);
+          startTimeRef.current = startTime;
+        }
       }
       
       initialSetupDoneRef.current = true;
     } catch (e) {
-      // Silently handle errors
       console.error('Error loading timer state:', e);
     }
-  }, [persistKey]);
+  }, [persistKey, isActiveTask]);
 
   // Function to clear interval safely
   const clearIntervalSafely = () => {

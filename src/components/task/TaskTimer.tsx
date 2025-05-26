@@ -23,7 +23,7 @@ const TaskTimer: React.FC<TaskTimerProps> = ({
   // Use the global timer if we have a taskId
   const globalTimerKey = taskId ? `global-timer-${taskId}` : undefined;
   
-  const { getFormattedTime } = useTimerState({
+  const { getFormattedTime, elapsedTime: liveElapsedTime } = useTimerState({
     initialTime: elapsedTime,
     autoStart: isRunning,
     persistKey: globalTimerKey
@@ -37,12 +37,16 @@ const TaskTimer: React.FC<TaskTimerProps> = ({
   const safeCurrentEarnings = typeof currentEarnings === 'number' ? currentEarnings : 0;
   const safeTaskId = taskId || '';
 
+  // Use live timer time if running, otherwise use saved elapsed time
+  const displayTime = isRunning && safeTaskId ? liveElapsedTime : safeElapsedTime;
+  const displayFormattedTime = isRunning && safeTaskId ? getFormattedTime() : formatDuration(safeElapsedTime);
+
   return (
     <div className="flex items-center justify-between p-2 bg-muted rounded mb-4">
       <div className="text-sm">
         <span className="text-muted-foreground">Tempo: </span>
         <span className={`font-medium ${isPaused ? 'text-yellow-500' : ''}`}>
-          {isRunning && safeTaskId ? getFormattedTime() : formatDuration(safeElapsedTime)}
+          {displayFormattedTime}
           {isPaused && <span className="ml-1">(Pausado)</span>}
         </span>
       </div>

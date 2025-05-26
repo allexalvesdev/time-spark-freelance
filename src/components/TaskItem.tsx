@@ -38,7 +38,7 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, project }) => {
   const { 
     isRunning, 
     isPaused,
-    elapsedTime,
+    elapsedTime: liveElapsedTime,
     start,
     pause,
     resume,
@@ -176,9 +176,9 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, project }) => {
   };
   
   // Pass the total time (either from active timer or from saved task)
-  const totalTime = isTimerRunning ? elapsedTime : (currentTask.elapsedTime || 0);
+  const currentTimeForEarnings = isTimerRunning ? liveElapsedTime : (currentTask.elapsedTime || 0);
   const safeHourlyRate = typeof safeProject.hourlyRate === 'number' ? safeProject.hourlyRate : 0;
-  const currentEarnings = calculateEarnings(totalTime, safeHourlyRate);
+  const currentEarnings = calculateEarnings(currentTimeForEarnings, safeHourlyRate);
   
   // Don't render if task is invalid
   if (!safeTask.id) {

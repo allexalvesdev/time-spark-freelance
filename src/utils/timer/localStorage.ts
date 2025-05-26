@@ -7,24 +7,36 @@ export const clearTimerStorage = (taskId: string): void => {
   console.log('[LocalStorage] 🧹 Clearing all timer storage for task:', taskId?.slice(0, 8));
   
   // Clear all timer-related localStorage entries
-  localStorage.removeItem('activeTimeEntryId');
-  localStorage.removeItem('activeTaskId');
-  localStorage.removeItem('timerStartTime');
-  localStorage.removeItem('timerIsPaused');
-  localStorage.removeItem('timerPausedTime');
-  localStorage.removeItem('timerPausedAt');
+  const keysToRemove = [
+    'activeTimeEntryId',
+    'activeTaskId', 
+    'timerStartTime',
+    'timerIsPaused',
+    'timerPausedTime',
+    'timerPausedAt'
+  ];
+  
+  keysToRemove.forEach(key => {
+    localStorage.removeItem(key);
+  });
   
   // Clear task-specific timer values
-  localStorage.removeItem(`timerIsRunning-global-timer-${taskId}`);
-  localStorage.removeItem(`timerStartTime-global-timer-${taskId}`);
-  localStorage.removeItem(`timerElapsedTime-global-timer-${taskId}`);
-  localStorage.removeItem(`timerIsPaused-global-timer-${taskId}`);
-  localStorage.removeItem(`timerPausedTime-global-timer-${taskId}`);
-  localStorage.removeItem(`timerPausedAt-global-timer-${taskId}`);
+  const taskSpecificKeys = [
+    `timerIsRunning-global-timer-${taskId}`,
+    `timerStartTime-global-timer-${taskId}`,
+    `timerElapsedTime-global-timer-${taskId}`,
+    `timerIsPaused-global-timer-${taskId}`,
+    `timerPausedTime-global-timer-${taskId}`,
+    `timerPausedAt-global-timer-${taskId}`
+  ];
+  
+  taskSpecificKeys.forEach(key => {
+    localStorage.removeItem(key);
+  });
   
   // Clear any old timer state entries that might be causing conflicts
-  const keys = Object.keys(localStorage);
-  keys.forEach(key => {
+  const allKeys = Object.keys(localStorage);
+  allKeys.forEach(key => {
     if (key.includes('timerState-') || key.includes('calculateTimerElapsed')) {
       localStorage.removeItem(key);
       console.log('[LocalStorage] 🗑️ Removed old timer key:', key);
@@ -42,8 +54,6 @@ export const clearTimerStorage = (taskId: string): void => {
  */
 export const updatePauseStateStorage = (taskId: string, isPaused: boolean, pausedTime: number): void => {
   console.log('[LocalStorage] 💾 Updating pause state:', { taskId: taskId?.slice(0, 8), isPaused, pausedTime });
-  
-  localStorage.setItem('timerIsPaused', isPaused ? 'true' : 'false');
   
   if (isPaused) {
     const pausedAt = new Date().getTime();

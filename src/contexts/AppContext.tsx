@@ -80,6 +80,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return task ? task.name : null;
   };
   
+  // Optimized batch tag loader
+  const batchGetTaskTags = async (taskIds: string[]): Promise<Map<string, string[]>> => {
+    try {
+      return await tagService.batchGetTaskTags(taskIds);
+    } catch (error) {
+      console.error('Error batch loading task tags:', error);
+      return new Map();
+    }
+  };
+  
   // Update centralized state when sub-states change
   useEffect(() => {
     setState({
@@ -121,6 +131,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     
     const loadInitialData = async () => {
       try {
+        console.log('[AppContext] 🔄 Loading initial data...');
+        
         // Load projects
         const projectsData = await projectService.loadProjects();
         setProjects(projectsData || []);
@@ -131,16 +143,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         
         // Load time entries
         const timeEntriesData = await timeEntryService.loadTimeEntries();
-        
         setTimeEntries(timeEntriesData || []);
         setActiveTimeEntry(timeEntriesData.find((entry: TimeEntry) => entry.isRunning) || null);
 
         // Load tags
         const { tags: tagsData } = await tagService.loadTags(user.id);
         setTags(tagsData);
+        
+        console.log('[AppContext] ✅ Initial data loaded successfully');
       } catch (error) {
-        // Handle data loading error
-        console.error("Error loading data:", error);
+        console.error("[AppContext] ❌ Error loading data:", error);
       }
     };
     
@@ -180,6 +192,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     addTagToTask,
     removeTagFromTask,
     getTaskTags,
+    batchGetTaskTags,
   };
   
   return (

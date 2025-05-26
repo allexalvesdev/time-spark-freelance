@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Task, Project } from '@/types';
 import { useDatabaseTimer } from '@/hooks/useDatabaseTimer';
-import { useSimpleTimer } from '@/hooks/useSimpleTimer';
 import EditTaskModal from './EditTaskModal';
 import CompleteTaskModal from './CompleteTaskModal';
 import TaskHeader from './task/TaskHeader';
 import TaskDetails from './task/TaskDetails';
 import TaskTimer from './task/TaskTimer';
 import TaskActions from './task/TaskActions';
-import { calculateEarnings } from '@/utils/dateUtils';
+import { calculateEarnings, formatDuration } from '@/utils/dateUtils';
 import { useAppContext } from '@/contexts/AppContext';
 
 interface TaskItemProps {
@@ -18,21 +17,56 @@ interface TaskItemProps {
 
 const TaskItem: React.FC<TaskItemProps> = ({ task, project }) => {
   const { deleteTask, getTaskTags } = useAppContext();
-  const { activeTimer, startTimer, pauseTimer, resumeTimer, stopTimer } = useDatabaseTimer();
+  const { activeTimer, realTimeSeconds, startTimer, pauseTimer, resumeTimer, stopTimer } = useDatabaseTimer();
   const [showEditModal, setShowEditModal] = useState(false);
   const [showCompleteModal, setShowCompleteModal] = useState(false);
   const [currentTask, setCurrentTask] = useState<Task>(task);
   const [taskTags, setTaskTags] = useState<string[]>([]);
+  const [displaySeconds, setDisplaySeconds] = useState(0);
   
   // Check if this task has the active timer
   const isTimerRunning = activeTimer?.taskId === task.id;
   const isTimerPaused = isTimerRunning && activeTimer?.isPaused;
   
-  // Use simple timer for UI updates when this task is active
-  const { elapsedSeconds, formattedTime } = useSimpleTimer({
-    initialElapsedSeconds: isTimerRunning ? (activeTimer?.elapsedSeconds || 0) : (task.elapsedTime || 0),
-    isActive: isTimerRunning && !isTimerPaused
-  });
+  // Update display seconds based on timer state
+  useEffect(() => {
+    if (isTimerRunning) {
+      setDisplaySeconds(realTimeSeconds);
+    } else {
+      setDisplaySeconds(currentTask.elapsedTime || 0);
+    }
+  }, [isTimerRunning, realTimeSeconds, currentTask.elapsedTime]);
+
+  // Listen for immediate timer synchronization events
+  useEffect(() => {
+    const handleTimerEvent = (event: CustomEvent) => {
+      const { taskId, elapsedSeconds, timestamp } = event.detail;
+      
+      if (taskId === task.id) {
+        if (elapsedSeconds !== undefined) {
+          setDisplaySeconds(elapsedSeconds);
+        }
+      }
+    };
+
+    const events = [
+      'timer-started',
+      'timer-paused', 
+      'timer-resumed',
+      'timer-stopped',
+      'timer-state-loaded'
+    ];
+
+    events.forEach(eventType => {
+      window.addEventListener(eventType, handleTimerEvent as EventListener);
+    });
+
+    return () => {
+      events.forEach(eventType => {
+        window.removeEventListener(eventType, handleTimerEvent as EventListener);
+      });
+    };
+  }, [task.id]);
 
   // Keep local task state updated with props
   useEffect(() => {
@@ -126,10 +160,9 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, project }) => {
     }
   };
   
-  // Calculate earnings based on current elapsed time
-  const currentTimeForEarnings = isTimerRunning ? elapsedSeconds : (currentTask.elapsedTime || 0);
+  // Calculate earnings based on current display seconds
   const safeHourlyRate = typeof project.hourlyRate === 'number' ? project.hourlyRate : 0;
-  const currentEarnings = calculateEarnings(currentTimeForEarnings, safeHourlyRate);
+  const currentEarnings = calculateEarnings(displaySeconds, safeHourlyRate);
   
   return (
     <div className="task-item rounded-lg border p-4 bg-card">
@@ -139,11 +172,11 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, project }) => {
         tags={taskTagObjects}
       />
       <TaskTimer 
-        elapsedTime={currentTask.elapsedTime || 0}
+        elapsedTime={displaySeconds}
         isRunning={isTimerRunning}
         isPaused={isTimerPaused}
         currentEarnings={currentEarnings}
-        formattedTime={formattedTime}
+        formattedTime={formatDuration(displaySeconds)}
         taskId={currentTask.id}
       />
       <TaskActions 

@@ -8,6 +8,7 @@ export const useDatabaseTimer = () => {
   const { user } = useAuth();
   const [activeTimer, setActiveTimer] = useState<ActiveTimer | null>(null);
   const [loading, setLoading] = useState(false);
+  const [realTimeSeconds, setRealTimeSeconds] = useState(0);
 
   const loadActiveTimer = useCallback(async () => {
     if (!user?.id) return;
@@ -15,6 +16,34 @@ export const useDatabaseTimer = () => {
     try {
       const timer = await databaseTimerService.getActiveTimer(user.id);
       setActiveTimer(timer);
+      
+      // Set real-time seconds for immediate display
+      if (timer) {
+        setRealTimeSeconds(timer.elapsedSeconds);
+      } else {
+        setRealTimeSeconds(0);
+      }
+      
+      // Dispatch global event for synchronization
+      if (timer) {
+        window.dispatchEvent(new CustomEvent('timer-state-loaded', { 
+          detail: { 
+            taskId: timer.taskId, 
+            elapsedSeconds: timer.elapsedSeconds,
+            isPaused: timer.isPaused,
+            isActive: true
+          } 
+        }));
+      } else {
+        window.dispatchEvent(new CustomEvent('timer-state-loaded', { 
+          detail: { 
+            taskId: null, 
+            elapsedSeconds: 0,
+            isPaused: false,
+            isActive: false
+          } 
+        }));
+      }
     } catch (error) {
       console.error('Error loading active timer:', error);
     }
@@ -28,9 +57,9 @@ export const useDatabaseTimer = () => {
       await databaseTimerService.startTimer(taskId, projectId, user.id);
       await loadActiveTimer();
       
-      // Dispatch event for other components
+      // Dispatch immediate synchronization event
       window.dispatchEvent(new CustomEvent('timer-started', { 
-        detail: { taskId, projectId } 
+        detail: { taskId, projectId, timestamp: Date.now() } 
       }));
       
       toast({
@@ -54,12 +83,21 @@ export const useDatabaseTimer = () => {
     
     setLoading(true);
     try {
+      // Immediately update local state for instant UI feedback
+      const pausedTimer = { ...activeTimer, isPaused: true };
+      setActiveTimer(pausedTimer);
+      
+      // Dispatch immediate pause event for synchronization
+      window.dispatchEvent(new CustomEvent('timer-paused', { 
+        detail: { 
+          taskId: activeTimer.taskId, 
+          elapsedSeconds: activeTimer.elapsedSeconds,
+          timestamp: Date.now()
+        } 
+      }));
+      
       await databaseTimerService.pauseTimer(user.id);
       await loadActiveTimer();
-      
-      window.dispatchEvent(new CustomEvent('timer-paused', { 
-        detail: { taskId: activeTimer.taskId } 
-      }));
       
       toast({
         title: "Timer pausado",
@@ -82,12 +120,21 @@ export const useDatabaseTimer = () => {
     
     setLoading(true);
     try {
+      // Immediately update local state for instant UI feedback
+      const resumedTimer = { ...activeTimer, isPaused: false };
+      setActiveTimer(resumedTimer);
+      
+      // Dispatch immediate resume event for synchronization
+      window.dispatchEvent(new CustomEvent('timer-resumed', { 
+        detail: { 
+          taskId: activeTimer.taskId, 
+          elapsedSeconds: activeTimer.elapsedSeconds,
+          timestamp: Date.now()
+        } 
+      }));
+      
       await databaseTimerService.resumeTimer(user.id);
       await loadActiveTimer();
-      
-      window.dispatchEvent(new CustomEvent('timer-resumed', { 
-        detail: { taskId: activeTimer.taskId } 
-      }));
       
       toast({
         title: "Timer retomado",
@@ -111,10 +158,19 @@ export const useDatabaseTimer = () => {
     setLoading(true);
     try {
       const finalDuration = await databaseTimerService.stopTimer(user.id, completeTask);
-      setActiveTimer(null);
       
+      // Immediately clear local state
+      setActiveTimer(null);
+      setRealTimeSeconds(0);
+      
+      // Dispatch immediate stop event for synchronization
       window.dispatchEvent(new CustomEvent('timer-stopped', { 
-        detail: { taskId: activeTimer.taskId, duration: finalDuration, completed: completeTask } 
+        detail: { 
+          taskId: activeTimer.taskId, 
+          duration: finalDuration, 
+          completed: completeTask,
+          timestamp: Date.now()
+        } 
       }));
       
       toast({
@@ -136,12 +192,25 @@ export const useDatabaseTimer = () => {
     }
   }, [user?.id, activeTimer]);
 
+  // Real-time counter for active timers
+  useEffect(() => {
+    if (!activeTimer || activeTimer.isPaused) {
+      return;
+    }
+
+    const interval = setInterval(() => {
+      setRealTimeSeconds(prev => prev + 1);
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [activeTimer?.isPaused, activeTimer?.id]);
+
   // Load active timer on mount and set up refresh interval
   useEffect(() => {
     loadActiveTimer();
     
-    // Refresh active timer every 5 seconds to get updated elapsed time
-    const interval = setInterval(loadActiveTimer, 5000);
+    // Refresh active timer every 30 seconds to stay in sync with database
+    const interval = setInterval(loadActiveTimer, 30000);
     
     return () => clearInterval(interval);
   }, [loadActiveTimer]);
@@ -149,6 +218,7 @@ export const useDatabaseTimer = () => {
   return {
     activeTimer,
     loading,
+    realTimeSeconds: activeTimer ? realTimeSeconds : 0,
     startTimer,
     pauseTimer,
     resumeTimer,

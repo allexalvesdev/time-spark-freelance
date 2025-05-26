@@ -32,12 +32,17 @@ const TaskTimer: React.FC<TaskTimerProps> = ({
   // Always display the timer section if running or if there's time recorded
   if (elapsedTime === 0 && !isRunning) return null;
 
+  // Add null checks for safer rendering
+  const safeElapsedTime = typeof elapsedTime === 'number' ? elapsedTime : 0;
+  const safeCurrentEarnings = typeof currentEarnings === 'number' ? currentEarnings : 0;
+  const safeTaskId = taskId || '';
+
   return (
     <div className="flex items-center justify-between p-2 bg-muted rounded mb-4">
       <div className="text-sm">
         <span className="text-muted-foreground">Tempo: </span>
         <span className={`font-medium ${isPaused ? 'text-yellow-500' : ''}`}>
-          {isRunning && taskId ? getFormattedTime() : formatDuration(elapsedTime)}
+          {isRunning && safeTaskId ? getFormattedTime() : formatDuration(safeElapsedTime)}
           {isPaused && <span className="ml-1">(Pausado)</span>}
         </span>
       </div>
@@ -47,7 +52,7 @@ const TaskTimer: React.FC<TaskTimerProps> = ({
           {new Intl.NumberFormat('pt-BR', {
             style: 'currency',
             currency: 'BRL'
-          }).format(currentEarnings)}
+          }).format(safeCurrentEarnings)}
         </span>
       </div>
     </div>

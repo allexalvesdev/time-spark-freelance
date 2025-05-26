@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Task, Project } from '@/types';
 import { useAppContext } from '@/contexts/AppContext';
@@ -24,11 +23,17 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, project }) => {
   const [currentTask, setCurrentTask] = useState<Task>(task);
   const [taskTags, setTaskTags] = useState<string[]>([]);
   
-  const isTimerRunning = activeTimeEntry?.taskId === task.id;
+  // Add null checks for safer operations
+  const safeTask = task || {} as Task;
+  const safeProject = project || {} as Project;
+  const safeTaskId = safeTask.id || '';
+  const safeProjectId = safeProject.id || '';
+  
+  const isTimerRunning = activeTimeEntry?.taskId === safeTaskId;
   const isTimerPaused = activeTimeEntry?.isPaused && isTimerRunning;
   
   // Use global timer key for persistence
-  const timerKey = `global-timer-${task.id}`;
+  const timerKey = safeTaskId ? `global-timer-${safeTaskId}` : undefined;
   
   const { 
     isRunning, 
@@ -42,38 +47,49 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, project }) => {
     getFormattedTime 
   } = useTimerState({
     autoStart: false,
-    initialTime: task.elapsedTime || 0,
+    initialTime: safeTask.elapsedTime || 0,
     persistKey: timerKey
   });
 
   // Keep local task state updated with props
   useEffect(() => {
-    setCurrentTask(task);
+    if (task) {
+      setCurrentTask(task);
+    }
   }, [task]);
   
   // Carregar tags da tarefa
   useEffect(() => {
     const loadTaskTags = async () => {
       try {
-        const tagIds = await getTaskTags(task.id);
-        setTaskTags(tagIds);
+        if (safeTaskId && getTaskTags) {
+          const tagIds = await getTaskTags(safeTaskId);
+          setTaskTags(tagIds || []);
+        }
       } catch (error) {
-        // Silently handle errors
+        console.error('Error loading task tags:', error);
+        setTaskTags([]);
       }
     };
     
-    loadTaskTags();
-  }, [task.id, getTaskTags]);
+    if (safeTaskId) {
+      loadTaskTags();
+    }
+  }, [safeTaskId, getTaskTags]);
   
   // Filter tags for this task
-  const taskTagObjects = tags.filter(tag => taskTags.includes(tag.id));
+  const taskTagObjects = Array.isArray(tags) ? tags.filter(tag => tag && taskTags.includes(tag.id)) : [];
   
   // Listen for task-completed events to update this specific task
   useEffect(() => {
     const handleTaskCompleted = (event: CustomEvent) => {
-      const { taskId, updatedTask } = event.detail;
-      if (taskId === task.id) {
-        setCurrentTask(updatedTask);
+      try {
+        const { taskId, updatedTask } = event.detail || {};
+        if (taskId === safeTaskId && updatedTask) {
+          setCurrentTask(updatedTask);
+        }
+      } catch (error) {
+        console.error('Error handling task completed event:', error);
       }
     };
     
@@ -82,56 +98,92 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, project }) => {
     return () => {
       window.removeEventListener('task-completed', handleTaskCompleted as EventListener);
     };
-  }, [task.id]);
+  }, [safeTaskId]);
   
   useEffect(() => {
-    if (isTimerRunning && !isRunning) {
-      start();
-    } else if (!isTimerRunning && isRunning) {
-      stop();
-      reset();
-    }
-    
-    // Sync pause state
-    if (isTimerRunning && isTimerPaused && !isPaused) {
-      pause();
-    }
-    else if (isTimerRunning && !isTimerPaused && isPaused) {
-      resume();
+    try {
+      if (isTimerRunning && !isRunning) {
+        start();
+      } else if (!isTimerRunning && isRunning) {
+        stop();
+        reset();
+      }
+      
+      // Sync pause state
+      if (isTimerRunning && isTimerPaused && !isPaused) {
+        pause();
+      }
+      else if (isTimerRunning && !isTimerPaused && isPaused) {
+        resume();
+      }
+    } catch (error) {
+      console.error('Error syncing timer state:', error);
     }
   }, [isTimerRunning, isTimerPaused, isRunning, isPaused, start, stop, pause, resume, reset]);
   
-  const handleStartTimer = () => {
-    startTimer(task.id, project.id);
-    start();
-  };
-  
-  const handlePauseTimer = () => {
-    pauseTimer();
-    pause();
-  };
-  
-  const handleResumeTimer = () => {
-    resumeTimer();
-    resume();
-  };
-  
-  const handleStopTimer = () => {
-    stopTimer(true); // Auto-complete task
-    stop();
-    reset();
-  };
-  
-  const handleDeleteTask = () => {
-    if (isTimerRunning) {
-      stopTimer(false); // Don't complete task on delete
+  const handleStartTimer = async () => {
+    try {
+      if (!safeTaskId || !safeProjectId) {
+        console.error('Missing taskId or projectId');
+        return;
+      }
+      await startTimer(safeTaskId, safeProjectId);
+      start();
+    } catch (error) {
+      console.error('Error starting timer:', error);
     }
-    deleteTask(task.id);
+  };
+  
+  const handlePauseTimer = async () => {
+    try {
+      await pauseTimer();
+      pause();
+    } catch (error) {
+      console.error('Error pausing timer:', error);
+    }
+  };
+  
+  const handleResumeTimer = async () => {
+    try {
+      await resumeTimer();
+      resume();
+    } catch (error) {
+      console.error('Error resuming timer:', error);
+    }
+  };
+  
+  const handleStopTimer = async () => {
+    try {
+      await stopTimer(true); // Auto-complete task
+      stop();
+      reset();
+    } catch (error) {
+      console.error('Error stopping timer:', error);
+    }
+  };
+  
+  const handleDeleteTask = async () => {
+    try {
+      if (isTimerRunning) {
+        await stopTimer(false); // Don't complete task on delete
+      }
+      if (safeTaskId && deleteTask) {
+        await deleteTask(safeTaskId);
+      }
+    } catch (error) {
+      console.error('Error deleting task:', error);
+    }
   };
   
   // Pass the total time (either from active timer or from saved task)
   const totalTime = isTimerRunning ? elapsedTime : (currentTask.elapsedTime || 0);
-  const currentEarnings = calculateEarnings(totalTime, project.hourlyRate);
+  const safeHourlyRate = typeof safeProject.hourlyRate === 'number' ? safeProject.hourlyRate : 0;
+  const currentEarnings = calculateEarnings(totalTime, safeHourlyRate);
+  
+  // Don't render if task is invalid
+  if (!safeTask.id) {
+    return null;
+  }
   
   return (
     <div className="task-item rounded-lg border p-4 bg-card">

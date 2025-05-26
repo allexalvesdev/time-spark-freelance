@@ -21,6 +21,11 @@ export interface TimerActionOptions {
  * Starts the timer
  */
 export const startTimerAction = (options: TimerActionOptions): void => {
+  if (!options) {
+    console.error('Timer options are required');
+    return;
+  }
+
   const {
     persistKey,
     isRunning,
@@ -60,6 +65,11 @@ export const startTimerAction = (options: TimerActionOptions): void => {
  * Pauses the timer
  */
 export const pauseTimerAction = (options: TimerActionOptions): void => {
+  if (!options) {
+    console.error('Timer options are required');
+    return;
+  }
+
   const {
     persistKey,
     isRunning,
@@ -82,10 +92,13 @@ export const pauseTimerAction = (options: TimerActionOptions): void => {
     clearInterval();
     
     // Force a custom event to notify other components about the change
-    const pauseEvent = new CustomEvent('timer-paused', {
-      detail: { taskId: persistKey?.split('-').pop(), pausedAt: pausedAtRef.current }
-    });
-    window.dispatchEvent(pauseEvent);
+    const taskId = persistKey?.split('-').pop();
+    if (taskId) {
+      const pauseEvent = new CustomEvent('timer-paused', {
+        detail: { taskId, pausedAt: pausedAtRef.current }
+      });
+      window.dispatchEvent(pauseEvent);
+    }
     
     if (persistKey) {
       persistTimerState(
@@ -110,6 +123,11 @@ export const pauseTimerAction = (options: TimerActionOptions): void => {
  * Resumes the timer
  */
 export const resumeTimerAction = (options: TimerActionOptions): void => {
+  if (!options) {
+    console.error('Timer options are required');
+    return;
+  }
+
   const {
     persistKey,
     isRunning,
@@ -138,10 +156,13 @@ export const resumeTimerAction = (options: TimerActionOptions): void => {
     pausedAtRef.current = null;
     
     // Force a custom event to notify other components about the change
-    const resumeEvent = new CustomEvent('timer-resumed', {
-      detail: { taskId: persistKey?.split('-').pop(), newPausedTime }
-    });
-    window.dispatchEvent(resumeEvent);
+    const taskId = persistKey?.split('-').pop();
+    if (taskId) {
+      const resumeEvent = new CustomEvent('timer-resumed', {
+        detail: { taskId, newPausedTime }
+      });
+      window.dispatchEvent(resumeEvent);
+    }
     
     if (persistKey) {
       persistTimerState(
@@ -167,6 +188,11 @@ export const resumeTimerAction = (options: TimerActionOptions): void => {
  * Stops the timer
  */
 export const stopTimerAction = (options: TimerActionOptions): void => {
+  if (!options) {
+    console.error('Timer options are required');
+    return;
+  }
+
   const {
     persistKey,
     isRunning,
@@ -202,10 +228,13 @@ export const stopTimerAction = (options: TimerActionOptions): void => {
     }
     
     // Force a custom event to notify other components about the change
-    const stopEvent = new CustomEvent('timer-stopped', {
-      detail: { taskId: persistKey?.split('-').pop(), elapsedTime: finalElapsedTime, pausedTime: finalPausedTime }
-    });
-    window.dispatchEvent(stopEvent);
+    const taskId = persistKey?.split('-').pop();
+    if (taskId) {
+      const stopEvent = new CustomEvent('timer-stopped', {
+        detail: { taskId, elapsedTime: finalElapsedTime, pausedTime: finalPausedTime }
+      });
+      window.dispatchEvent(stopEvent);
+    }
   }
 };
 
@@ -215,11 +244,11 @@ export const stopTimerAction = (options: TimerActionOptions): void => {
  * @returns Formatted time string (HH:MM:SS)
  */
 export const formatTimerDisplay = (elapsedTime: number): string => {
-  if (elapsedTime < 0) elapsedTime = 0;
+  const safeElapsedTime = typeof elapsedTime === 'number' && elapsedTime >= 0 ? elapsedTime : 0;
   
-  const hours = Math.floor(elapsedTime / 3600);
-  const minutes = Math.floor((elapsedTime % 3600) / 60);
-  const seconds = elapsedTime % 60;
+  const hours = Math.floor(safeElapsedTime / 3600);
+  const minutes = Math.floor((safeElapsedTime % 3600) / 60);
+  const seconds = safeElapsedTime % 60;
 
   return [
     hours.toString().padStart(2, '0'),

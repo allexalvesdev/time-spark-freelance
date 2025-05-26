@@ -18,11 +18,16 @@ const Timer: React.FC<TimerProps> = ({ taskId, projectId, hourlyRate }) => {
   const { activeTimeEntry } = state;
   const isMobile = useIsMobile();
   
-  const isActive = activeTimeEntry?.taskId === taskId;
+  // Add null checks for safer operations
+  const safeTaskId = taskId || '';
+  const safeProjectId = projectId || '';
+  const safeHourlyRate = typeof hourlyRate === 'number' ? hourlyRate : 0;
+  
+  const isActive = activeTimeEntry?.taskId === safeTaskId;
   const isPaused = activeTimeEntry?.isPaused && isActive;
   
   // Use a global timer key for better persistence across tabs
-  const timerKey = `global-timer-${taskId}`;
+  const timerKey = safeTaskId ? `global-timer-${safeTaskId}` : undefined;
   const syncTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   const { 
@@ -44,12 +49,16 @@ const Timer: React.FC<TimerProps> = ({ taskId, projectId, hourlyRate }) => {
   useEffect(() => {
     if (isActive) {
       const syncState = () => {
-        if (isPaused !== localIsPaused) {
-          if (isPaused) {
-            pause();
-          } else {
-            resume();
+        try {
+          if (isPaused !== localIsPaused) {
+            if (isPaused) {
+              pause();
+            } else {
+              resume();
+            }
           }
+        } catch (error) {
+          console.error('Error syncing timer state:', error);
         }
       };
       
@@ -65,21 +74,33 @@ const Timer: React.FC<TimerProps> = ({ taskId, projectId, hourlyRate }) => {
   // Listen for timer events
   useEffect(() => {
     const handleTimerPaused = (e: CustomEvent) => {
-      if (e.detail.taskId === taskId && isRunning && !localIsPaused) {
-        pause();
+      try {
+        if (e.detail?.taskId === safeTaskId && isRunning && !localIsPaused) {
+          pause();
+        }
+      } catch (error) {
+        console.error('Error handling timer paused event:', error);
       }
     };
     
     const handleTimerResumed = (e: CustomEvent) => {
-      if (e.detail.taskId === taskId && isRunning && localIsPaused) {
-        resume();
+      try {
+        if (e.detail?.taskId === safeTaskId && isRunning && localIsPaused) {
+          resume();
+        }
+      } catch (error) {
+        console.error('Error handling timer resumed event:', error);
       }
     };
     
     const handleTimerStopped = (e: CustomEvent) => {
-      if (e.detail.taskId === taskId && isRunning) {
-        stop();
-        reset();
+      try {
+        if (e.detail?.taskId === safeTaskId && isRunning) {
+          stop();
+          reset();
+        }
+      } catch (error) {
+        console.error('Error handling timer stopped event:', error);
       }
     };
     
@@ -92,33 +113,37 @@ const Timer: React.FC<TimerProps> = ({ taskId, projectId, hourlyRate }) => {
       window.removeEventListener('timer-resumed', handleTimerResumed as EventListener);
       window.removeEventListener('timer-stopped', handleTimerStopped as EventListener);
     };
-  }, [taskId, isRunning, localIsPaused, pause, resume, stop, reset]);
+  }, [safeTaskId, isRunning, localIsPaused, pause, resume, stop, reset]);
   
   // This effect handles syncing between local timer state and global state
   useEffect(() => {
-    // If time entry is active in global context but not in local state
-    if (isActive && !isRunning) {
-      start();
-    } 
-    // If time entry is no longer active in global context but still running locally
-    else if (!isActive && isRunning) {
-      stop();
-      reset();
-    }
-    
-    // Sync pause state with some debounce to avoid flickering
-    if (isActive && isPaused !== localIsPaused) {
-      if (syncTimeoutRef.current) {
-        clearTimeout(syncTimeoutRef.current);
+    try {
+      // If time entry is active in global context but not in local state
+      if (isActive && !isRunning) {
+        start();
+      } 
+      // If time entry is no longer active in global context but still running locally
+      else if (!isActive && isRunning) {
+        stop();
+        reset();
       }
       
-      syncTimeoutRef.current = setTimeout(() => {
-        if (isPaused && !localIsPaused) {
-          pause();
-        } else if (!isPaused && localIsPaused) {
-          resume();
+      // Sync pause state with some debounce to avoid flickering
+      if (isActive && isPaused !== localIsPaused) {
+        if (syncTimeoutRef.current) {
+          clearTimeout(syncTimeoutRef.current);
         }
-      }, 100);
+        
+        syncTimeoutRef.current = setTimeout(() => {
+          if (isPaused && !localIsPaused) {
+            pause();
+          } else if (!isPaused && localIsPaused) {
+            resume();
+          }
+        }, 100);
+      }
+    } catch (error) {
+      console.error('Error syncing timer states:', error);
     }
     
     return () => {
@@ -126,12 +151,16 @@ const Timer: React.FC<TimerProps> = ({ taskId, projectId, hourlyRate }) => {
         clearTimeout(syncTimeoutRef.current);
       }
     };
-  }, [isActive, isRunning, isPaused, localIsPaused, taskId, start, stop, pause, resume, reset]);
+  }, [isActive, isRunning, isPaused, localIsPaused, safeTaskId, start, stop, pause, resume, reset]);
   
   // Handler to start the global and local timer
   const handleStartTimer = async () => {
     try {
-      await startTimer(taskId, projectId);
+      if (!safeTaskId || !safeProjectId) {
+        console.error('Missing taskId or projectId');
+        return;
+      }
+      await startTimer(safeTaskId, safeProjectId);
       start();
     } catch (error) {
       console.error("Error starting timer:", error);
@@ -171,12 +200,13 @@ const Timer: React.FC<TimerProps> = ({ taskId, projectId, hourlyRate }) => {
   };
   
   // Calculate earnings based on recorded time and hourly rate
-  const currentEarnings = calculateEarnings(elapsedTime, hourlyRate);
+  const safeElapsedTime = typeof elapsedTime === 'number' ? elapsedTime : 0;
+  const currentEarnings = calculateEarnings(safeElapsedTime, safeHourlyRate);
   
   return (
     <div className="p-4 border rounded-lg bg-card">
       <div className="text-center mb-4 md:mb-6">
-        <div className="text-2xl md:text-3xl font-mono font-semibold mb-2" data-testid={`timer-${taskId}`}>
+        <div className="text-2xl md:text-3xl font-mono font-semibold mb-2" data-testid={`timer-${safeTaskId}`}>
           <span className={isPaused ? "opacity-60" : ""}>{getFormattedTime()}</span>
           {isPaused && <span className="text-sm font-normal text-yellow-500 ml-2">(Pausado)</span>}
         </div>

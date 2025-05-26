@@ -26,7 +26,11 @@ export const useTimerStop = ({
 
   const stopTimer = async (completeTask: boolean = true) => {
     try {
-      if (!activeTimeEntry) return;
+      // Add null check for activeTimeEntry
+      if (!activeTimeEntry || !activeTimeEntry.id || !activeTimeEntry.taskId) {
+        console.warn('No active time entry to stop or missing required properties');
+        return;
+      }
 
       const endTime = new Date();
       const startTime = new Date(activeTimeEntry.startTime);
@@ -96,7 +100,13 @@ export const useTimerStop = ({
   
   const handleTaskCompletion = async (taskId: string, endTime: Date, duration: number) => {
     try {
-      const task = tasks.find(t => t.id === taskId);
+      // Add null check for taskId
+      if (!taskId) {
+        console.warn('No taskId provided for task completion');
+        return;
+      }
+
+      const task = tasks.find(t => t && t.id === taskId);
       
       if (task) {
         // Use scheduledStartTime as fallback if actualStartTime is not available

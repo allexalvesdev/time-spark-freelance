@@ -1,9 +1,8 @@
-
 import React, { useState, useEffect } from 'react';
 import { Task, Project } from '@/types';
 import { useAppContext } from '@/contexts/AppContext';
 import { calculateEarnings, formatDuration } from '@/utils/dateUtils';
-import { useInstantTimer } from '@/hooks/task/useInstantTimer';
+import { useInstantTimer } from '@/hooks/timer/useInstantTimer';
 import { useTaskEvents } from '@/hooks/task/useTaskEvents';
 import { useOptimizedTaskTags } from '@/hooks/task/useOptimizedTaskTags';
 import { useTaskActions } from '@/hooks/task/useTaskActions';
@@ -28,8 +27,7 @@ const TaskItemContainer: React.FC<TaskItemContainerProps> = ({ task, project }) 
 
   // Use the optimized hooks
   const { displaySeconds, isTimerRunning, isTimerPaused } = useInstantTimer({ 
-    taskId: currentTask.id,
-    initialElapsedTime: currentTask.elapsedTime || 0 
+    taskId: currentTask.id
   });
   
   const { taskTags } = useOptimizedTaskTags({ taskId: currentTask.id });

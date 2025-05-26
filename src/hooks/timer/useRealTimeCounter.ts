@@ -5,17 +5,12 @@ import { ActiveTimer } from '@/services/databaseTimerService';
 export const useRealTimeCounter = (activeTimer: ActiveTimer | null) => {
   const [realTimeSeconds, setRealTimeSeconds] = useState(0);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
-  
-  // LOCAL STATE for immediate pause/resume control
-  const [isLocallyPaused, setIsLocallyPaused] = useState(false);
-  const [isLocallyRunning, setIsLocallyRunning] = useState(false);
 
   // Clear any existing interval
   const clearCurrentInterval = useCallback(() => {
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
       intervalRef.current = null;
-      console.log('[RealTimeCounter] ✅ Interval cleared - TIMER STOPPED');
     }
   }, []);
 
@@ -23,17 +18,12 @@ export const useRealTimeCounter = (activeTimer: ActiveTimer | null) => {
   useEffect(() => {
     if (activeTimer) {
       setRealTimeSeconds(activeTimer.elapsedSeconds);
-      setIsLocallyPaused(activeTimer.isPaused);
-      setIsLocallyRunning(true);
       
       if (activeTimer.isPaused) {
-        console.log('[RealTimeCounter] ⏸️ Timer is paused - FREEZING display at:', activeTimer.elapsedSeconds);
         clearCurrentInterval();
       }
     } else {
       setRealTimeSeconds(0);
-      setIsLocallyPaused(false);
-      setIsLocallyRunning(false);
       clearCurrentInterval();
     }
   }, [activeTimer?.id, activeTimer?.elapsedSeconds, activeTimer?.isPaused, clearCurrentInterval]);
@@ -42,44 +32,27 @@ export const useRealTimeCounter = (activeTimer: ActiveTimer | null) => {
   useEffect(() => {
     const handleImmediatePause = (event: CustomEvent) => {
       const { taskId, elapsedSeconds } = event.detail;
-      console.log('[RealTimeCounter] 🔴 IMMEDIATE PAUSE EVENT:', { 
-        taskId: taskId?.slice(0, 8), 
-        elapsedSeconds,
-        'STOPPING_INTERVAL_NOW': true
-      });
       
       if (activeTimer && taskId === activeTimer.taskId) {
-        setIsLocallyPaused(true);
         setRealTimeSeconds(elapsedSeconds);
         clearCurrentInterval();
-        console.log('[RealTimeCounter] ✅ Timer FROZEN INSTANTLY at:', elapsedSeconds);
       }
     };
 
     const handleImmediateResume = (event: CustomEvent) => {
       const { taskId } = event.detail;
-      console.log('[RealTimeCounter] 🟢 IMMEDIATE RESUME EVENT:', { 
-        taskId: taskId?.slice(0, 8),
-        'RESUMING_INTERVAL_NOW': true
-      });
       
       if (activeTimer && taskId === activeTimer.taskId) {
-        setIsLocallyPaused(false);
-        console.log('[RealTimeCounter] ✅ Timer RESUMED INSTANTLY');
+        // Timer will be handled by main interval logic
       }
     };
 
     const handleTimerStopped = (event: CustomEvent) => {
       const { taskId } = event.detail;
-      console.log('[RealTimeCounter] 🛑 TIMER STOPPED EVENT:', { 
-        taskId: taskId?.slice(0, 8),
-        'CLEARING_ALL_STATE': true
-      });
       
       if (activeTimer && taskId === activeTimer.taskId) {
-        setIsLocallyRunning(false);
-        setIsLocallyPaused(false);
         clearCurrentInterval();
+        setRealTimeSeconds(0);
       }
     };
 
@@ -94,38 +67,28 @@ export const useRealTimeCounter = (activeTimer: ActiveTimer | null) => {
     };
   }, [activeTimer?.taskId, clearCurrentInterval]);
 
-  // Main interval management - controlled by LOCAL STATE, not database state
+  // Main interval management
   useEffect(() => {
     clearCurrentInterval();
 
-    if (isLocallyRunning && !isLocallyPaused && activeTimer) {
-      console.log('[RealTimeCounter] 🚀 Starting interval for task:', activeTimer.taskId?.slice(0, 8));
-      
+    if (activeTimer && !activeTimer.isPaused) {
       intervalRef.current = setInterval(() => {
-        setRealTimeSeconds(prev => {
-          const newValue = prev + 1;
-          return newValue;
-        });
+        setRealTimeSeconds(prev => prev + 1);
       }, 1000);
-
-      console.log('[RealTimeCounter] ✅ Interval started - Timer running');
     }
 
     return clearCurrentInterval;
-  }, [isLocallyRunning, isLocallyPaused, activeTimer?.id, clearCurrentInterval]);
+  }, [activeTimer?.id, activeTimer?.isPaused, clearCurrentInterval]);
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      console.log('[RealTimeCounter] 🧹 Component unmounting - clearing interval');
       clearCurrentInterval();
     };
   }, [clearCurrentInterval]);
 
   return {
     realTimeSeconds,
-    setRealTimeSeconds,
-    isLocallyPaused,
-    isLocallyRunning
+    setRealTimeSeconds
   };
 };

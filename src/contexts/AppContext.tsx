@@ -9,6 +9,7 @@ import { useTimerManagement } from '@/hooks/useTimerManagement';
 import { useReportGenerator } from '@/hooks/useReportGenerator';
 import { projectService, taskService, timeEntryService, tagService } from '@/services';
 import { useTags } from '@/hooks/useTags';
+import { optimizedTagService } from '@/services/optimizedTagService';
 
 // Define initial state
 const initialState: AppState = {
@@ -80,12 +81,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     return task ? task.name : null;
   };
   
-  // Optimized batch tag loader
+  // Optimized batch tag loader using the new service
   const batchGetTaskTags = async (taskIds: string[]): Promise<Map<string, string[]>> => {
     try {
-      return await tagService.batchGetTaskTags(taskIds);
+      return await optimizedTagService.batchGetTaskTags(taskIds);
     } catch (error) {
-      console.error('Error batch loading task tags:', error);
       return new Map();
     }
   };
@@ -131,8 +131,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     
     const loadInitialData = async () => {
       try {
-        console.log('[AppContext] 🔄 Loading initial data...');
-        
         // Load projects
         const projectsData = await projectService.loadProjects();
         setProjects(projectsData || []);
@@ -149,10 +147,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         // Load tags
         const { tags: tagsData } = await tagService.loadTags(user.id);
         setTags(tagsData);
-        
-        console.log('[AppContext] ✅ Initial data loaded successfully');
       } catch (error) {
-        console.error("[AppContext] ❌ Error loading data:", error);
+        // Silent error handling - logs removed for production
       }
     };
     

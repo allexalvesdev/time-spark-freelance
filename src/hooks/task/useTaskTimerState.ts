@@ -1,3 +1,4 @@
+
 import { Task } from '@/types';
 import { useDatabaseTimer } from '@/hooks/useDatabaseTimer';
 
@@ -28,7 +29,8 @@ export const useTaskTimerState = ({ task }: UseTaskTimerStateOptions) => {
     displaySeconds,
     realTimeSeconds,
     taskElapsedTime: task.elapsedTime,
-    activeTimerElapsed: activeTimer?.elapsedSeconds
+    activeTimerElapsed: activeTimer?.elapsedSeconds,
+    'USING_DATABASE_TIMER_ONLY': true
   });
   
   return {

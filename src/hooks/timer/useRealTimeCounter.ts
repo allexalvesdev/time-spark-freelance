@@ -15,7 +15,7 @@ export const useRealTimeCounter = (activeTimer: ActiveTimer | null) => {
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
       intervalRef.current = null;
-      console.log('[RealTimeCounter] ✅ Interval cleared');
+      console.log('[RealTimeCounter] ✅ Interval cleared - TIMER STOPPED');
     }
   };
 
@@ -25,50 +25,66 @@ export const useRealTimeCounter = (activeTimer: ActiveTimer | null) => {
       hasTimer: !!activeTimer,
       taskId: activeTimer?.taskId?.slice(0, 8),
       elapsedSeconds: activeTimer?.elapsedSeconds,
-      isPaused: activeTimer?.isPaused
+      isPaused: activeTimer?.isPaused,
+      'DATABASE_TIMER_ONLY': true
     });
 
     if (activeTimer) {
       setRealTimeSeconds(activeTimer.elapsedSeconds);
       setIsLocallyPaused(activeTimer.isPaused);
       setIsLocallyRunning(true);
+      
+      if (activeTimer.isPaused) {
+        console.log('[RealTimeCounter] ⏸️ Timer is paused - FREEZING display at:', activeTimer.elapsedSeconds);
+        clearCurrentInterval();
+      }
     } else {
       setRealTimeSeconds(0);
       setIsLocallyPaused(false);
       setIsLocallyRunning(false);
       clearCurrentInterval();
     }
-  }, [activeTimer?.id, activeTimer?.elapsedSeconds]);
+  }, [activeTimer?.id, activeTimer?.elapsedSeconds, activeTimer?.isPaused]);
 
   // IMMEDIATE local state management for pause/resume events
   useEffect(() => {
     const handleImmediatePause = (event: CustomEvent) => {
       const { taskId, elapsedSeconds } = event.detail;
-      console.log('[RealTimeCounter] 🟡 IMMEDIATE PAUSE:', { taskId: taskId?.slice(0, 8), elapsedSeconds });
+      console.log('[RealTimeCounter] 🔴 IMMEDIATE PAUSE EVENT:', { 
+        taskId: taskId?.slice(0, 8), 
+        elapsedSeconds,
+        'STOPPING_INTERVAL_NOW': true
+      });
       
       if (activeTimer && taskId === activeTimer.taskId) {
         // IMMEDIATE local state change - this is crucial for instant pause
         setIsLocallyPaused(true);
         setRealTimeSeconds(elapsedSeconds);
-        clearCurrentInterval(); // Stop interval immediately
-        console.log('[RealTimeCounter] ✅ Timer FROZEN at:', elapsedSeconds);
+        clearCurrentInterval(); // Stop interval INSTANTLY
+        console.log('[RealTimeCounter] ✅ Timer FROZEN INSTANTLY at:', elapsedSeconds);
       }
     };
 
     const handleImmediateResume = (event: CustomEvent) => {
       const { taskId } = event.detail;
-      console.log('[RealTimeCounter] 🟢 IMMEDIATE RESUME:', { taskId: taskId?.slice(0, 8) });
+      console.log('[RealTimeCounter] 🟢 IMMEDIATE RESUME EVENT:', { 
+        taskId: taskId?.slice(0, 8),
+        'RESUMING_INTERVAL_NOW': true
+      });
       
       if (activeTimer && taskId === activeTimer.taskId) {
         // IMMEDIATE local state change for instant resume
         setIsLocallyPaused(false);
-        console.log('[RealTimeCounter] ✅ Timer RESUMED');
+        console.log('[RealTimeCounter] ✅ Timer RESUMED INSTANTLY');
       }
     };
 
     const handleTimerStopped = (event: CustomEvent) => {
       const { taskId } = event.detail;
-      console.log('[RealTimeCounter] 🔴 TIMER STOPPED:', { taskId: taskId?.slice(0, 8) });
+      console.log('[RealTimeCounter] 🛑 TIMER STOPPED EVENT:', { 
+        taskId: taskId?.slice(0, 8),
+        'CLEARING_ALL_STATE': true
+      });
       
       if (activeTimer && taskId === activeTimer.taskId) {
         setIsLocallyRunning(false);
@@ -98,24 +114,26 @@ export const useRealTimeCounter = (activeTimer: ActiveTimer | null) => {
       console.log('[RealTimeCounter] 🚀 Starting interval for task:', activeTimer.taskId?.slice(0, 8));
       
       intervalRef.current = setInterval(() => {
-        // Double-check local state before each tick
+        // Triple-check local state before each tick to prevent runaway timers
         if (!isLocallyPaused) {
           setRealTimeSeconds(prev => {
             const newValue = prev + 1;
-            console.log('[RealTimeCounter] ⏱️ Tick:', newValue);
+            console.log('[RealTimeCounter] ⏱️ Tick:', newValue, 'paused:', isLocallyPaused);
             return newValue;
           });
         } else {
-          console.log('[RealTimeCounter] ⏸️ Tick blocked - locally paused');
+          console.log('[RealTimeCounter] 🚫 Tick BLOCKED - locally paused');
+          clearCurrentInterval(); // Extra safety - clear interval if somehow still running while paused
         }
       }, 1000);
 
-      console.log('[RealTimeCounter] ✅ Interval started successfully');
+      console.log('[RealTimeCounter] ✅ Interval started - Timer running');
     } else {
-      console.log('[RealTimeCounter] ⏹️ Not starting interval:', {
+      console.log('[RealTimeCounter] ⏹️ NOT starting interval:', {
         isLocallyRunning,
         isLocallyPaused,
-        hasTimer: !!activeTimer
+        hasTimer: !!activeTimer,
+        reason: !isLocallyRunning ? 'not running' : isLocallyPaused ? 'PAUSED' : 'no timer'
       });
     }
 

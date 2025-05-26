@@ -23,7 +23,7 @@ export const useTaskActions = ({
 
   const handleStartTimer = async () => {
     try {
-      await startTimer(task.id, projectId);
+      await startTimer(task.id);
     } catch (error) {
       console.error('Error starting timer:', error);
     }
@@ -36,7 +36,7 @@ export const useTaskActions = ({
         console.log(`Task ${task.id} - Immediate pause, freezing at:`, activeTimer.elapsedSeconds);
         setDisplaySeconds(activeTimer.elapsedSeconds);
       }
-      await pauseTimer();
+      await pauseTimer(activeTimer?.id || '');
     } catch (error) {
       console.error('Error pausing timer:', error);
     }
@@ -44,7 +44,7 @@ export const useTaskActions = ({
   
   const handleResumeTimer = async () => {
     try {
-      await resumeTimer();
+      await resumeTimer(activeTimer?.id || '');
     } catch (error) {
       console.error('Error resuming timer:', error);
     }
@@ -52,7 +52,7 @@ export const useTaskActions = ({
   
   const handleStopTimer = async () => {
     try {
-      await stopTimer(true);
+      await stopTimer(activeTimer?.id || '');
     } catch (error) {
       console.error('Error stopping timer:', error);
     }
@@ -61,7 +61,7 @@ export const useTaskActions = ({
   const handleDeleteTask = async () => {
     try {
       if (isTimerRunning) {
-        await stopTimer(false);
+        await stopTimer(activeTimer?.id || '');
       }
       if (task.id && deleteTask) {
         await deleteTask(task.id);

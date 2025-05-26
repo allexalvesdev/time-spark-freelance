@@ -1,5 +1,5 @@
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Task } from '@/types';
 import { useDatabaseTimer } from '@/hooks/useDatabaseTimer';
 
@@ -9,6 +9,7 @@ interface UseTaskTimerStateOptions {
 
 export const useTaskTimerState = ({ task }: UseTaskTimerStateOptions) => {
   const { displaySeconds, isPaused, isActive, timerId } = useDatabaseTimer();
+  const [localDisplaySeconds, setLocalDisplaySeconds] = useState(0);
   
   // Use useMemo to prevent unnecessary recalculations
   const timerState = useMemo(() => {
@@ -26,5 +27,8 @@ export const useTaskTimerState = ({ task }: UseTaskTimerStateOptions) => {
     };
   }, [displaySeconds, isPaused, isActive, timerId, task.id, task.elapsedTime]);
   
-  return timerState;
+  return {
+    ...timerState,
+    setDisplaySeconds: setLocalDisplaySeconds
+  };
 };

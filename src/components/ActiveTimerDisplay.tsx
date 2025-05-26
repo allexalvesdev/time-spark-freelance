@@ -67,16 +67,16 @@ const ActiveTimerDisplay: React.FC = () => {
   const handlePause = async () => {
     // Immediately freeze display at current elapsed time
     setDisplaySeconds(activeTimer.elapsedSeconds);
-    await pauseTimer();
+    await pauseTimer(activeTimer.id);
   };
 
   const handleResume = async () => {
-    await resumeTimer();
+    await resumeTimer(activeTimer.id);
   };
 
   const handleStop = async () => {
     setDisplaySeconds(0);
-    await stopTimer(true);
+    await stopTimer(activeTimer.id);
   };
 
   return (

@@ -1,60 +1,46 @@
 
 import { useState } from 'react';
 import { TimeEntry, Task } from '@/types';
-
-// Import refactored timer hooks
-import { useTimerStart } from './timer/useTimerStart';
-import { useTimerPause } from './timer/useTimerPause';
-import { useTimerResume } from './timer/useTimerResume';
-import { useTimerStop } from './timer/useTimerStop';
-import { useActiveTaskName } from './timer/useActiveTaskName';
+import { useDatabaseTimer } from './useDatabaseTimer';
 
 export const useTimerManagement = (userId: string, tasks: Task[] = []) => {
   const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([]);
   const [activeTimeEntry, setActiveTimeEntry] = useState<TimeEntry | null>(null);
 
-  // Create a helper function to stop current timer (used by startTimer)
-  const stopCurrentTimer = async () => {
-    if (activeTimeEntry) {
-      await stopTimer(false);
-    }
+  // Use the unified database timer system
+  const { 
+    activeTimer, 
+    startTimer: dbStartTimer, 
+    pauseTimer: dbPauseTimer, 
+    resumeTimer: dbResumeTimer, 
+    stopTimer: dbStopTimer 
+  } = useDatabaseTimer();
+
+  // Wrapper functions to maintain compatibility
+  const startTimer = async (taskId: string, projectId: string) => {
+    return await dbStartTimer(taskId, projectId);
   };
 
-  // Use the refactored hooks
-  const { startTimer } = useTimerStart({
-    userId,
-    timeEntries,
-    setTimeEntries,
-    setActiveTimeEntry,
-    stopCurrentTimer
-  });
+  const pauseTimer = async () => {
+    return await dbPauseTimer();
+  };
 
-  const { pauseTimer } = useTimerPause({
-    timeEntries,
-    setTimeEntries,
-    activeTimeEntry,
-    setActiveTimeEntry
-  });
+  const resumeTimer = async () => {
+    return await dbResumeTimer();
+  };
 
-  const { resumeTimer } = useTimerResume({
-    timeEntries,
-    setTimeEntries,
-    activeTimeEntry,
-    setActiveTimeEntry
-  });
+  const stopTimer = async (completeTask: boolean = false) => {
+    return await dbStopTimer(completeTask);
+  };
 
-  const { stopTimer } = useTimerStop({
-    timeEntries,
-    setTimeEntries,
-    activeTimeEntry,
-    setActiveTimeEntry,
-    tasks
-  });
-
-  const { getActiveTaskName } = useActiveTaskName({
-    activeTimeEntry,
-    tasks
-  });
+  // Function to get the name of the currently active task
+  const getActiveTaskName = (): string | null => {
+    if (!activeTimer) return null;
+    
+    const taskId = activeTimer.taskId;
+    const task = tasks.find(t => t.id === taskId);
+    return task ? task.name : null;
+  };
 
   return {
     timeEntries,

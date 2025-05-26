@@ -1,3 +1,4 @@
+
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { Timer } from '@/types/timer';
 
@@ -6,20 +7,15 @@ export function useRealTimeCounter(activeTimer: Timer | null) {
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const lastUpdateRef = useRef<number>(Date.now());
 
-  // Função para limpar interval de forma segura
-  const clearInterval = useCallback(() => {
+  // Remove clearInterval from dependencies to prevent circular dependency
+  useEffect(() => {
+    // Clear any existing interval
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
       intervalRef.current = null;
     }
-  }, []);
 
-  // Efeito único que gerencia tudo
-  useEffect(() => {
-    // Limpa interval anterior sempre
-    clearInterval();
-
-    // Se não há timer ou está pausado, apenas atualiza o estado
+    // If no timer or timer is paused, set the exact elapsed seconds and stop
     if (!activeTimer) {
       setRealTimeSeconds(0);
       return;
@@ -30,7 +26,7 @@ export function useRealTimeCounter(activeTimer: Timer | null) {
       return;
     }
 
-    // Timer ativo e não pausado - inicia contagem
+    // Timer is active and not paused - start real-time counting
     setRealTimeSeconds(activeTimer.elapsedSeconds);
     lastUpdateRef.current = Date.now();
 
@@ -42,13 +38,16 @@ export function useRealTimeCounter(activeTimer: Timer | null) {
         setRealTimeSeconds(prev => prev + deltaSeconds);
         lastUpdateRef.current = now;
       }
-    }, 100); // Atualiza a cada 100ms para maior precisão
+    }, 100);
 
-    // Cleanup
+    // Cleanup function
     return () => {
-      clearInterval();
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
     };
-  }, [activeTimer?.id, activeTimer?.isPaused, activeTimer?.elapsedSeconds, clearInterval]);
+  }, [activeTimer?.id, activeTimer?.isPaused, activeTimer?.elapsedSeconds]);
 
   return realTimeSeconds;
 }

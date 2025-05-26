@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Timer } from '@/types/timer';
 
@@ -20,7 +21,7 @@ export function useUnifiedTimerState(
   });
 
   useEffect(() => {
-    // Se não há timer ativo
+    // If no active timer
     if (!activeTimer) {
       setState({
         displaySeconds: 0,
@@ -31,16 +32,14 @@ export function useUnifiedTimerState(
       return;
     }
 
-    // Atualiza estado unificado
+    // Update unified state
     setState({
-      // Usa realTimeSeconds sempre que não estiver pausado
-      // Usa elapsedSeconds do banco quando pausado
       displaySeconds: activeTimer.isPaused ? activeTimer.elapsedSeconds : realTimeSeconds,
       isPaused: activeTimer.isPaused,
       isActive: true,
       timerId: activeTimer.id
     });
-  }, [activeTimer, realTimeSeconds]);
+  }, [activeTimer?.id, activeTimer?.isPaused, activeTimer?.elapsedSeconds, realTimeSeconds]);
 
   return state;
 }

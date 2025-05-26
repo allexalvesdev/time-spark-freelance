@@ -1,10 +1,11 @@
+
 import React, { useState, useEffect } from 'react';
 import { Task, Project } from '@/types';
 import { useAppContext } from '@/contexts/AppContext';
 import { calculateEarnings, formatDuration } from '@/utils/dateUtils';
-import { useTaskTimerState } from '@/hooks/task/useTaskTimerState';
+import { useInstantTimer } from '@/hooks/task/useInstantTimer';
 import { useTaskEvents } from '@/hooks/task/useTaskEvents';
-import { useTaskTags } from '@/hooks/task/useTaskTags';
+import { useOptimizedTaskTags } from '@/hooks/task/useOptimizedTaskTags';
 import { useTaskActions } from '@/hooks/task/useTaskActions';
 import EditTaskModal from '../EditTaskModal';
 import CompleteTaskModal from '../CompleteTaskModal';
@@ -25,9 +26,14 @@ const TaskItemContainer: React.FC<TaskItemContainerProps> = ({ task, project }) 
   const [showCompleteModal, setShowCompleteModal] = useState(false);
   const [currentTask, setCurrentTask] = useState<Task>(task);
 
-  // Use the simplified hooks
-  const { displaySeconds, isTimerRunning, isTimerPaused } = useTaskTimerState({ task: currentTask });
-  const { taskTags } = useTaskTags({ taskId: currentTask.id });
+  // Use the optimized hooks
+  const { displaySeconds, isTimerRunning, isTimerPaused } = useInstantTimer({ 
+    taskId: currentTask.id,
+    initialElapsedTime: currentTask.elapsedTime || 0 
+  });
+  
+  const { taskTags } = useOptimizedTaskTags({ taskId: currentTask.id });
+  
   const taskActions = useTaskActions({ 
     task: currentTask, 
     projectId: project.id, 
@@ -42,12 +48,21 @@ const TaskItemContainer: React.FC<TaskItemContainerProps> = ({ task, project }) 
     setCurrentTask(task);
   }, [task]);
   
-  // Get task tag objects
-  const taskTagObjects = Array.isArray(tags) ? tags.filter(tag => tag && taskTags.includes(tag.id)) : [];
+  // Get task tag objects with safety check
+  const taskTagObjects = Array.isArray(tags) ? 
+    tags.filter(tag => tag && tag.id && taskTags.includes(tag.id)) : [];
   
   // Calculate earnings based on current display seconds
   const safeHourlyRate = typeof project.hourlyRate === 'number' ? project.hourlyRate : 0;
   const currentEarnings = calculateEarnings(displaySeconds, safeHourlyRate);
+  
+  console.log('[TaskItemContainer] 📊 Rendering with:', {
+    taskId: currentTask.id.slice(0, 8),
+    displaySeconds,
+    isTimerRunning,
+    isTimerPaused,
+    formattedTime: formatDuration(displaySeconds)
+  });
   
   return (
     <div className="task-item rounded-lg border p-4 bg-card">

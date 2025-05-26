@@ -1,95 +1,110 @@
 
-import { supabase } from '@/integrations/supabase/client';
-
 class BatchTagService {
   private cache = new Map<string, string[]>();
-  private pendingRequests = new Map<string, Promise<string[]>>();
-  
+  private batchCache = new Map<string, string[]>();
+  private pendingRequests = new Set<string>();
+  private batchRequestTimeout: NodeJS.Timeout | null = null;
+  private readonly BATCH_DELAY = 50; // 50ms delay for batching
+
   async getTaskTags(taskId: string): Promise<string[]> {
-    // Return cached result if available
+    // Check individual cache first
     if (this.cache.has(taskId)) {
-      return this.cache.get(taskId)!;
+      return this.cache.get(taskId) || [];
     }
-    
-    // Return pending request if one exists
-    if (this.pendingRequests.has(taskId)) {
-      return this.pendingRequests.get(taskId)!;
+
+    // Check batch cache
+    if (this.batchCache.has(taskId)) {
+      return this.batchCache.get(taskId) || [];
     }
-    
-    // Create new request
-    const request = this.fetchTaskTags(taskId);
-    this.pendingRequests.set(taskId, request);
-    
-    try {
-      const result = await request;
-      this.cache.set(taskId, result);
-      return result;
-    } finally {
-      this.pendingRequests.delete(taskId);
-    }
+
+    // Add to pending and trigger batch request
+    this.pendingRequests.add(taskId);
+    this.scheduleBatchRequest();
+
+    // Wait for batch completion or return empty array
+    return new Promise((resolve) => {
+      const checkBatch = () => {
+        if (this.batchCache.has(taskId)) {
+          resolve(this.batchCache.get(taskId) || []);
+        } else if (!this.pendingRequests.has(taskId)) {
+          resolve([]);
+        } else {
+          setTimeout(checkBatch, 10);
+        }
+      };
+      checkBatch();
+    });
   }
-  
+
   async batchGetTaskTags(taskIds: string[]): Promise<Map<string, string[]>> {
-    const uncachedIds = taskIds.filter(id => !this.cache.has(id));
+    console.log('[BatchTagService] 📦 Batch loading tags for tasks:', taskIds.length);
     
-    if (uncachedIds.length === 0) {
-      const result = new Map<string, string[]>();
-      taskIds.forEach(id => {
-        result.set(id, this.cache.get(id) || []);
-      });
-      return result;
-    }
+    const { supabase } = await import('@/integrations/supabase/client');
     
     try {
       const { data, error } = await supabase
         .from('task_tags')
         .select('task_id, tag_id')
-        .in('task_id', uncachedIds);
-      
+        .in('task_id', taskIds);
+
       if (error) throw error;
-      
-      // Group by task_id
-      const grouped = new Map<string, string[]>();
-      uncachedIds.forEach(id => grouped.set(id, []));
-      
-      data?.forEach(relation => {
-        const tags = grouped.get(relation.task_id) || [];
-        tags.push(relation.tag_id);
-        grouped.set(relation.task_id, tags);
-      });
-      
-      // Update cache
-      grouped.forEach((tags, taskId) => {
-        this.cache.set(taskId, tags);
-      });
-      
-      // Return all requested tags
+
       const result = new Map<string, string[]>();
-      taskIds.forEach(id => {
-        result.set(id, this.cache.get(id) || []);
-      });
       
+      // Initialize all tasks with empty arrays
+      taskIds.forEach(taskId => {
+        result.set(taskId, []);
+      });
+
+      // Group tag IDs by task ID
+      data?.forEach(item => {
+        const existing = result.get(item.task_id) || [];
+        existing.push(item.tag_id);
+        result.set(item.task_id, existing);
+      });
+
+      // Update both caches
+      result.forEach((tagIds, taskId) => {
+        this.cache.set(taskId, tagIds);
+        this.batchCache.set(taskId, tagIds);
+      });
+
+      console.log('[BatchTagService] ✅ Batch loaded tags for', result.size, 'tasks');
       return result;
     } catch (error) {
-      console.error('Error batch loading task tags:', error);
-      throw error;
+      console.error('[BatchTagService] ❌ Batch load error:', error);
+      // Return empty arrays for all requested tasks
+      const result = new Map<string, string[]>();
+      taskIds.forEach(taskId => {
+        result.set(taskId, []);
+      });
+      return result;
     }
   }
-  
-  private async fetchTaskTags(taskId: string): Promise<string[]> {
-    const { data, error } = await supabase
-      .from('task_tags')
-      .select('tag_id')
-      .eq('task_id', taskId);
-    
-    if (error) throw error;
-    
-    return data?.map(relation => relation.tag_id) || [];
+
+  private scheduleBatchRequest() {
+    if (this.batchRequestTimeout) {
+      clearTimeout(this.batchRequestTimeout);
+    }
+
+    this.batchRequestTimeout = setTimeout(async () => {
+      const taskIds = Array.from(this.pendingRequests);
+      this.pendingRequests.clear();
+      
+      if (taskIds.length > 0) {
+        await this.batchGetTaskTags(taskIds);
+      }
+    }, this.BATCH_DELAY);
   }
-  
+
   clearCache() {
+    console.log('[BatchTagService] 🗑️ Clearing all caches');
     this.cache.clear();
+    this.batchCache.clear();
     this.pendingRequests.clear();
+    
+    // Emit event to notify components
+    window.dispatchEvent(new CustomEvent('task-tags-modified'));
   }
 }
 

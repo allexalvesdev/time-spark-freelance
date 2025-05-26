@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { formatDuration } from '@/utils/dateUtils';
+import { getCurrentElapsedFromStorage } from '@/utils/timer/timeCalculator';
 import useTimerState from '@/hooks/useTimerState';
 
 interface TaskTimerProps {
@@ -37,9 +38,26 @@ const TaskTimer: React.FC<TaskTimerProps> = ({
   const safeCurrentEarnings = typeof currentEarnings === 'number' ? currentEarnings : 0;
   const safeTaskId = taskId || '';
 
-  // Use live timer time if running, otherwise use saved elapsed time
-  const displayTime = isRunning && safeTaskId ? liveElapsedTime : safeElapsedTime;
-  const displayFormattedTime = isRunning && safeTaskId ? getFormattedTime() : formatDuration(safeElapsedTime);
+  // Use unified calculation for display time
+  let displayTime = safeElapsedTime;
+  let displayFormattedTime = formatDuration(safeElapsedTime);
+  
+  if (isRunning && safeTaskId) {
+    // Get current elapsed time from storage using unified calculation
+    const currentElapsed = getCurrentElapsedFromStorage(safeTaskId);
+    displayTime = currentElapsed;
+    displayFormattedTime = getFormattedTime();
+    
+    console.log('TaskTimer display:', {
+      taskId: safeTaskId,
+      isRunning,
+      isPaused,
+      savedElapsed: safeElapsedTime,
+      currentElapsed,
+      displayTime,
+      displayFormattedTime
+    });
+  }
 
   return (
     <div className="flex items-center justify-between p-2 bg-muted rounded mb-4">

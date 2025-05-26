@@ -1,6 +1,8 @@
+
 import React, { useEffect } from 'react';
 import { useAppContext } from '@/contexts/AppContext';
-import useTimerState from '@/hooks/useTimerState';
+import { getCurrentElapsedFromStorage } from '@/utils/timer/timeCalculator';
+import { formatDuration } from '@/utils/dateUtils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Button } from './ui/button';
 import { Square, Pause, Play } from 'lucide-react';
@@ -14,30 +16,34 @@ const ActiveTimerDisplay: React.FC = () => {
   const isPaused = activeTimeEntry?.isPaused;
   const taskId = activeTimeEntry?.taskId || '';
   
-  // Use persistKey com o ID da tarefa atual para garantir que o timer continue após refresh
-  const { getFormattedTime, isRunning } = useTimerState({
-    persistKey: taskId ? `global-timer-${taskId}` : undefined,
-    autoStart: false // Não iniciamos automaticamente, deixamos o sistema de sincronização fazer isso
-  });
+  // Get current time using unified calculation
+  const currentElapsed = taskId ? getCurrentElapsedFromStorage(taskId) : 0;
+  const formattedTime = formatDuration(currentElapsed);
 
-  // Efeito para detectar problemas de sincronização
+  // Auto-refresh timer display every second when active
   useEffect(() => {
-    if (activeTimeEntry && !isRunning) {
-      // Se temos uma entrada ativa mas o timer não está rodando, sincronize novamente
-      const timerState = localStorage.getItem(`timerIsRunning-global-timer-${taskId}`);
-      if (timerState === 'true' && taskId) {
-        console.log('Detectada dessincronização do timer após refresh, corrigindo...');
-        
-        // Forçamos a renderização do timer sem alterá-lo
-        window.dispatchEvent(new Event('storage'));
-      }
-    }
-  }, [activeTimeEntry, isRunning, taskId]);
+    if (!activeTimeEntry || !taskId) return;
+    
+    const interval = setInterval(() => {
+      // Force re-render by triggering a storage event
+      window.dispatchEvent(new Event('storage-check'));
+    }, 1000);
+    
+    return () => clearInterval(interval);
+  }, [activeTimeEntry, taskId]);
 
   if (!activeTimeEntry || !taskId) return null;
   
   const taskName = getActiveTaskName();
   const isCompact = isMobile;
+  
+  console.log('ActiveTimerDisplay render:', {
+    taskId,
+    isPaused,
+    currentElapsed,
+    formattedTime,
+    taskName
+  });
   
   const handlePauseTimer = () => {
     pauseTimer();
@@ -68,7 +74,7 @@ const ActiveTimerDisplay: React.FC = () => {
       <div className="flex items-center justify-between w-full gap-2">
         <div className="flex flex-col">
           <div className={`text-sm font-mono font-medium ${isPaused ? 'text-yellow-500' : ''}`}>
-            {getFormattedTime()}
+            {formattedTime}
             {isPaused && <span className="text-xs ml-1">(Pausado)</span>}
           </div>
           {taskName && (
@@ -118,7 +124,7 @@ const ActiveTimerDisplay: React.FC = () => {
     <div className="flex items-center justify-between py-1 px-3 w-full gap-3">
       <div className="flex flex-col items-center">
         <div className={`text-base font-mono font-bold ${isPaused ? 'text-yellow-500' : ''}`}>
-          {getFormattedTime()}
+          {formattedTime}
           {isPaused && <span className="text-sm ml-2">(Pausado)</span>}
         </div>
         {taskName && (

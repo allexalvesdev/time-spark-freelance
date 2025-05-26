@@ -3,6 +3,7 @@ import { getSafeInteger } from '@/utils/timer/safeInteger';
 import { getPersistedTimerState, persistTimerState, clearPersistedTimerState } from '@/utils/timer/timerStorage';
 import { startTimerAction, pauseTimerAction, resumeTimerAction, stopTimerAction, formatTimerDisplay } from '@/utils/timer/timerActions';
 import { useTimerSync } from './timer/useTimerSync';
+import { calculateTimerElapsed } from '@/utils/timer/timeCalculator';
 
 interface UseTimerOptions {
   autoStart?: boolean;
@@ -49,54 +50,36 @@ const useTimerState = (options: UseTimerOptions = {}) => {
       const timerState = getPersistedTimerState(persistKey);
       
       if (timerState) {
-        // If timer is running and this is the active task, calculate current elapsed time
-        if (timerState.running && isActiveTask && timerState.startTime) {
-          const currentTime = Date.now();
-          let calculatedElapsed = Math.floor((currentTime - timerState.startTime) / 1000);
+        console.log('Loading timer state:', timerState);
+        
+        // Use unified calculation for all scenarios
+        if (timerState.running && timerState.startTime) {
+          const calculation = calculateTimerElapsed(
+            timerState.startTime,
+            timerState.pausedTime || 0,
+            timerState.paused || false,
+            timerState.pausedAt || null
+          );
           
-          // Subtract total paused time
-          calculatedElapsed -= timerState.pausedTime;
-          
-          // If currently paused, subtract additional paused time since pause started
-          if (timerState.paused && timerState.pausedAt) {
-            const additionalPausedTime = Math.floor((currentTime - timerState.pausedAt) / 1000);
-            calculatedElapsed -= additionalPausedTime;
+          if (calculation.isValid) {
+            setElapsedTime(calculation.elapsedTime);
+            setPausedTime(timerState.pausedTime || 0);
+            setIsRunning(true);
+            setIsPaused(timerState.paused || false);
+            startTimeRef.current = timerState.startTime;
+            pausedAtRef.current = timerState.pausedAt || null;
+            
+            console.log('Timer state loaded successfully:', {
+              elapsedTime: calculation.elapsedTime,
+              pausedTime: timerState.pausedTime,
+              isRunning: true,
+              isPaused: timerState.paused
+            });
           }
-          
-          // Ensure non-negative elapsed time
-          calculatedElapsed = Math.max(0, calculatedElapsed);
-          
-          setElapsedTime(getSafeInteger(calculatedElapsed));
-          setPausedTime(timerState.pausedTime);
-          setIsRunning(true);
-          setIsPaused(timerState.paused);
-          startTimeRef.current = timerState.startTime;
-          pausedAtRef.current = timerState.pausedAt;
-        }
-        // Handle paused state
-        else if (timerState.running && timerState.paused && timerState.pausedAt) {
-          setIsRunning(true);
-          setIsPaused(true);
-          setPausedTime(timerState.pausedTime);
-          setElapsedTime(timerState.elapsed);
-          startTimeRef.current = timerState.startTime;
-          pausedAtRef.current = timerState.pausedAt;
-        }
-        // If timer was running but not paused
-        else if (timerState.running && !timerState.paused && timerState.startTime) {
-          const currentElapsed = getSafeInteger(Math.floor((Date.now() - timerState.startTime) / 1000) - timerState.pausedTime);
-          
-          setElapsedTime(Math.max(0, currentElapsed));
-          setPausedTime(timerState.pausedTime);
-          setIsRunning(true);
-          setIsPaused(false);
-          startTimeRef.current = timerState.startTime;
-          pausedAtRef.current = null;
-        } 
-        // If timer was not running, just load the elapsed time
-        else if (!timerState.running) {
-          setElapsedTime(timerState.elapsed);
-          setPausedTime(timerState.pausedTime);
+        } else {
+          // Timer not running, just load saved elapsed time
+          setElapsedTime(timerState.elapsed || 0);
+          setPausedTime(timerState.pausedTime || 0);
           setIsRunning(false);
           setIsPaused(false);
           startTimeRef.current = null;
@@ -107,17 +90,24 @@ const useTimerState = (options: UseTimerOptions = {}) => {
         const globalStartTime = localStorage.getItem('timerStartTime');
         const globalIsPaused = localStorage.getItem('timerIsPaused') === 'true';
         const globalPausedTime = localStorage.getItem('timerPausedTime');
+        const globalPausedAt = localStorage.getItem('timerPausedAt');
         
         if (globalStartTime) {
-          const startTime = parseInt(globalStartTime, 10);
-          const pausedTimeValue = globalPausedTime ? parseInt(globalPausedTime, 10) : 0;
-          const currentElapsed = Math.max(0, Math.floor((Date.now() - startTime) / 1000) - pausedTimeValue);
+          const calculation = calculateTimerElapsed(
+            parseInt(globalStartTime, 10),
+            globalPausedTime ? parseInt(globalPausedTime, 10) : 0,
+            globalIsPaused,
+            globalPausedAt ? parseInt(globalPausedAt, 10) : null
+          );
           
-          setElapsedTime(getSafeInteger(currentElapsed));
-          setPausedTime(getSafeInteger(pausedTimeValue));
-          setIsRunning(true);
-          setIsPaused(globalIsPaused);
-          startTimeRef.current = startTime;
+          if (calculation.isValid) {
+            setElapsedTime(calculation.elapsedTime);
+            setPausedTime(calculation.debugInfo?.pausedTime || 0);
+            setIsRunning(true);
+            setIsPaused(globalIsPaused);
+            startTimeRef.current = parseInt(globalStartTime, 10);
+            pausedAtRef.current = globalPausedAt ? parseInt(globalPausedAt, 10) : null;
+          }
         }
       }
       
@@ -139,30 +129,32 @@ const useTimerState = (options: UseTimerOptions = {}) => {
   useEffect(() => {
     // Function to update elapsed time on each tick
     const updateElapsedTime = () => {
-      if (startTimeRef.current !== null) {
-        if (isPaused) {
-          // If paused, don't update elapsed time
-          return;
-        }
+      if (startTimeRef.current !== null && !isPaused) {
+        // Use unified calculation
+        const calculation = calculateTimerElapsed(
+          startTimeRef.current,
+          pausedTime,
+          false, // Not paused during update
+          null
+        );
         
-        const now = Date.now();
-        // Calculate current elapsed time accounting for total paused time
-        const currentElapsed = getSafeInteger(Math.floor((now - startTimeRef.current) / 1000) - pausedTime);
-        
-        setElapsedTime(currentElapsed);
-        
-        // Sync state every 2 seconds to ensure persistence
-        if (now - lastSyncTimeRef.current > 2000) {
-          persistTimerState(
-            persistKey,
-            true,
-            isPaused, 
-            currentElapsed, 
-            pausedTime, 
-            startTimeRef.current, 
-            pausedAtRef.current
-          );
-          lastSyncTimeRef.current = now;
+        if (calculation.isValid) {
+          setElapsedTime(calculation.elapsedTime);
+          
+          // Sync state every 2 seconds to ensure persistence
+          const now = Date.now();
+          if (now - lastSyncTimeRef.current > 2000) {
+            persistTimerState(
+              persistKey,
+              true,
+              isPaused, 
+              calculation.elapsedTime, 
+              pausedTime, 
+              startTimeRef.current, 
+              pausedAtRef.current
+            );
+            lastSyncTimeRef.current = now;
+          }
         }
       }
     };

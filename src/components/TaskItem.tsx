@@ -9,6 +9,7 @@ import TaskDetails from './task/TaskDetails';
 import TaskTimer from './task/TaskTimer';
 import TaskActions from './task/TaskActions';
 import { calculateEarnings } from '@/utils/dateUtils';
+import { getCurrentElapsedFromStorage } from '@/utils/timer/timeCalculator';
 
 interface TaskItemProps {
   task: Task;
@@ -175,8 +176,15 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, project }) => {
     }
   };
   
-  // Pass the total time (either from active timer or from saved task)
-  const currentTimeForEarnings = isTimerRunning ? liveElapsedTime : (currentTask.elapsedTime || 0);
+  // Use unified calculation for earnings - get current time if running, otherwise use saved time
+  const currentTimeForEarnings = isTimerRunning ? 
+    (() => {
+      // Import the getCurrentElapsedFromStorage function for consistent calculation
+      const { getCurrentElapsedFromStorage } = require('@/utils/timer/timeCalculator');
+      return getCurrentElapsedFromStorage(safeTaskId);
+    })() : 
+    (currentTask.elapsedTime || 0);
+    
   const safeHourlyRate = typeof safeProject.hourlyRate === 'number' ? safeProject.hourlyRate : 0;
   const currentEarnings = calculateEarnings(currentTimeForEarnings, safeHourlyRate);
   

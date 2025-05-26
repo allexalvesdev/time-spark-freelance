@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Task, Project } from '@/types';
 import { useDatabaseTimer } from '@/hooks/useDatabaseTimer';
@@ -31,20 +30,19 @@ const TaskItem: React.FC<TaskItemProps> = ({ task, project }) => {
   
   // Update display seconds based on timer state
   useEffect(() => {
-    if (isTimerRunning) {
-      // If this task has the active timer, use the exact same logic as header
+    if (isTimerRunning && activeTimer) {
       if (activeTimer.isPaused) {
-        // When paused, show the exact elapsed seconds from database
+        // When paused, show the exact elapsed seconds from database and NEVER update
         setDisplaySeconds(activeTimer.elapsedSeconds);
       } else {
-        // When running, show real-time seconds
+        // When running, show real-time seconds that update every second
         setDisplaySeconds(realTimeSeconds);
       }
     } else {
       // If not the active timer, show stored elapsed time
       setDisplaySeconds(currentTask.elapsedTime || 0);
     }
-  }, [isTimerRunning, realTimeSeconds, currentTask.elapsedTime, activeTimer]);
+  }, [isTimerRunning, realTimeSeconds, currentTask.elapsedTime, activeTimer?.elapsedSeconds, activeTimer?.isPaused]);
 
   // Listen for immediate timer synchronization events
   useEffect(() => {

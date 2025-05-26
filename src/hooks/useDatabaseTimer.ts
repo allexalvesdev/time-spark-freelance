@@ -90,6 +90,9 @@ export const useDatabaseTimer = () => {
       const pausedTimer = { ...activeTimer, isPaused: true };
       setActiveTimer(pausedTimer);
       
+      // Stop the real-time counter immediately when pausing
+      setRealTimeSeconds(currentElapsedSeconds);
+      
       // Dispatch immediate pause event with current elapsed seconds
       window.dispatchEvent(new CustomEvent('timer-paused', { 
         detail: { 
@@ -197,9 +200,10 @@ export const useDatabaseTimer = () => {
     }
   }, [user?.id, activeTimer]);
 
-  // Real-time counter for active timers
+  // Real-time counter for active timers - ONLY runs when NOT paused
   useEffect(() => {
     if (!activeTimer || activeTimer.isPaused) {
+      // If paused or no timer, stop the interval completely
       return;
     }
 

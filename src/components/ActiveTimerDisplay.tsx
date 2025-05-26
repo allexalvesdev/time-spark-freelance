@@ -14,17 +14,17 @@ const ActiveTimerDisplay: React.FC = () => {
   // Sync display with real-time seconds and handle external events
   useEffect(() => {
     if (activeTimer) {
-      // If paused, show the exact elapsed seconds from the database
-      // If running, show the real-time updating seconds
       if (activeTimer.isPaused) {
+        // When paused, always show the exact elapsed seconds from database - never update
         setDisplaySeconds(activeTimer.elapsedSeconds);
       } else {
+        // Only update in real-time when NOT paused
         setDisplaySeconds(realTimeSeconds);
       }
     } else {
       setDisplaySeconds(0);
     }
-  }, [realTimeSeconds, activeTimer]);
+  }, [realTimeSeconds, activeTimer?.elapsedSeconds, activeTimer?.isPaused, activeTimer?.id]);
 
   // Listen for immediate synchronization events
   useEffect(() => {

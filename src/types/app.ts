@@ -23,7 +23,7 @@ export interface AppContextType {
   startTimer: (taskId: string, projectId: string) => Promise<void>;
   pauseTimer: () => Promise<void>;
   resumeTimer: () => Promise<void>;
-  stopTimer: (autoComplete?: boolean) => Promise<void>;
+  stopTimer: (completeTask?: boolean) => Promise<void>;
   setCurrentProject: (project: Project | null) => void;
   setCurrentTask: (task: Task | null) => void;
   generateReport: (projectId: string) => ReportData | null;

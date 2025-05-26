@@ -16,21 +16,21 @@ export const useTimerManagement = (userId: string, tasks: Task[] = []) => {
     stopTimer: dbStopTimer 
   } = useDatabaseTimer();
 
-  // Wrapper functions to maintain compatibility
-  const startTimer = async (taskId: string, projectId: string) => {
-    return await dbStartTimer(taskId, projectId);
+  // Wrapper functions to maintain compatibility with AppContext interface
+  const startTimer = async (taskId: string, projectId: string): Promise<void> => {
+    await dbStartTimer(taskId, projectId);
   };
 
-  const pauseTimer = async () => {
-    return await dbPauseTimer();
+  const pauseTimer = async (): Promise<void> => {
+    await dbPauseTimer();
   };
 
-  const resumeTimer = async () => {
-    return await dbResumeTimer();
+  const resumeTimer = async (): Promise<void> => {
+    await dbResumeTimer();
   };
 
-  const stopTimer = async (completeTask: boolean = false) => {
-    return await dbStopTimer(completeTask);
+  const stopTimer = async (completeTask: boolean = false): Promise<void> => {
+    await dbStopTimer(completeTask);
   };
 
   // Function to get the name of the currently active task
